@@ -97,9 +97,9 @@
             groupBox1.SuspendLayout();
             statusStrip1.SuspendLayout();
             SuspendLayout();
-            // 
+            //
             // ButtonAdvanceDate
-            // 
+            //
             ButtonAdvanceDate.Enabled = false;
             ButtonAdvanceDate.Location = new Point(117, 98);
             ButtonAdvanceDate.Margin = new Padding(4, 3, 4, 3);
@@ -110,9 +110,9 @@
             toolTip.SetToolTip(ButtonAdvanceDate, "Advance Date performs one (1) time set.\r\n\r\nIf Stop Filters are defined, Advance Date\r\ncontinues advancing the date until a stop\r\nfilter has been hit.");
             ButtonAdvanceDate.UseVisualStyleBackColor = true;
             ButtonAdvanceDate.Click += ButtonAdvanceDate_Click;
-            // 
+            //
             // CheckEnableFilters
-            // 
+            //
             CheckEnableFilters.AutoSize = true;
             CheckEnableFilters.Checked = true;
             CheckEnableFilters.CheckState = CheckState.Checked;
@@ -124,9 +124,9 @@
             toolTip.SetToolTip(CheckEnableFilters, "Enable Filters enables or disables all filters\r\nentirely.\r\n\r\nEnabled - Advance Date will continue until\r\na match occurs from a filter.\r\n\r\nDisabled - Advance Date will only advance\r\none (1) day.");
             CheckEnableFilters.UseVisualStyleBackColor = true;
             CheckEnableFilters.Click += EnableFilters_Click;
-            // 
+            //
             // ButtonDisconnect
-            // 
+            //
             ButtonDisconnect.Enabled = false;
             ButtonDisconnect.Location = new Point(117, 35);
             ButtonDisconnect.Margin = new Padding(4, 3, 4, 3);
@@ -136,9 +136,9 @@
             ButtonDisconnect.Text = "Disconnect";
             ButtonDisconnect.UseVisualStyleBackColor = true;
             ButtonDisconnect.Click += Disconnect_Click;
-            // 
+            //
             // ButtonConnect
-            // 
+            //
             ButtonConnect.Location = new Point(13, 35);
             ButtonConnect.Margin = new Padding(4, 3, 4, 3);
             ButtonConnect.Name = "ButtonConnect";
@@ -147,9 +147,9 @@
             ButtonConnect.Text = "Connect";
             ButtonConnect.UseVisualStyleBackColor = true;
             ButtonConnect.Click += ButtonConnect_Click;
-            // 
+            //
             // InputSwitchIP
-            // 
+            //
             InputSwitchIP.Location = new Point(84, 6);
             InputSwitchIP.Margin = new Padding(4, 3, 4, 3);
             InputSwitchIP.Name = "InputSwitchIP";
@@ -157,9 +157,9 @@
             InputSwitchIP.TabIndex = 8;
             InputSwitchIP.Text = "www.www.www.www";
             InputSwitchIP.TextChanged += InputSwitchIP_Changed;
-            // 
+            //
             // LabelSwitchIP
-            // 
+            //
             LabelSwitchIP.AutoSize = true;
             LabelSwitchIP.Location = new Point(13, 9);
             LabelSwitchIP.Margin = new Padding(4, 0, 4, 0);
@@ -167,9 +167,9 @@
             LabelSwitchIP.Size = new Size(58, 15);
             LabelSwitchIP.TabIndex = 6;
             LabelSwitchIP.Text = "Switch IP:";
-            // 
+            //
             // LabelLoadedRaids
-            // 
+            //
             LabelLoadedRaids.AutoSize = true;
             LabelLoadedRaids.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             LabelLoadedRaids.Location = new Point(12, 103);
@@ -177,9 +177,9 @@
             LabelLoadedRaids.Size = new Size(67, 15);
             LabelLoadedRaids.TabIndex = 12;
             LabelLoadedRaids.Text = "Matches: 0";
-            // 
+            //
             // TeraType
-            // 
+            //
             TeraType.Font = new Font("Consolas", 9F);
             TeraType.Location = new Point(296, 152);
             TeraType.Margin = new Padding(4, 3, 4, 3);
@@ -187,9 +187,9 @@
             TeraType.ReadOnly = true;
             TeraType.Size = new Size(95, 22);
             TeraType.TabIndex = 49;
-            // 
+            //
             // LabelTeraType
-            // 
+            //
             LabelTeraType.AutoSize = true;
             LabelTeraType.Location = new Point(232, 156);
             LabelTeraType.Name = "LabelTeraType";
@@ -197,9 +197,9 @@
             LabelTeraType.TabIndex = 48;
             LabelTeraType.Text = "Tera Type:";
             LabelTeraType.TextAlign = ContentAlignment.MiddleRight;
-            // 
+            //
             // PID
-            // 
+            //
             PID.Font = new Font("Consolas", 9F);
             PID.Location = new Point(296, 68);
             PID.Margin = new Padding(4, 3, 4, 3);
@@ -207,9 +207,9 @@
             PID.ReadOnly = true;
             PID.Size = new Size(95, 22);
             PID.TabIndex = 47;
-            // 
+            //
             // LabelPID
-            // 
+            //
             LabelPID.AutoSize = true;
             LabelPID.Location = new Point(261, 70);
             LabelPID.Name = "LabelPID";
@@ -217,9 +217,9 @@
             LabelPID.TabIndex = 46;
             LabelPID.Text = "PID:";
             LabelPID.TextAlign = ContentAlignment.MiddleRight;
-            // 
+            //
             // EC
-            // 
+            //
             EC.Font = new Font("Consolas", 9F);
             EC.Location = new Point(296, 40);
             EC.Margin = new Padding(4, 3, 4, 3);
@@ -227,9 +227,9 @@
             EC.ReadOnly = true;
             EC.Size = new Size(95, 22);
             EC.TabIndex = 45;
-            // 
+            //
             // LabelEC
-            // 
+            //
             LabelEC.AutoSize = true;
             LabelEC.Location = new Point(265, 42);
             LabelEC.Name = "LabelEC";
@@ -237,9 +237,9 @@
             LabelEC.TabIndex = 44;
             LabelEC.Text = "EC:";
             LabelEC.TextAlign = ContentAlignment.MiddleRight;
-            // 
+            //
             // Seed
-            // 
+            //
             Seed.Font = new Font("Consolas", 9F);
             Seed.Location = new Point(296, 12);
             Seed.Margin = new Padding(4, 3, 4, 3);
@@ -248,9 +248,9 @@
             Seed.Size = new Size(95, 22);
             Seed.TabIndex = 43;
             Seed.Click += Seed_Click;
-            // 
+            //
             // LabelSeed
-            // 
+            //
             LabelSeed.AutoSize = true;
             LabelSeed.Location = new Point(254, 14);
             LabelSeed.Name = "LabelSeed";
@@ -258,9 +258,9 @@
             LabelSeed.TabIndex = 42;
             LabelSeed.Text = "Seed:";
             LabelSeed.TextAlign = ContentAlignment.MiddleRight;
-            // 
+            //
             // ButtonNext
-            // 
+            //
             ButtonNext.Enabled = false;
             ButtonNext.Location = new Point(168, 67);
             ButtonNext.Name = "ButtonNext";
@@ -269,9 +269,9 @@
             ButtonNext.Text = ">>";
             ButtonNext.UseVisualStyleBackColor = true;
             ButtonNext.Click += ButtonNext_Click;
-            // 
+            //
             // ButtonPrevious
-            // 
+            //
             ButtonPrevious.Enabled = false;
             ButtonPrevious.Location = new Point(13, 68);
             ButtonPrevious.Name = "ButtonPrevious";
@@ -280,9 +280,9 @@
             ButtonPrevious.Text = "<<";
             ButtonPrevious.UseVisualStyleBackColor = true;
             ButtonPrevious.Click += ButtonPrevious_Click;
-            // 
+            //
             // Area
-            // 
+            //
             Area.Font = new Font("Consolas", 9F);
             Area.Location = new Point(296, 236);
             Area.Margin = new Padding(4, 3, 4, 3);
@@ -291,9 +291,9 @@
             Area.Size = new Size(271, 22);
             Area.TabIndex = 61;
             Area.Click += DisplayMap;
-            // 
+            //
             // LabelUNK_2
-            // 
+            //
             LabelUNK_2.AutoSize = true;
             LabelUNK_2.Location = new Point(256, 240);
             LabelUNK_2.Name = "LabelUNK_2";
@@ -301,9 +301,9 @@
             LabelUNK_2.TabIndex = 60;
             LabelUNK_2.Text = "Area:";
             LabelUNK_2.TextAlign = ContentAlignment.MiddleRight;
-            // 
+            //
             // IVs
-            // 
+            //
             IVs.Font = new Font("Consolas", 9F);
             IVs.Location = new Point(296, 208);
             IVs.Margin = new Padding(4, 3, 4, 3);
@@ -311,9 +311,9 @@
             IVs.ReadOnly = true;
             IVs.Size = new Size(271, 22);
             IVs.TabIndex = 69;
-            // 
+            //
             // LabelIVs
-            // 
+            //
             LabelIVs.AutoSize = true;
             LabelIVs.Location = new Point(265, 212);
             LabelIVs.Name = "LabelIVs";
@@ -321,9 +321,9 @@
             LabelIVs.TabIndex = 68;
             LabelIVs.Text = "IVs:";
             LabelIVs.TextAlign = ContentAlignment.MiddleRight;
-            // 
+            //
             // ButtonReadRaids
-            // 
+            //
             ButtonReadRaids.Enabled = false;
             ButtonReadRaids.Location = new Point(6, 22);
             ButtonReadRaids.Margin = new Padding(4, 3, 4, 3);
@@ -333,9 +333,9 @@
             ButtonReadRaids.Text = "Read Raids";
             ButtonReadRaids.UseVisualStyleBackColor = true;
             ButtonReadRaids.Click += ButtonReadRaids_Click;
-            // 
+            //
             // labelEvent
-            // 
+            //
             labelEvent.AutoSize = true;
             labelEvent.Font = new Font("Segoe UI", 9F, FontStyle.Bold | FontStyle.Italic);
             labelEvent.ForeColor = SystemColors.ControlText;
@@ -346,9 +346,9 @@
             labelEvent.Text = "~~Event~~";
             labelEvent.TextAlign = ContentAlignment.MiddleLeft;
             labelEvent.Visible = false;
-            // 
+            //
             // Difficulty
-            // 
+            //
             Difficulty.Font = new Font("Consolas", 9F);
             Difficulty.Location = new Point(470, 152);
             Difficulty.Margin = new Padding(4, 3, 4, 3);
@@ -356,9 +356,9 @@
             Difficulty.ReadOnly = true;
             Difficulty.Size = new Size(97, 22);
             Difficulty.TabIndex = 86;
-            // 
+            //
             // LabelDifficulty
-            // 
+            //
             LabelDifficulty.AutoSize = true;
             LabelDifficulty.Location = new Point(405, 156);
             LabelDifficulty.Name = "LabelDifficulty";
@@ -366,9 +366,9 @@
             LabelDifficulty.TabIndex = 85;
             LabelDifficulty.Text = "Difficulty:";
             LabelDifficulty.TextAlign = ContentAlignment.MiddleRight;
-            // 
+            //
             // ButtonViewRAM
-            // 
+            //
             ButtonViewRAM.Enabled = false;
             ButtonViewRAM.Location = new Point(104, 22);
             ButtonViewRAM.Name = "ButtonViewRAM";
@@ -377,9 +377,9 @@
             ButtonViewRAM.Text = "Dump Raid";
             ButtonViewRAM.UseVisualStyleBackColor = true;
             ButtonViewRAM.Click += ViewRAM_Click;
-            // 
+            //
             // Species
-            // 
+            //
             Species.Font = new Font("Consolas", 9F);
             Species.Location = new Point(296, 96);
             Species.Margin = new Padding(4, 3, 4, 3);
@@ -387,9 +387,9 @@
             Species.ReadOnly = true;
             Species.Size = new Size(271, 22);
             Species.TabIndex = 93;
-            // 
+            //
             // LabelSpecies
-            // 
+            //
             LabelSpecies.AutoSize = true;
             LabelSpecies.Location = new Point(241, 100);
             LabelSpecies.Name = "LabelSpecies";
@@ -397,9 +397,9 @@
             LabelSpecies.TabIndex = 92;
             LabelSpecies.Text = "Species:";
             LabelSpecies.TextAlign = ContentAlignment.MiddleRight;
-            // 
+            //
             // LabelMoves
-            // 
+            //
             LabelMoves.AutoSize = true;
             LabelMoves.Location = new Point(244, 280);
             LabelMoves.Name = "LabelMoves";
@@ -407,9 +407,9 @@
             LabelMoves.TabIndex = 94;
             LabelMoves.Text = "Moves:";
             LabelMoves.TextAlign = ContentAlignment.MiddleRight;
-            // 
+            //
             // Move1
-            // 
+            //
             Move1.Font = new Font("Consolas", 9F);
             Move1.Location = new Point(296, 264);
             Move1.Margin = new Padding(4, 3, 4, 3);
@@ -418,9 +418,9 @@
             Move1.Size = new Size(133, 22);
             Move1.TabIndex = 95;
             Move1.Click += Move_Clicked;
-            // 
+            //
             // Move2
-            // 
+            //
             Move2.Font = new Font("Consolas", 9F);
             Move2.Location = new Point(434, 264);
             Move2.Margin = new Padding(4, 3, 4, 3);
@@ -429,9 +429,9 @@
             Move2.Size = new Size(133, 22);
             Move2.TabIndex = 96;
             Move2.Click += Move_Clicked;
-            // 
+            //
             // Move4
-            // 
+            //
             Move4.Font = new Font("Consolas", 9F);
             Move4.Location = new Point(434, 292);
             Move4.Margin = new Padding(4, 3, 4, 3);
@@ -440,9 +440,9 @@
             Move4.Size = new Size(133, 22);
             Move4.TabIndex = 98;
             Move4.Click += Move_Clicked;
-            // 
+            //
             // Move3
-            // 
+            //
             Move3.Font = new Font("Consolas", 9F);
             Move3.Location = new Point(296, 292);
             Move3.Margin = new Padding(4, 3, 4, 3);
@@ -451,9 +451,9 @@
             Move3.Size = new Size(133, 22);
             Move3.TabIndex = 97;
             Move3.Click += Move_Clicked;
-            // 
+            //
             // Nature
-            // 
+            //
             Nature.Font = new Font("Consolas", 9F);
             Nature.Location = new Point(470, 180);
             Nature.Margin = new Padding(4, 3, 4, 3);
@@ -461,9 +461,9 @@
             Nature.ReadOnly = true;
             Nature.Size = new Size(97, 22);
             Nature.TabIndex = 106;
-            // 
+            //
             // LabelNature
-            // 
+            //
             LabelNature.AutoSize = true;
             LabelNature.Location = new Point(417, 184);
             LabelNature.Name = "LabelNature";
@@ -471,9 +471,9 @@
             LabelNature.TabIndex = 105;
             LabelNature.Text = "Nature:";
             LabelNature.TextAlign = ContentAlignment.MiddleRight;
-            // 
+            //
             // Gender
-            // 
+            //
             Gender.Font = new Font("Consolas", 9F);
             Gender.Location = new Point(296, 180);
             Gender.Margin = new Padding(4, 3, 4, 3);
@@ -481,9 +481,9 @@
             Gender.ReadOnly = true;
             Gender.Size = new Size(95, 22);
             Gender.TabIndex = 104;
-            // 
+            //
             // LabelGender
-            // 
+            //
             LabelGender.AutoSize = true;
             LabelGender.Location = new Point(241, 184);
             LabelGender.Name = "LabelGender";
@@ -491,9 +491,9 @@
             LabelGender.TabIndex = 103;
             LabelGender.Text = "Gender:";
             LabelGender.TextAlign = ContentAlignment.MiddleRight;
-            // 
+            //
             // StopFilter
-            // 
+            //
             StopFilter.Location = new Point(12, 273);
             StopFilter.Name = "StopFilter";
             StopFilter.Size = new Size(97, 23);
@@ -501,18 +501,18 @@
             StopFilter.Text = "Edit Filters";
             StopFilter.UseVisualStyleBackColor = true;
             StopFilter.Click += StopFilter_Click;
-            // 
+            //
             // Sprite
-            // 
+            //
             Sprite.Location = new Point(498, 7);
             Sprite.Name = "Sprite";
             Sprite.Size = new Size(68, 56);
             Sprite.SizeMode = PictureBoxSizeMode.CenterImage;
             Sprite.TabIndex = 108;
             Sprite.TabStop = false;
-            // 
+            //
             // Ability
-            // 
+            //
             Ability.Font = new Font("Consolas", 9F);
             Ability.Location = new Point(296, 124);
             Ability.Margin = new Padding(4, 3, 4, 3);
@@ -520,9 +520,9 @@
             Ability.ReadOnly = true;
             Ability.Size = new Size(271, 22);
             Ability.TabIndex = 110;
-            // 
+            //
             // LabelAbility
-            // 
+            //
             LabelAbility.AutoSize = true;
             LabelAbility.Location = new Point(245, 127);
             LabelAbility.Name = "LabelAbility";
@@ -530,18 +530,18 @@
             LabelAbility.TabIndex = 109;
             LabelAbility.Text = "Ability:";
             LabelAbility.TextAlign = ContentAlignment.MiddleRight;
-            // 
+            //
             // GemIcon
-            // 
+            //
             GemIcon.Location = new Point(434, 7);
             GemIcon.Name = "GemIcon";
             GemIcon.Size = new Size(56, 56);
             GemIcon.SizeMode = PictureBoxSizeMode.Zoom;
             GemIcon.TabIndex = 111;
             GemIcon.TabStop = false;
-            // 
+            //
             // ButtonDownloadEvents
-            // 
+            //
             ButtonDownloadEvents.Enabled = false;
             ButtonDownloadEvents.Location = new Point(104, 50);
             ButtonDownloadEvents.Name = "ButtonDownloadEvents";
@@ -550,9 +550,9 @@
             ButtonDownloadEvents.Text = "Pull Events";
             ButtonDownloadEvents.UseVisualStyleBackColor = true;
             ButtonDownloadEvents.Click += DownloadEvents_Click;
-            // 
+            //
             // ConfigSettings
-            // 
+            //
             ConfigSettings.Location = new Point(12, 302);
             ConfigSettings.Name = "ConfigSettings";
             ConfigSettings.Size = new Size(97, 23);
@@ -560,9 +560,9 @@
             ConfigSettings.Text = "Open Settings";
             ConfigSettings.UseVisualStyleBackColor = true;
             ConfigSettings.Click += ConfigSettings_Click;
-            // 
+            //
             // Rewards
-            // 
+            //
             Rewards.Location = new Point(104, 78);
             Rewards.Name = "Rewards";
             Rewards.Size = new Size(90, 25);
@@ -570,18 +570,18 @@
             Rewards.Text = "Rewards";
             Rewards.UseVisualStyleBackColor = true;
             Rewards.Click += Rewards_Click;
-            // 
+            //
             // LabelSandwichBonus
-            // 
+            //
             LabelSandwichBonus.AutoSize = true;
             LabelSandwichBonus.Location = new Point(13, 248);
             LabelSandwichBonus.Name = "LabelSandwichBonus";
             LabelSandwichBonus.Size = new Size(120, 15);
             LabelSandwichBonus.TabIndex = 118;
             LabelSandwichBonus.Text = "Raid Sandwich Boost:";
-            // 
+            //
             // RaidBoost
-            // 
+            //
             RaidBoost.FormattingEnabled = true;
             RaidBoost.Items.AddRange(new object[] { "0", "1", "2", "3" });
             RaidBoost.Location = new Point(165, 245);
@@ -590,9 +590,9 @@
             RaidBoost.TabIndex = 117;
             RaidBoost.Text = "w";
             RaidBoost.SelectedIndexChanged += RaidBoost_SelectedIndexChanged;
-            // 
+            //
             // ComboIndex
-            // 
+            //
             ComboIndex.BackColor = SystemColors.Window;
             ComboIndex.DropDownStyle = ComboBoxStyle.DropDownList;
             ComboIndex.Enabled = false;
@@ -602,9 +602,9 @@
             ComboIndex.Size = new Size(98, 23);
             ComboIndex.TabIndex = 120;
             ComboIndex.SelectedIndexChanged += ComboIndex_SelectedIndexChanged;
-            // 
+            //
             // SendScreenshot
-            // 
+            //
             SendScreenshot.Location = new Point(6, 50);
             SendScreenshot.Name = "SendScreenshot";
             SendScreenshot.Size = new Size(90, 25);
@@ -612,16 +612,16 @@
             SendScreenshot.Text = "Screenshot";
             SendScreenshot.UseVisualStyleBackColor = true;
             SendScreenshot.Click += SendScreenshot_Click;
-            // 
+            //
             // SearchTimer
-            // 
+            //
             SearchTimer.Enabled = true;
             SearchTimer.Interval = 1D;
             SearchTimer.SynchronizingObject = this;
             SearchTimer.Elapsed += SearchTimer_Elapsed;
-            // 
+            //
             // btnOpenMap
-            // 
+            //
             btnOpenMap.Location = new Point(6, 78);
             btnOpenMap.Name = "btnOpenMap";
             btnOpenMap.Size = new Size(90, 25);
@@ -629,9 +629,9 @@
             btnOpenMap.Text = "Open Map";
             btnOpenMap.UseVisualStyleBackColor = true;
             btnOpenMap.Click += DisplayMap;
-            // 
+            //
             // groupBox1
-            // 
+            //
             groupBox1.Controls.Add(ButtonViewRAM);
             groupBox1.Controls.Add(ButtonDownloadEvents);
             groupBox1.Controls.Add(btnOpenMap);
@@ -644,9 +644,9 @@
             groupBox1.TabIndex = 125;
             groupBox1.TabStop = false;
             groupBox1.Text = "Raid Controls";
-            // 
+            //
             // statusStrip1
-            // 
+            //
             statusStrip1.Items.AddRange(new ToolStripItem[] { StatusLabel, ToolStripStatusLabel, Label_DayAdvance });
             statusStrip1.Location = new Point(0, 335);
             statusStrip1.Name = "statusStrip1";
@@ -654,37 +654,37 @@
             statusStrip1.SizingGrip = false;
             statusStrip1.TabIndex = 126;
             statusStrip1.Text = "statusStrip1";
-            // 
+            //
             // StatusLabel
-            // 
+            //
             StatusLabel.Name = "StatusLabel";
             StatusLabel.Size = new Size(42, 17);
             StatusLabel.Text = "Status:";
-            // 
+            //
             // ToolStripStatusLabel
-            // 
+            //
             ToolStripStatusLabel.Name = "ToolStripStatusLabel";
             ToolStripStatusLabel.Size = new Size(89, 17);
             ToolStripStatusLabel.Text = "Not connected.";
-            // 
+            //
             // Label_DayAdvance
-            // 
+            //
             Label_DayAdvance.Name = "Label_DayAdvance";
             Label_DayAdvance.Size = new Size(136, 17);
             Label_DayAdvance.Text = "Day Skip Successes: 0 / 0";
             Label_DayAdvance.Visible = false;
-            // 
+            //
             // USB_Port_label
-            // 
+            //
             USB_Port_label.AutoSize = true;
             USB_Port_label.Location = new Point(13, 9);
             USB_Port_label.Name = "USB_Port_label";
             USB_Port_label.Size = new Size(56, 15);
             USB_Port_label.TabIndex = 127;
             USB_Port_label.Text = "USB Port:";
-            // 
+            //
             // USB_Port_TB
-            // 
+            //
             USB_Port_TB.Location = new Point(84, 6);
             USB_Port_TB.Name = "USB_Port_TB";
             USB_Port_TB.Size = new Size(129, 23);
@@ -692,9 +692,9 @@
             USB_Port_TB.Text = "w";
             USB_Port_TB.TextAlign = HorizontalAlignment.Center;
             USB_Port_TB.TextChanged += USB_Port_Changed;
-            // 
+            //
             // StopAdvance_Button
-            // 
+            //
             StopAdvance_Button.Location = new Point(117, 98);
             StopAdvance_Button.Name = "StopAdvance_Button";
             StopAdvance_Button.Size = new Size(96, 27);
@@ -703,9 +703,9 @@
             StopAdvance_Button.UseVisualStyleBackColor = true;
             StopAdvance_Button.Visible = false;
             StopAdvance_Button.Click += StopAdvanceButton_Click;
-            // 
+            //
             // B_DateTools
-            // 
+            //
             B_DateTools.Enabled = false;
             B_DateTools.Location = new Point(117, 302);
             B_DateTools.Name = "B_DateTools";
@@ -714,9 +714,31 @@
             B_DateTools.Text = "Date Tools";
             B_DateTools.UseVisualStyleBackColor = true;
             B_DateTools.Click += B_DateTools_Click;
-            // 
+
+            // Initialize new controls
+            LabelHeightWeightScale = new Label();
+            HeightWeightScale = new TextBox();
+
+            // Set properties for LabelHeightWeightScale
+            LabelHeightWeightScale.AutoSize = true;
+            LabelHeightWeightScale.Location = new Point(241, 324);
+            LabelHeightWeightScale.Name = "LabelHeightWeightScale";
+            LabelHeightWeightScale.Size = new Size(150, 15);
+            LabelHeightWeightScale.Text = "Height/Weight/Scale";
+            LabelHeightWeightScale.TextAlign = ContentAlignment.MiddleRight;
+
+            // Set properties for HeightWeightScale
+            HeightWeightScale.Location = new Point(400, 320);
+            HeightWeightScale.Name = "HeightWeightScale";
+            HeightWeightScale.Size = new Size(150, 23);
+            HeightWeightScale.ReadOnly = true;
+
+            //
             // MainWindow
-            // 
+            //
+            // Add new controls to the form
+            Controls.Add(LabelHeightWeightScale);
+            Controls.Add(HeightWeightScale);
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(580, 357);
@@ -808,6 +830,14 @@
         private Label LabelUNK_2;
         private TextBox IVs;
         private Label LabelIVs;
+        private TextBox HeightWeightScale;
+        private Label LabelHeightWeightScale;
+        // private TextBox HeightSize;
+        // private TextBox WeightSize;
+        // private TextBox ScaleSize;
+        // private Label LabelHeight;
+        // private Label LabelWeight;
+        // private Label LabelScale;
         private Button ButtonReadRaids;
         private Button ButtonAdvanceDate;
         private Label labelEvent;

@@ -977,6 +977,13 @@ public partial class MainWindow : Form
 
             IVs.Text = IVsString(Utils.ToSpeedLast(blank.IVs));
             toolTip.SetToolTip(IVs, IVsString(Utils.ToSpeedLast(blank.IVs), true));
+            var scale = blank.Scale;
+            var height = blank.HeightScalar;
+            var weight = blank.WeightScalar;
+            HeightWeightScale.Text = $"{height}m / {weight}kg / {scale}";
+            // HeightSize.Text = $"{height}";
+            // WeightSize.Text = $"{weight}";
+            // ScaleSize.Text = $"{scale}";
 
             PID.BackColor = raid.CheckIsShiny(encounter) ? Color.Gold : DefaultColor;
             IVs.BackColor = IVs.Text is "31/31/31/31/31/31" ? Color.YellowGreen : DefaultColor;
