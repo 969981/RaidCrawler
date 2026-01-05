@@ -177,7 +177,8 @@
     <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="PKHeX.Core" Version="25.6.9" />
+<!--    <PackageReference Include="PKHeX.Core" Version="25.6.9" />-->
+    <PackageReference Include="PKHeX.Core" Version="25.12.21" />
   </ItemGroup>
 
   <ItemGroup>

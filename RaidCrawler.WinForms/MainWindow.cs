@@ -1791,7 +1791,10 @@ public partial class MainWindow : Form
             Form = encounters[i].Form,
             Gender = encounters[i].Gender,
         };
-        blank.SetSuggestedFormArgument();
+        // blank.SetSuggestedFormArgument();
+        // blank.SetSuggestedFormArgument(blank.EvolutionHistory, blank.Species);
+
+
 
         var spriteName = GetSpriteNameForUrl(blank, raids[i].CheckIsShiny(encounters[i]));
         await Webhook.SendNotification(encounters[i], raids[i], filter, time, rewards[i], hexColor, spriteName, token).ConfigureAwait(false);
