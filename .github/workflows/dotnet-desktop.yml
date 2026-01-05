@@ -17,17 +17,15 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
     - name: Install .NET Core
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: |
-          6.0.x
-          7.0.x
-          8.0.x
+          10.0.x
 
     - name: Restore the solution
       run: dotnet restore
@@ -39,8 +37,8 @@ jobs:
 
     - name: Archive production artifacts
       if: ${{ success() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: RaidCrawler
         path: |
-          ./RaidCrawler.WinForms/bin/x64/Release/net8.0-windows/win-x64/publish/
+          ./RaidCrawler.WinForms/bin/x64/Release/net10.0-windows/win-x64/publish/
