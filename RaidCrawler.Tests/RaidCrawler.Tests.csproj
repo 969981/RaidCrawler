@@ -95,7 +95,8 @@
     <PackageReference Include="FluentAssertions" Version="6.12.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
 <!--    <PackageReference Include="PKHeX.Core" Version="25.6.9" />-->
-    <PackageReference Include="PKHeX.Core" Version="25.12.21" />
+<!--    <PackageReference Include="PKHeX.Core" Version="25.12.21" />-->
+<!--    <PackageReference Include="PKHeX.Core" Version="26.1.7" />-->
     <PackageReference Include="xunit" Version="2.6.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -105,6 +106,9 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <Reference Include="PKHeX.Core">
+      <HintPath>..\RaidCrawler.Core\deps\PKHeX.Core.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>

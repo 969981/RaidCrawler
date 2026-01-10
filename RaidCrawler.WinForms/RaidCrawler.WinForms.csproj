@@ -178,7 +178,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
 <!--    <PackageReference Include="PKHeX.Core" Version="25.6.9" />-->
-    <PackageReference Include="PKHeX.Core" Version="25.12.21" />
+<!--    <PackageReference Include="PKHeX.Core" Version="25.12.21" />-->
+    <PackageReference Include="PKHeX.Core" Version="26.1.7" />
   </ItemGroup>
 
   <ItemGroup>
@@ -197,6 +198,9 @@
     </Reference>
     <Reference Include="SysBot.Base">
       <HintPath>deps\SysBot.Base.dll</HintPath>
+    </Reference>
+    <Reference Include="PKHeX.Core">
+      <HintPath>..\RaidCrawler.Core\deps\PKHeX.Core.dll</HintPath>
     </Reference>
   </ItemGroup>
 
