@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="RaidCrawler.Core\RaidCrawler.Core.csproj" />
+  <Project Path="RaidCrawler.Tests\RaidCrawler.Tests.csproj" />
+  <Project Path="RaidCrawler.WinForms\RaidCrawler.WinForms.csproj" />
+</Solution>
