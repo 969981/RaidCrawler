@@ -179,7 +179,7 @@
     </PackageReference>
 <!--    <PackageReference Include="PKHeX.Core" Version="25.6.9" />-->
 <!--    <PackageReference Include="PKHeX.Core" Version="25.12.21" />-->
-    <PackageReference Include="PKHeX.Core" Version="26.1.7" />
+<!--    <PackageReference Include="PKHeX.Core" Version="26.1.7" />-->
   </ItemGroup>
 
   <ItemGroup>
@@ -187,7 +187,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="PKHeX.Drawing">
+<!--     <Reference Include="PKHeX.Drawing">
       <HintPath>deps\PKHeX.Drawing.dll</HintPath>
     </Reference>
     <Reference Include="PKHeX.Drawing.Misc">
@@ -195,13 +195,17 @@
     </Reference>
     <Reference Include="PKHeX.Drawing.PokeSprite">
       <HintPath>deps\PKHeX.Drawing.PokeSprite.dll</HintPath>
-    </Reference>
+    </Reference> -->
     <Reference Include="SysBot.Base">
       <HintPath>deps\SysBot.Base.dll</HintPath>
     </Reference>
-    <Reference Include="PKHeX.Core">
+<!--    <Reference Include="PKHeX.Core">
       <HintPath>..\RaidCrawler.Core\deps\PKHeX.Core.dll</HintPath>
-    </Reference>
+    </Reference> -->
+    <ProjectReference Include="..\..\..\PKHeX.Core\PKHeX.Core.csproj" />
+    <ProjectReference Include="..\..\..\PKHeX.Drawing\PKHeX.Drawing.csproj" />
+    <ProjectReference Include="..\..\..\PKHeX.Drawing.Misc\PKHeX.Drawing.Misc.csproj" />
+    <ProjectReference Include="..\..\..\PKHeX.Drawing.PokeSprite\PKHeX.Drawing.PokeSprite.csproj" />
   </ItemGroup>
 
   <ItemGroup>

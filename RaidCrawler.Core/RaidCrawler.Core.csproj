@@ -12,15 +12,14 @@
 	</PackageReference>
 	<PackageReference Include="FlatSharp.Runtime" Version="7.6.0" />
     <PackageReference Include="LibUsbDotNet" Version="2.2.29" />
-<!--    <PackageReference Include="PKHeX.Core" Version="25.6.9" />-->
-<!--    <PackageReference Include="PKHeX.Core" Version="25.12.21" />-->
 <!--    <PackageReference Include="PKHeX.Core" Version="26.1.7" />-->
 	<Reference Include="SysBot.Base">
 	  <HintPath>deps\SysBot.Base.dll</HintPath>
 	</Reference>
-    <Reference Include="PKHeX.Core">
+<!--    <Reference Include="PKHeX.Core">
       <HintPath>deps\PKHeX.Core.dll</HintPath>
-    </Reference>
+    </Reference> -->
+      <ProjectReference Include="..\..\..\PKHeX.Core\PKHeX.Core.csproj" />
 	<FlatSharpSchema Include="Schemas\*.fbs" />
   </ItemGroup>
 

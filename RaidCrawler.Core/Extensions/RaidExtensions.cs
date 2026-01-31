@@ -157,9 +157,6 @@ public static class RaidExtensions
 
     public static (int delivery, int encounter) ReadAllRaids(this RaidContainer container, byte[] data, int storyPrg, int eventPrg, int boost, TeraRaidMapParent type)
     {
-        var dbgFile = $"raid_dbg_{type}.txt";
-        if (File.Exists(dbgFile))
-            File.Delete(dbgFile);
 
         var count = data.Length / Raid.SIZE;
         List<int> possibleGroups = [];
@@ -208,9 +205,9 @@ public static class RaidExtensions
             }
             catch (Exception ex)
             {
-                var extra = $"Group ID: {raidDeliveryGroupID}\nisFixed: {raid.Flags == 3}\nisBlack: {raid.IsBlack}\nisEvent: {raid.IsEvent}\n\n";
-                var msg = $"{ex.Message}\nDen: {raid.Den}\nProgress: {progress}\nDifficulty: {raid.Difficulty}\n{extra}";
-                File.AppendAllText(dbgFile, msg);
+                var extra = $"Group ID: {raidDeliveryGroupID}, isFixed: {raid.Flags == 3}, isBlack: {raid.IsBlack}, isEvent: {raid.IsEvent}";
+                var msg = $"[{type}] {ex.Message} Den: {raid.Den}, Progress: {progress}, Difficulty: {raid.Difficulty}, {extra}";
+                System.Diagnostics.Debug.WriteLine(msg);
                 failed.delivery++;
                 continue;
             }
@@ -218,9 +215,9 @@ public static class RaidExtensions
             var encounter = raid.GetTeraEncounter(container, progress, raidDeliveryGroupID);
             if (encounter is null)
             {
-                var extra = $"Group ID: {raidDeliveryGroupID}\nisFixed: {raid.Flags == 3}\nisBlack: {raid.IsBlack}\nisEvent: {raid.IsEvent}\n\n";
-                var msg = $"No encounters found.\nDen: {raid.Den}\nProgress: {progress}\nDifficulty: {raid.Difficulty}\n{extra}";
-                File.AppendAllText(dbgFile, msg);
+                var extra = $"Group ID: {raidDeliveryGroupID}, isFixed: {raid.Flags == 3}, isBlack: {raid.IsBlack}, isEvent: {raid.IsEvent}";
+                var msg = $"[{type}] No encounters found. Den: {raid.Den}, Progress: {progress}, Difficulty: {raid.Difficulty}, {extra}";
+                System.Diagnostics.Debug.WriteLine(msg);
                 failed.encounter++;
                 continue;
             }
