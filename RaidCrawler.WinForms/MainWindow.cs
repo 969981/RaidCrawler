@@ -29,13 +29,13 @@ public partial class MainWindow : Form
     private readonly NotificationHandler Webhook;
 
     private List<RaidFilter> RaidFilters = [];
-    private static readonly Image MapBase = Image.FromStream(
+    private static readonly Bitmap MapBase = (Bitmap)Image.FromStream(
         new MemoryStream(Utils.GetBinaryResource("paldea.png"))
     );
-    private static readonly Image MapKitakami = Image.FromStream(
+    private static readonly Bitmap MapKitakami = (Bitmap)Image.FromStream(
         new MemoryStream(Utils.GetBinaryResource("kitakami.png"))
     );
-    private static readonly Image MapBlueberry = Image.FromStream(
+    private static readonly Bitmap MapBlueberry = (Bitmap)Image.FromStream(
         new MemoryStream(Utils.GetBinaryResource("blueberry.png"))
     );
     private static Dictionary<string, float[]>? DenLocationsBase;
@@ -1004,8 +1004,8 @@ public partial class MainWindow : Form
     {
         var shouldDisplayBlack = raid.IsBlack || raid.Flags == 3;
         var baseImg = shouldDisplayBlack
-            ? (Image?)Properties.Resources.ResourceManager.GetObject($"black_{teratype:D2}")
-            : (Image?)Properties.Resources.ResourceManager.GetObject($"gem_{teratype:D2}");
+                ? (Bitmap?)Properties.Resources.ResourceManager.GetObject($"black_{teratype:D2}")
+                : (Bitmap?)Properties.Resources.ResourceManager.GetObject($"gem_{teratype:D2}");
         if (baseImg is null)
             return null;
 
@@ -1015,7 +1015,7 @@ public partial class MainWindow : Form
             baseImg.PixelFormat
         );
         baseImg = ImageUtil.LayerImage(backlayer, baseImg, 5, 5);
-        var pixels = ImageUtil.GetPixelData((Bitmap)baseImg);
+        var pixels = ((Bitmap)baseImg).GetBitmapData();
         for (int i = 0; i < pixels.Length; i += 4)
         {
             if (pixels[i + 3] == 0)
@@ -1035,7 +1035,7 @@ public partial class MainWindow : Form
         if (shouldDisplayBlack)
         {
             var color = Color.Indigo;
-            SpriteUtil.GetSpriteGlow(baseImg, color.B, color.G, color.R, out var glow);
+            SpriteUtil.GetSpriteGlow((Bitmap)baseImg, color.B, color.G, color.R, out var glow);
             baseImg = ImageUtil.LayerImage(
                 ImageUtil.GetBitmap(glow, baseImg.Width, baseImg.Height, baseImg.PixelFormat),
                 baseImg,
@@ -1046,7 +1046,7 @@ public partial class MainWindow : Form
         else if (raid.IsEvent)
         {
             var color = Color.DarkTurquoise;
-            SpriteUtil.GetSpriteGlow(baseImg, color.B, color.G, color.R, out var glow);
+            SpriteUtil.GetSpriteGlow((Bitmap)baseImg, color.B, color.G, color.R, out var glow);
             baseImg = ImageUtil.LayerImage(
                 ImageUtil.GetBitmap(glow, baseImg.Width, baseImg.Height, baseImg.PixelFormat),
                 baseImg,
@@ -1347,24 +1347,30 @@ public partial class MainWindow : Form
 
     private static Image ApplyColor(Image img, SpriteBackgroundType type, Color color, int thick, byte opacStripe, byte opacBack)
     {
+        var bmp = (Bitmap)img;
         if (type == SpriteBackgroundType.BottomStripe)
         {
             int stripeHeight = thick; // from bottom
-            if ((uint)stripeHeight > img.Height) // clamp negative & too-high values back to height.
-                stripeHeight = img.Height;
+            if ((uint)stripeHeight > bmp.Height) // clamp negative & too-high values back to height.
+                stripeHeight = bmp.Height;
 
-            return ImageUtil.BlendTransparentTo(img, color, opacStripe, img.Width * 4 * (img.Height - stripeHeight));
+            bmp.BlendTransparentTo(color, opacStripe, bmp.Width * 4 * (bmp.Height - stripeHeight));
+            return bmp;
         }
         if (type == SpriteBackgroundType.TopStripe)
         {
             int stripeHeight = thick; // from top
-            if ((uint)stripeHeight > img.Height) // clamp negative & too-high values back to height.
-                stripeHeight = img.Height;
+            if ((uint)stripeHeight > bmp.Height) // clamp negative & too-high values back to height.
+                stripeHeight = bmp.Height;
 
-            return ImageUtil.BlendTransparentTo(img, color, opacStripe, 0, (img.Width * 4 * stripeHeight) - 4);
+            bmp.BlendTransparentTo(color, opacStripe, 0, (bmp.Width * 4 * stripeHeight) - 4);
+            return bmp;
         }
         if (type == SpriteBackgroundType.FullBackground) // full background
-            return ImageUtil.BlendTransparentTo(img, color, opacBack);
+        {
+            bmp.BlendTransparentTo(color, opacBack);
+            return bmp;
+        }
         return img;
     }
 
