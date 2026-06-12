@@ -478,7 +478,6 @@ public class RaidLotteryRewards
     };
 }
 
-[JsonSerializable(typeof(RaidLotteryRewardItemInfo))]
 [FlatBufferTable, TypeConverter(typeof(ExpandableObjectConverter))]
 public class RaidLotteryRewardItemInfo
 {
@@ -498,7 +497,6 @@ public class RaidLotteryRewardItemInfo
     public bool RareItemFlag { get; set; }
 }
 
-[JsonSerializable(typeof(RaidFixedRewardItemInfo))]
 [FlatBufferTable, TypeConverter(typeof(ExpandableObjectConverter))]
 public class RaidFixedRewardItemInfo
 {
