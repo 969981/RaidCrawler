@@ -338,6 +338,7 @@ public sealed class RewardEditorForm : Form
         {
             // Preparing a template never means the console has accepted it.
             RaidRewardGlobalProfileStore.Save(RaidRewardGlobalProfileStore.DefaultPath, slots);
+            RaidRewardNativePackage.Save(slots); // 720-byte payload for user-authorized Switch plugin
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
         {
