@@ -13,7 +13,7 @@
   - https://en-americas-support.nintendo.com/app/answers/detail/a_id/60277/p/988/c/950
 - `Martmists-GH/SV-Script-RE` 公开仓库最新版本是 `1f843bd`（2024-10-29），README 标注 3.0.1；三个研究文件均来自该版本。**仓库没有独立的 4.0.0 文件版本或两代文件 SHA 对比，故无法从此仓库单独证明 RomFS Lua 字节完全相同。**
 - 证据强度区别：**Native Build ID/地址兼容：已受社区与本机验证；Lua 业务调用链沿用：高置信研究假设，可直接作为工作基线；三个 Lua 文件的逐字节一致：尚无双版本样本验证；4.0.0 运行时命中及对象同一性：仍须测试。**
-- 因此本任务 P0 应直接推进**事件上下文 [92] 如何进入后续 `setupData[92]`**，以及生成奖励行与 `Bag.AddItem` 实参是否在同场次一致；不应再以“先获得全部 4.0.0 Lua”为由暂停这条调用链研究。
+- **N2→N3 的静态实参调用已经通过 `GameEventNetworkBattleRaid` 第 1987–1995 行找到，后续 P0 应聚焦本机 4.0.0 是否实际走过这条单人模式分支，以及过滤后的 `ItemNo/ItemNum` 是否真正被 `Bag.AddItem` 消费**；不应再以“先获得全部 4.0.0 Lua”为由暂停分析。
 
 ## 0. 验证目标：严格区分静态链与实机结果
 
@@ -32,11 +32,13 @@
 | N1→N2 | 同文件 `684-701` 和 `777-791` | 奖励对象进入 `SE9713F112CDA989C`，并作为 raid event 参数传递 | **NOT_OBSERVED** |
 | N2: event | `C849FF496D0E93636.lua:54-95` | `raidBattleRewardData = A8_2`，同时独立保存 `isComm=A1_2` | **NOT_OBSERVED** |
 | N2: filter | 同文件 `1512-1549` | 参数封装为 `self[19][92]` 并调用 `F316609DEA110601D` | **NOT_OBSERVED** |
-| N2→N3 | `C889F6553EDFCD011.lua:103-115` | `GameEventBattleResult.onCreate` 从新的事件 `setupData` 建立 `self[18]` | **OBJECT_PROVENANCE_GAP** |
+| N2→N3 | `C849FF496D0E93636.lua:1987-1995` + `C889F6553EDFCD011.lua:65-115` | `GameEventNetworkBattleRaid` 直接把筛选上下文 `self[19]` 作为 `GameEventBattleResult` 的 `setupData` 传入，后者再建立 `self[18]` | **STATIC_ARGUMENT_HANDOFF_CONFIRMED; RUNTIME_NOT_OBSERVED** |
 | N3: win | 同文件 `304-357` | 在 `type==2`、`result[1]==1` 分支调用 `RaidResultAddItem` | **NOT_OBSERVED** |
 | N3: Bag | 同文件 `1625-1696` | 从 `self[18][92][3]` 迭代，容量检查后调用 `Bag.AddItem` | **NOT_OBSERVED** |
 
-**重要纠错**：N2 的 `self[19][92]` 和 N3 的 `self[18][92]` 看上去字段位置相同，但 N3 是一个后续新事件的 `setupData`。必须确认 `NetworkBattleRaid` 的上下文如何经过战斗系统**交给** `GameEventBattleResult`，不能仅因字段索引 `92` 相同就声称「完全同一对象实例」。可能有复制/序列化，需对比逻辑内容与唯一的 runId/坑位/种子；不能比较跨进程指针数值。
+**新闭环（直接旧 Lua 调用证据，2026-10-20）**：继续检索 `GameEventNetworkBattleRaid` 调用方，在 `C849FF496D0E93636.lua:1987-1995` 找到它**直接调用** `GameEventBattleResult.SFCE091807173F6E9`：`L40_2 = 2`，`L41_2 = self[19]`（当前经过过滤的上下文），`L42_2 = self[18].F357A65DD82CA566E(...)`（战斗结果数据），最终 `SFCE...(2, self[19], result...)`。而 `GameEventBattleResult.SFCE...` 的 `setupData=A1_2`、`resultData=A2_2`（`C889F6553EDFCD011.lua:65-95`），其 `onCreate` 将 `setupData` 包装进新事件 `self[18]`（约 103–115 行）。最后 `RaidResultAddItem` 从 `self[18][92][3]` 逐行读取并调用 Bag。**所以 N2→N3 的源码实参传递已闭合，必须取消“无调用方”的静态阻断项。**
+
+**仍须区分**：`self[19]` 传递与后续 `self[18]` 封装可能产生新对象；源码证明**逻辑数据从本次筛选上下文传至结算事件**，但不能证明物理对象地址完全不变，更不能冒充 4.0.0 真机执行事件。
 
 代码实证工具：`tools/research/verify_sv_reward_three_nodes.py`，要求 checkout 原始固定 commit；仅验证代码片段顺序，明确输出所有 runtime = `NOT_OBSERVED`。它不是修改器、不会解析 Lua 虚拟机的运行时内存。
 
