@@ -1661,8 +1661,22 @@ public partial class MainWindow : Form
             return;
         }
 
-        var form = new RewardsView(RaidContainer.Strings.Item, RaidContainer.Strings.Move, rewards);
-        ShowDialog(form);
+        int index = ComboIndex.SelectedIndex;
+        if (index < 0 || index >= RaidContainer.Encounters.Count)
+            return;
+
+        var encounter = RaidContainer.Encounters[index];
+        var raid = RaidContainer.Raids[index];
+        try
+        {
+            using var form = new RewardEditorForm(RaidContainer.Strings.Item, RaidContainer.Strings.Move,
+                rewards, encounter.Species, raid.GetTeraType(encounter));
+            ShowDialog(form);
+        }
+        catch (ArgumentException ex)
+        {
+            MessageBox.Show(this, ex.Message, "Reward editor", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
     }
 
     private void RaidBoost_SelectedIndexChanged(object sender, EventArgs e)
