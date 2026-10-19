@@ -98,9 +98,9 @@ public sealed class RaidRewardTraceEvidenceTests
     {
         string hostStation1 = Row("S2_HOST_BOOTSTRAP");
         string wireStation2 = Row("S2_WIRE_LOOPBACK")
-            .Replace("\\"station_index\\":1", "\\"station_index\\":2");
+            .Replace("\"station_index\":1", "\"station_index\":2");
         var result = RaidRewardTraceEvidence.Analyze(
-            Row("S1_SOURCE") + "\\n" + hostStation1 + "\\n" + wireStation2);
+            Row("S1_SOURCE") + "\n" + hostStation1 + "\n" + wireStation2);
         Assert.Equal(2, result.Runs.Count);
         var station1 = Assert.Single(result.Runs.Where(x => x.Station == 1));
         var station2 = Assert.Single(result.Runs.Where(x => x.Station == 2));
