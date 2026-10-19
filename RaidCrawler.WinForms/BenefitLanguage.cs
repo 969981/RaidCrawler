@@ -115,6 +115,28 @@ public static class BenefitLanguage
                 if (values.TryGetValue(item.Name, out var text)) item.Text = text;
     }
 
+    public static string Error(string source)
+    {
+        if (!Chinese) return source;
+        // Only translate known presentation-time validation failures; keep original details for debugging.
+        if (source.Contains("RaidPoint supports at most"))
+            return "奖励数量超过 45 行上限。";
+        if (source.Contains("use a real item ID") || source.Contains("specify an actual item ID"))
+            return "道具 ID 必须为 1～65535 的真实道具编号，不能使用计算预览占位 ID。";
+        if (source.Contains("quantity must be") || source.Contains("quantity must be between"))
+            return "每行道具数量必须为 1～999。";
+        if (source.Contains("rare flag must be") || source.Contains("rare must be"))
+            return "稀有标记仅可为 0 或 1。";
+        if (source.Contains("subject must be"))
+            return "发放条件 Subject 仅可选择 0～5。";
+        if (source.Contains("PokéLDN custom rewards support only") ||
+            source.Contains("PokéLDN currently accepts custom"))
+            return "当前 PokéLDN 自定义主持仅支持 Subject=0（全员）或 5（晶耀护符），且 Rare 必须为 0。";
+        if (source.Contains("Event raids require"))
+            return "活动坑必须提供匹配的活动配信数据，本版不支持把活动坑作为普通坑主持。";
+        return source;
+    }
+
     public static string Status(string source)
     {
         if (!Chinese) return source;
