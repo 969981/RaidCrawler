@@ -55,7 +55,7 @@ def audit(data: bytes):
     for off in range(RELA_DYN_FILE_OFFSET,
                      RELA_DYN_FILE_OFFSET + RELA_DYN_SIZE, 24):
         r_offset, r_info, r_addend = struct.unpack_from("<QQq", data, off)
-        if r_addend == target:
+        if r_addend == TARGET:
             records.append({
                 "rela_record_file_offset": f"0x{off:X}",
                 "r_offset_rva": f"0x{r_offset:X}",
