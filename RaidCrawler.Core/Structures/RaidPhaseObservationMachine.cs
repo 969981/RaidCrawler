@@ -47,8 +47,11 @@ public sealed class RaidPhaseObservationMachine
     {
         // Never infer game state from a failed read, or a random byte value.
         if (signals is null || !signals.HasCoreSignals ||
-            signals.LoadedFlag is > 5)
+            signals.LoadedFlag is > 5 ||
+            (signals.IsOverworld && (signals.IsLobby || signals.IsBattle)))
         {
+            // Unknown/contradictory readings are not evidence of a game
+            // phase transition. Candidate flag offsets require calibration.
             candidate = null;
             candidateSamples = 0;
             return null;
