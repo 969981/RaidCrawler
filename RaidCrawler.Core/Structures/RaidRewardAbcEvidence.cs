@@ -181,17 +181,28 @@ public static class RaidRewardAbcEvidence
             string ta = TemplateState(a, template);
             string tb = TemplateState(b, template);
             string tc = TemplateState(c, template);
+            bool hasTemplate = template.Count > 0;
+            bool inA = ta == "CUSTOM_ROWS_PRESENT_IN_IMPORTED_DATA";
+            bool inB = tb == "CUSTOM_ROWS_PRESENT_IN_IMPORTED_DATA";
+            bool inC = tc == "CUSTOM_ROWS_PRESENT_IN_IMPORTED_DATA";
             string status = a is null || b is null || c is null ? "INCOMPLETE_CAPTURE" :
                 handoffAB != "IMPORTED_SUBSEQUENCE" ? "A_TO_B_NEEDS_INVESTIGATION" :
                 handoffBC != "IMPORTED_ROWS_MATCH" ? "B_TO_C_NEEDS_INVESTIGATION" :
-                tc == "CUSTOM_ROWS_PRESENT_IN_IMPORTED_DATA" ?
-                    "CUSTOM_ROWS_PRESENT_IN_C_CLAIM_NOT_BAG_PROOF" :
-                    "CUSTOM_ROWS_NOT_OBSERVED_IN_C";
+                !hasTemplate ? "NO_TEMPLATE_FOR_COMPARISON" :
+                !inA ? "CUSTOM_ROWS_ABSENT_AT_GENERATION" :
+                !inB ? "CUSTOM_ROWS_LOST_DURING_FILTER" :
+                !inC ? "CUSTOM_ROWS_LOST_BETWEEN_FILTER_AND_CONSUMER" :
+                "CUSTOM_ROWS_PRESENT_IN_C_CLAIM_NOT_BAG_PROOF";
 
             if (group.Select(x => x.BuildId).Distinct(StringComparer.OrdinalIgnoreCase).Count() != 1)
             {
                 warnings.Add("run " + group.Key + ": mixed game builds, data not correlatable");
                 status = "INVALID_MIXED_BUILD";
+            }
+            if (group.Select(x => x.Origin).Distinct(StringComparer.Ordinal).Count() != 1)
+            {
+                warnings.Add("run " + group.Key + ": mixed capture origins, data not correlatable");
+                status = "INVALID_MIXED_ORIGIN";
             }
 
             runs.Add(new Run(group.Key,
