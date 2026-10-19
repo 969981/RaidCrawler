@@ -15,6 +15,19 @@ public static class NativeRaidCodeFingerprint
     public const int EndOfTextPaddingLength = 0x370;
     public const ulong NextReadOnlySegmentRva = 0x3440000;
     public const ulong SerializerHookRva = 0xE32984;
+    // Verified against the user's exact ELF SHA256:
+    // 0x343FC8C is the last executable PLT instruction (br x17).
+    // The zero-filled 880B candidate is the tail of the same 4KiB page.
+    // Same-page layout is static evidence, NOT a Switch runtime X-permission query.
+    public const ulong LastPltInstructionRva = 0x343FC8C;
+    public const uint LastPltInstructionOpcode = 0xD61F0220;
+    public const ulong TextPageBytes = 0x1000;
+    public static bool CandidateSharesLastPltPage =>
+        (LastPltInstructionRva / TextPageBytes) ==
+        (EndOfTextPaddingRva / TextPageBytes) &&
+        EndOfTextPaddingRva + (ulong)EndOfTextPaddingLength ==
+        NextReadOnlySegmentRva;
+
     public readonly record struct Anchor(ulong Rva, uint AArch64Opcode, string Meaning);
 
     public static IReadOnlyList<Anchor> Violet400 => [
