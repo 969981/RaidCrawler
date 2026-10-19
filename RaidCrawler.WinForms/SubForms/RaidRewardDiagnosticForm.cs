@@ -86,7 +86,7 @@ public sealed partial class RaidRewardDiagnosticForm : Form
         var openFolder = new Button { Text = "打开日志目录", AutoSize = true };
         advancedActions.Controls.Add(openFolder);
         ConfigureRewardEvidenceControls(advancedActions);
-        ConfigureAutomaticRaidPhaseMonitor(advancedActions);
+        ConfigureAutomaticRaidPhaseMonitor(toolbar, advancedActions);
 
         advancedToggle = new Button { Text = "高级工具 ▾", AutoSize = true };
         toolbar.Controls.Add(advancedToggle);
