@@ -100,6 +100,7 @@ public sealed class RewardEditorForm : Form
         Button(buttons, "Save JSON", (_, _) => SaveJson());
         Button(buttons, "Import .bin", (_, _) => ImportBinary());
         Button(buttons, "Export .bin", (_, _) => ExportBinary());
+        Button(buttons, "Copy PokéLDN", (_, _) => CopyPokeLdn());
         Button(buttons, "Close", (_, _) => Close());
         Populate(existingPreview ?? defaults);
     }
@@ -217,6 +218,15 @@ public sealed class RewardEditorForm : Form
             MessageBox.Show(this, ex.Message, "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
+
+    private void CopyPokeLdn() => Export(rows =>
+    {
+        string args = RaidRewardEditor.BuildPokeLdnRewardArguments(rows);
+        Clipboard.SetText(args);
+        MessageBox.Show(this,
+            "Copied PokéLDN --raid-reward flags for local hosting. This does not modify the connected Switch or official internet raids.",
+            "Host arguments copied");
+    });
 
     private void ExportBinary() => Export(rows =>
     {
