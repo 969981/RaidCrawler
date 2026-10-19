@@ -62,9 +62,7 @@ public sealed class RaidRewardDiagnosticForm : Form
         var markBattle = new Button { Text = "标记：已开战", AutoSize = true };
         var markResult = new Button { Text = "标记：已结算", AutoSize = true };
         var openFolder = new Button { Text = "打开诊断目录", AutoSize = true };
-        var openNative = new Button { Text = "插件配置包", AutoSize = true };
-        var importNative = new Button { Text = "导入Hook日志", AutoSize = true };
-        buttons.Controls.AddRange([markLobby, markBattle, markResult, openFolder, openNative, importNative]);
+        buttons.Controls.AddRange([markLobby, markBattle, markResult, openFolder]);
         panel.Controls.Add(buttons, 0, 2);
 
         var raw = RaidRewardEditor.EncodeSlots(slots);
@@ -86,19 +84,6 @@ public sealed class RaidRewardDiagnosticForm : Form
         markLobby.Click += (_,_) => Append("manual-lobby", "用户标记：已开房（可能为本地或互联网）。不是实际 Hook 命中。");
         markBattle.Click += (_,_) => Append("manual-battle", "用户手动标记：已进入战斗。并非发送回调证据。");
         markResult.Click += (_,_) => Append("manual-result", "用户手动标记：已结算。实际奖励增量和保存尚需独立核验。");
-        openNative.Click += (_,_) =>
-        {
-            try
-            {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = RaidRewardNativePackage.Folder,
-                    UseShellExecute = true,
-                });
-            }
-            catch (Exception ex) { Append("error", "打开插件配置包失败：" + ex.Message); }
-        };
-        importNative.Click += (_,_) => ImportNativeHookLog();
         openFolder.Click += (_,_) =>
         {
             try
