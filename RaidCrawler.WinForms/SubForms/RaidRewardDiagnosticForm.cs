@@ -42,7 +42,7 @@ public sealed partial class RaidRewardDiagnosticForm : Form
             ColumnCount = 1, RowCount = 3 };
         panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 75));
         panel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 122));
+        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 180));
         Controls.Add(panel);
         var header = new Label
         {
@@ -64,6 +64,7 @@ public sealed partial class RaidRewardDiagnosticForm : Form
         var markResult = new Button { Text = "标记：已结算", AutoSize = true };
         var openFolder = new Button { Text = "打开诊断目录", AutoSize = true };
         buttons.Controls.AddRange([markLobby, markBattle, markResult, openFolder]);
+        ConfigureRewardEvidenceControls(buttons);
         panel.Controls.Add(buttons, 0, 2);
 
         var raw = RaidRewardEditor.EncodeSlots(slots);
@@ -91,9 +92,9 @@ public sealed partial class RaidRewardDiagnosticForm : Form
 
         inspect.Click += async (_,_) => await RunInspectionAsync();
         testWrite.Click += async (_,_) => await RunWriteProbeAsync();
-        markLobby.Click += (_,_) => Append("manual-lobby", "用户标记：已开房（可能为本地或互联网）。不是实际 Hook 命中。");
-        markBattle.Click += (_,_) => Append("manual-battle", "用户手动标记：已进入战斗。并非发送回调证据。");
-        markResult.Click += (_,_) => Append("manual-result", "用户手动标记：已结算。实际奖励增量和保存尚需独立核验。");
+        markLobby.Click += (_,_) => RecordRaidMilestone("manual-lobby", "用户标记：已开房");
+        markBattle.Click += (_,_) => RecordRaidMilestone("manual-battle", "用户标记：已进入战斗");
+        markResult.Click += (_,_) => RecordRaidMilestone("manual-result", "用户标记：已结算");
         openFolder.Click += (_,_) =>
         {
             try
