@@ -14,6 +14,7 @@ public sealed class RemoteInlineHookLifecycleTests
         EntryReadbackVerified = true,
         CallbacksQuiescentVerified = true,
         TemplateReadbackVerified = true,
+        ModeReadbackVerified = true,
         OriginalEntryRestoredVerified = true,
     };
 
@@ -62,6 +63,19 @@ public sealed class RemoteInlineHookLifecycleTests
         Assert.False(machine.TryAdvance(RemoteInlineHookAction.Stage, busy, out _));
         Assert.True(machine.TryAdvance(RemoteInlineHookAction.Stage, Verified, out _));
         Assert.False(machine.TryAdvance(RemoteInlineHookAction.ConfirmInstall, busy, out _));
+    }
+
+    [Fact]
+    public void ModeMustBeReadBackBeforeArmingOrDisarming()
+    {
+        var machine = new RemoteInlineHookLifecycle();
+        Assert.True(machine.TryAdvance(RemoteInlineHookAction.Stage, Verified, out _));
+        Assert.True(machine.TryAdvance(RemoteInlineHookAction.ConfirmInstall, Verified, out _));
+        var unknownMode = Verified with { ModeReadbackVerified = false };
+        Assert.False(machine.TryAdvance(RemoteInlineHookAction.Enable, unknownMode, out _));
+        Assert.True(machine.TryAdvance(RemoteInlineHookAction.Enable, Verified, out _));
+        Assert.False(machine.TryAdvance(RemoteInlineHookAction.Disable, unknownMode, out _));
+        Assert.Equal(RemoteInlineHookPhase.Armed, machine.Phase);
     }
 
     [Fact]
