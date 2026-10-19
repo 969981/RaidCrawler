@@ -38,7 +38,7 @@ public sealed class RemoteViolet400HookInstallerTests
             }
             int pos = checked((int)(rva - NativeRaidCodeFingerprint.EndOfTextPaddingRva));
             byte[] bytes = Cave.AsSpan(pos, len).ToArray();
-            if (CorruptCaveReadback && pos == 0 && len == 880)
+            if (CorruptCaveReadback && Writes.Contains(NativeRaidCodeFingerprint.EndOfTextPaddingRva) && pos == 0 && len == 880)
                 bytes[1] ^= 1;
             return Task.FromResult(bytes);
         }
