@@ -1,3 +1,29 @@
+## 2026-10-19 增量：SV-Script-RE 与预加载 Hook 契约
+
+研究链路已直接阅读并核对 [SV-Script-RE 固定版本](https://github.com/Martmists-GH/SV-Script-RE/tree/1f843bd2517c707fbb47491dad58856eaa2c2cc7)：
+
+- `C849FF496D0E93636.lua` 第 1512–1549 行：网络战斗事件从 `self[17].raidBattleRewardData` 复制/包装到 `self[19][92]`，随后调用奖励筛选。它是**战斗配置消费阶段**，不能从此直接推断原生互联网主持端网络发送的全部路径。
+- `C07C34FC3B976E5A7.lua` 第 183–321 行：`BattleRewardData.F316609DEA110601D` 读取 `Bag.GetNumItem(2481) > 0`；根据 `subjectType=0..5`、房主身份、一次性条件、团体战力顺序进行筛选。**必须保留原始 45 个物理槽位顺序**，特别是 `subject=4`。
+- `C889F6553EDFCD011.lua` 第 1625–1697 行：`GameEventBattleResult.RaidResultAddItem` 根据过滤后 `ItemNo/ItemNum` 调用背包增加，不能把 `Quantity=999` 误解成保证净增加 999。
+- `C14A8D35D72F56FE9.lua` 第 2820–2835 行：`Bag.GetNumItem` 由背包状态读取 ID 2481 的数量。这不是 Nintendo 官方联网 Hook 的入口。
+
+已创建 [RaidRewardHookContract.cs](../../RaidCrawler.Core/Structures/RaidRewardHookContract.cs) 和 [单元测试](../../RaidCrawler.Tests/RaidRewardHookContractTests.cs)：这是未来 Switch 侧发包前回调的数据契约，要求游戏 Build ID、场次 Session ID、Seed 一致、官方联网模式/本机房主确认、发送方向的 0xAA0 明文且还未压缩，匹配时只创建奖励替换**副本**并保证同一场次只处理一次。该类完全离线、不会安装 AArch64 跳转，也不能直接写入 Switch 进程。
+
+### 为什么不能把现成 ELF RVA 当作有效的在线注入 Hook？
+
+`main+0xE327FC` 在 4.0.0 中经虚表注册为**bootstrap 序列化函数**；`main+0x1E62FE4` 是恢复函数。ELF 静态结构和 PokéLDN 0x2F 模拟确实一致，然而**缺乏本机作为 Nintendo 在线房主时实际走到发送回调的运行时证据**。静态 RVA 不是宿主的一个“监听奖励表加载”的常驻事件，而且 `x20/x23` 的有效期只是序列化函数的一次调用；进入实际联网 Hook 前必须捕获发包模式、当前场次、正确的 buffer ownership 与同步时序。
+
+即便满足上述条件，仍需独立在有授权的测试设备上实现和调试 Switch 侧原生拦截模块，并有严格的重入保护、异常回滚和退出时的恢复。**当前版本绝不自动向 Nintendo 官方联机房间写入奖励，也不绕过服务器校验。**
+
+## 2026-10-19 新奖励编辑器 P0
+
+- PKHeX.Core `ItemStorage9SV` + 简中/英文 `GameInfo.GetStrings` 构建有效道具目录；搜索按精确 ID、中文/英文前缀、子串、非连续字符依次排序。不展示晶耀护符 2481 等重要物品为发放候选。
+- 45 个固定槽：点击“奖励道具”弹出带搜索输入框的下拉面板，默认 20 行，其余为空；点击候选自动设置 ID，并在空槽设置 `Quantity=999`、`Subject=5`、`Rare=0`。
+- 底部只保留“**写入奖励、导入 JSON、导出 JSON、查看**”。清空单槽 (Delete)、恢复默认 20 行、清空全部、Subject 快捷设置和 720 字节 BIN 处理移至右键菜单。
+- 关闭窗口时，在配置正确的情况下自动暂存 45 槽到当前坑本次会话（`MainWindow.RewardPreviews`），不需要一个额外的“应用预览”按钮。
+- “查看”展示当前 45 槽与游戏计算奖励两个标签页；导出 JSON 保留全部 45 个位置与 null，Subject 4 顺序不被压缩。
+- **“写入奖励”按钮是诚实的诊断入口，不进行写入。** 没有在线 Hook 之前，点击它只提示缺少运行时证明，不会产生错误的“写入成功”。
+
 # 官方互联网手动主持：奖励区写入研究和阶段验收（2026-10-19）
 
 > **当前状态：已开发 20 行晶耀护符默认配置、完整 45 个物理槽位、Subject 0–5 编辑、720 字节编码及离线 RaidPoint/Bootstrap 替换验证；还没有安全可复现的 Nintendo 官方互联网主持端运行时 Hook，因此当前软件**不执行 Switch 官方联网奖励内存写入**。下文区分已证实的数据格式与未证实的在线运行时目标，不能把 GitHub CI 绿色当成联机发奖成功。

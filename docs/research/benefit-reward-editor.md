@@ -1,3 +1,10 @@
+## 2026-10-19 操作界面重构及运行时 Hook 边界
+
+- [可搜索道具目录](../../RaidCrawler.Core/Structures/RaidRewardItemCatalog.cs) 使用 PKHeX.Core Gen9 道具类别和中英文名称；[搜索弹窗](../../RaidCrawler.WinForms/SubForms/RewardItemPickerPopup.cs) 支持模糊输入及 ID。
+- [RewardEditorForm](../../RaidCrawler.WinForms/SubForms/RewardEditorForm.cs) 保留 45 个物理槽位，底部四按钮“写入奖励、导入 JSON、导出 JSON、查看”。高级菜单转移到右键菜单。正常关闭后自动在当前会话暂存本坑配置。
+- [原生 Hook 契约](../../RaidCrawler.Core/Structures/RaidRewardHookContract.cs) 只实现**离线**校验与单场明文奖励替换，绝不表示 Nintendo 官方互联网联机已找到稳定写入入口。
+- [官方在线主持研究](official-online-host-reward-write-plan.md) 结合 PokéLDN、《紫》4.0.0 ELF、SV-Script-RE 整理发送/接收/奖励筛选链路。即使 ELF 指令已匹配，尚未完成 Switch 侧 Hook 和实机网络验证。
+
 # Benefit — SV raid reward editor
 
 **Scope / state (2026-10-19):** This branch includes a functioning *local* reward-row editor plus an optional **explicitly launched** one-raid PokéLDN WSL host, not a game memory patch. See the original project README for ordinary raid scanning.
