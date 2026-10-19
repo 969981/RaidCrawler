@@ -76,7 +76,7 @@ public sealed class RaidRewardDiagnosticForm : Form
         });
         Append("scope", "全局奖励模板：不限地图、Seed、坑位、活动标记；尚未绑定任何实际战斗。",
             new { mode="all-raids", actualBattleSeed=(uint?)null, targetDen=(int?)null });
-        Append("hook-status", "Windows 端无法确定 Skyline Hook 是否已安装；需要 Switch 插件原始日志确认实际命中。");
+        Append("hook-status", "纯 Windows 通信方案：尚未安装 ARM64 inline Hook；当前只提供只读验证和 4B 写入/恢复测试。");
         Append("log", "诊断日志：" + trace.Path);
 
         inspect.Click += async (_,_) => await RunInspectionAsync();
@@ -319,7 +319,7 @@ public sealed class RaidRewardDiagnosticForm : Form
             }
             else
                 Append("elf", "此游戏版本尚无已验证的原生对战构建指令 RVA；不检查或使用《紫》4.0.0 地址。");
-            Append("probe-complete", "Windows 只读检查完成；真实 HOOK_HIT/PATCH_VERIFIED 需导入 Switch hook.log 核实。");
+            Append("probe-complete", "Windows 只读检查完成。可另行人工启动写入/恢复测试；仍未证明候选区可执行或 Hook 已命中。");
         }
         catch(OperationCanceledException)
         {
