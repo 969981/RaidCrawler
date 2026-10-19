@@ -1,0 +1,25 @@
+[package]
+name = "raidcrawler_sv_reward_hook"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Violet 4.0.0 native raid bootstrap reward hook (experimental)"
+
+[package.metadata.skyline]
+titleid = "01008F6008C5E000"  # Pokemon Violet; Scarlet has a different ELF/build
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+skyline = "0.6.0"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+lto = true
+
+[features]
+default = []
