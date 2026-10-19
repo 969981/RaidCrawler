@@ -21,6 +21,23 @@
 3. 启动《紫》4.0.0（TitleID 01008F6008C5E000），原版 sys-botbase 2.5 保持连接。Build ID 前缀必须为 709bfd6611529864。
 4. 打开全局奖励编辑器。首次建议只配置一条合法的常见物品奖励，Quantity 5、Rare 0、Subject 0。Subject 5 要求有晶耀护符，首次测试不建议选 45 行 ×999。
 
+## 2026-10-19：新版证据日志使用方法（需更新 Windows 构建）
+
+本次根据用户五星梦妖魔测试完善了原先只记录「安装／启用」的 JSONL。该玩家**持有晶耀护符**；原日志中的 `Subject=5` 并不能证明筛选失败。应优先核对发送端 Hook 是否被调用、是否是房主出站 Bootstrap 路径。
+
+1. 打开新诊断窗口，模式下拉框选择：**单人离线／本地 LDN 房主／本地 LDN 参与者／官方互联网房主／官方互联网参与者**。用户已有晶耀护符则勾选「本角色持有晶耀护符」。未勾选的三态默认值为「未确认」，不等于「没有」。
+2. 点 **只读 Hook 快照**：在不写入 Switch 的情况下检查 `main+0xE32984` 入口、完整 144B reader 签名、奇偶 epoch 前后稳定性、720B SHA-256 和 `Subject=0/5` 行数。此项证据是 `CONTROL_PLANE_INTEGRITY_ONLY`，不能自动生成 `HOOK_HIT`。
+3. 开房时点 **标记：已开房**，生成同一场战斗的唯一 `runId`；进战斗点 **标记：已开战**，此后每 5 秒自动进行只读快照，最多 160 次／至手动结算。结束时点 **标记：已结算**，停止采样并输出当前证据边界。自动轮询不会冻结 CPU、读取临时寄存器或改变游戏奖励。
+4. 可点 **记录背包前后数量**：输入道具 ID、之前及之后数量，生成 `manual-bag-delta`。这是 `USER_REPORTED`，不是游戏内存抓包，亦非自动保存验证。
+5. 如果本地 PokéLDN 也开启了 `POKELDN_SV_REWARD_TRACE`，点 **导入 LDN 证据 JSONL**，将 `S1_SOURCE → S2_HOST_BOOTSTRAP → S2_WIRE_LOOPBACK` 用 45 行完整 SHA 逐站点（`station_index`）比较。外部 JSONL 不是零售机器的原生 `HOOK_HIT`，也不能自动与目前 Switch 的 `runId` 关联；导入时会明示 `IMPORTED_NOT_NATIVE_RETAIL`。
+6. 结束后点 **输出证据结论**。没有真正采集到的节点固定输出 `NOT_OBSERVED`，不会把内存哈希稳定或玩家手动截图伪造成 Hook 执行。
+
+新增 JSONL 字段：`schemaVersion=2`、递增 `sequence`、`runId`、`scenario`、`playerCharm`、`entryState`、`readerState`、`epoch`、`stableEpoch`、`rewardSha256`、`templateComparison`、`nativeHookHit=NOT_OBSERVED`。日志路径仍位于 `%LOCALAPPDATA%/RaidCrawler/raid-diagnostics/`。
+
+**目前自动诊断能够回答**：补丁是否保持存在、模板是否意外改变、哪场战斗及角色出现了常规奖励、LDN 外部数据构建是否一致。
+
+**目前不能回答**：CPU 是否经过 `E32984`、实际运行期 `RaidPoint_` 检查是否通过、真正的接收方是否使用该段奖励、Lua 最终筛选以及保存。取得这些证据还需安全的原生事件源或独立接收端观测，而不能靠每 5 秒读静态内存猜测。
+
 ## 安装和启用
 1. 点奖励编辑器的 **写入奖励**，保存本地模板并打开诊断窗口（不会自动修改 Switch）。
 2. 先点 **Hook 状态**；初次应显示 Empty。如显示 ConflictOrIncomplete，停止，不要强制覆盖。
