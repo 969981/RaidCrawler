@@ -168,6 +168,32 @@ public sealed class RaidRewardDiagnosticForm : Form
             string botbase=(await connection.GetBotbaseVersion(token)).Trim();
             Append("console", $"TitleID={title}; game={version}; botbase={botbase}",
                 new {title,version,botbase});
+            // SysBot's getBuildID command supplies only the first eight NSO Build ID bytes.
+            // This helps identify a bad match, but cannot attest a complete build.
+            try
+            {
+                bool useCrlf = connection is SwitchSocketAsync;
+                byte[] rawBuild = await connection.ReadRaw(SwitchCommand.GetBuildID(useCrlf), 17, token);
+                string buildPrefix = Encoding.ASCII.GetString(rawBuild).Trim('\\0', '\\r', '\\n', ' ');
+                if (buildPrefix.Length == 16 && buildPrefix.All(Uri.IsHexDigit))
+                {
+                    string expected = RaidRewardHookContract.VerifiedViolet400BuildId[..16];
+                    bool match = buildPrefix.Equals(expected, StringComparison.OrdinalIgnoreCase);
+                    Append("build-id-prefix",
+                        $"NSO Build ID 前8字节={buildPrefix}; Violet4.0.0 前缀匹配={match}; 不能代替完整 Build ID 与指纹。",
+                        new { first8Bytes=buildPrefix, expectedFirst8Bytes=expected, matches=match, fullBuildConfirmed=false });
+                }
+                else
+                    Append("build-id-prefix", "当前 botbase 未返回可解析的 8 字节 Build ID 前缀。");
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                Append("build-id-prefix", "getBuildID 命令读取不可用："+ex.GetType().Name);
+            }
+            var capability=RemoteHookCapabilities.StandardSysBotBase;
+            Append("remote-hook-a",
+                "方案A检查：当前标准 botbase 只支持内存读写，不具备线程上下文、可执行代码管理及安全回滚协议；拒绝安装。",
+                new { ready=capability.RemoteInlineHookReady, missing=capability.Missing() });
             if (title is not (Offsets.ScarletID or Offsets.VioletID))
             {
                 Append("blocked", "不是《朱／紫》游戏。无法继续原生 Hook 的任何判断。");
