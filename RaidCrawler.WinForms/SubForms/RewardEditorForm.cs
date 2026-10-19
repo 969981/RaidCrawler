@@ -13,8 +13,11 @@ public sealed class RewardEditorForm : Form
     private readonly DataGridView grid = new();
     private readonly Label counter = new();
 
+    public IReadOnlyList<RaidRewardEntry>? AppliedPreview { get; private set; }
+
     public RewardEditorForm(IReadOnlyList<string> items, IReadOnlyList<string> moves,
-        IReadOnlyList<(int, int, int)> calculated, int species, int teraType)
+        IReadOnlyList<(int, int, int)> calculated, int species, int teraType,
+        IReadOnlyList<RaidRewardEntry>? existingPreview = null)
     {
         itemNames = items;
         moveNames = moves;
@@ -38,7 +41,7 @@ public sealed class RewardEditorForm : Form
         {
             Dock = DockStyle.Top, Height = 40, Padding = new Padding(10, 7, 5, 0),
             ForeColor = Color.DarkRed, AutoEllipsis = true,
-            Text = "LOCAL PREVIEW / EXPORT ONLY - editing this table will NOT patch your Switch, raid, or Nintendo online room.",
+            Text = "LOCAL PREVIEW / EXPORT ONLY - Apply keeps a local session copy; nothing is written to the Switch or online rooms.",
         });
         counter.Dock = DockStyle.Bottom;
         counter.Height = 28;
@@ -81,6 +84,12 @@ public sealed class RewardEditorForm : Form
             if (grid.CurrentRow is not null) grid.Rows.Remove(grid.CurrentRow);
         });
         Button(buttons, "Reset defaults", (_, _) => Populate(defaults));
+        Button(buttons, "Apply preview", (_, _) => Export(rows =>
+        {
+            AppliedPreview = rows.ToArray();
+            DialogResult = DialogResult.OK;
+            Close();
+        }));
         Button(buttons, "View calculated", (_, _) =>
         {
             if (this.calculated.Count == 0) return;
@@ -92,7 +101,7 @@ public sealed class RewardEditorForm : Form
         Button(buttons, "Import .bin", (_, _) => ImportBinary());
         Button(buttons, "Export .bin", (_, _) => ExportBinary());
         Button(buttons, "Close", (_, _) => Close());
-        Populate(defaults);
+        Populate(existingPreview ?? defaults);
     }
 
     private static void Button(FlowLayoutPanel host, string text, EventHandler action)
