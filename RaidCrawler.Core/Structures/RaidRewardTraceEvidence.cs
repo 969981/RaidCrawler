@@ -16,7 +16,7 @@ public static class RaidRewardTraceEvidence
     public sealed record Event(string RunId, string Name, string Origin,
         int? Station, string? ClaimedResult, string? RewardSha,
         int? RowCount, bool RowsVerified);
-    public sealed record Run(string RunId, int Events, string Source, string Host,
+    public sealed record Run(string RunId, int? Station, int Events, string Source, string Host,
         string WireLoopback, string Receiver, string Filtering,
         string TemplateCompare, int? HostRows);
     public sealed record Analysis(int Lines, int Rejected, IReadOnlyList<Run> Runs,
@@ -116,11 +116,10 @@ public static class RaidRewardTraceEvidence
         var runs = new List<Run>();
         foreach (var group in events.GroupBy(e => e.RunId).Take(100))
         {
+            var stations = group.Where(e => e.Station.HasValue)
+                .Select(e => e.Station).Distinct().ToArray();
+            if (stations.Length == 0) stations = [null];
             Event? source = group.FirstOrDefault(x => x.Name == "S1_SOURCE");
-            Event? host = group.FirstOrDefault(x => x.Name == "S2_HOST_BOOTSTRAP");
-            Event? wire = group.FirstOrDefault(x => x.Name == "S2_WIRE_LOOPBACK");
-            Event? receiver = group.FirstOrDefault(x => x.Name == "S2_RECEIVER_PRE_FILTER");
-            Event? filtered = group.FirstOrDefault(x => x.Name == "S3_FILTERED");
 
             static string Compare(Event? a, Event? b)
             {
@@ -130,20 +129,36 @@ public static class RaidRewardTraceEvidence
                 return string.Equals(a.RewardSha, b.RewardSha,
                     StringComparison.OrdinalIgnoreCase) ? "HASH_MATCH" : "HASH_MISMATCH";
             }
-            string sourceState = source is null ? "NOT_OBSERVED" :
-                source.RowsVerified ? "IMPORTED_HASH_VALID" : "IMPORTED_UNVERIFIED";
-            string hostState = Compare(source, host);
-            string wireState = Compare(host, wire);
-            string recvState = Compare(host, receiver);
-            string filterState = filtered is null ? "NOT_OBSERVED" :
-                "IMPORTED_ONLY_NO_NATIVE_PROOF";
-            string templateState = configuredTemplateSha is null || host is null
-                ? "NOT_OBSERVED"
-                : host.RowsVerified && string.Equals(configuredTemplateSha, host.RewardSha,
-                    StringComparison.OrdinalIgnoreCase)
-                  ? "HASH_MATCH_UNLINKED_SESSION" : "HASH_MISMATCH_OR_UNVERIFIED";
-            runs.Add(new Run(group.Key, group.Count(), sourceState, hostState,
-                wireState, recvState, filterState, templateState, host?.RowCount));
+
+            foreach (int? station in stations)
+            {
+                // Avoid silently matching a host S2 station with a different
+                // guest's S2 wire/receiver observation.
+                Event? host = group.FirstOrDefault(x => x.Name == "S2_HOST_BOOTSTRAP"
+                    && x.Station == station);
+                Event? wire = group.FirstOrDefault(x => x.Name == "S2_WIRE_LOOPBACK"
+                    && x.Station == station);
+                Event? receiver = group.FirstOrDefault(x => x.Name == "S2_RECEIVER_PRE_FILTER"
+                    && x.Station == station);
+                Event? filtered = group.FirstOrDefault(x => x.Name == "S3_FILTERED"
+                    && x.Station == station);
+
+                string sourceState = source is null ? "NOT_OBSERVED" :
+                    source.RowsVerified ? "IMPORTED_HASH_VALID" : "IMPORTED_UNVERIFIED";
+                string hostState = Compare(source, host);
+                string wireState = Compare(host, wire);
+                string recvState = Compare(host, receiver);
+                string filterState = filtered is null ? "NOT_OBSERVED" :
+                    "IMPORTED_ONLY_NO_NATIVE_PROOF";
+                string templateState = configuredTemplateSha is null || host is null
+                    ? "NOT_OBSERVED"
+                    : host.RowsVerified && string.Equals(configuredTemplateSha, host.RewardSha,
+                        StringComparison.OrdinalIgnoreCase)
+                      ? "HASH_MATCH_UNLINKED_SESSION" : "HASH_MISMATCH_OR_UNVERIFIED";
+                int number = group.Count(e => e.Station == station || e.Name == "S1_SOURCE");
+                runs.Add(new Run(group.Key, station, number, sourceState, hostState,
+                    wireState, recvState, filterState, templateState, host?.RowCount));
+            }
         }
         if (events.Count == 0)
             warnings.Add("No valid S1/S2/S3 evidence events. Original RaidCrawler log only contains control-plane readback.");
