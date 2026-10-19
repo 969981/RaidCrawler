@@ -11,9 +11,11 @@ When a raid is selected, use the existing **Rewards** button. The editor starts 
 - Subject 2: guest
 - Subject 3: once-only eligibility
 - Subject 4: matching Raid Power (the Lua filter keeps up to level N of these rows)
-- Subject 5: receiving player possesses the **Glimmering Charm** (item ID 2481, not the Shiny Charm)
+- Subject 5: receiving player possesses the **Glimmering Charm** (item ID 2481, not the Shiny Charm). When host launches, the argument is explicitly `--raid-reward ITEM:QUANTITY:5`; the receiving console executes `Bag.GetNumItem(2481) > 0` eligibility filtering.
 
 The edit controls permit 1–999 quantity, IDs 1–65535 and rare flag 0/1, and reject row 46 instead of silently truncating. The session preview uses the raid map, area, den, seed and Raid Power boost as a key; it is only recalled in the editor and does not alter the Seed prediction data, filters, or live game. The 999 value is only an editing constraint, **not proof of SlotMaxNum in the game's itemdata_array.bin**.
+
+The editor provides **Set selected Charm (5)**, **All Charm (5)** and **All players (0)** shortcuts. Editing still accepts all six subject values; the PokéLDN hosting action refuses subjects 1–4 with a clear validation error until upstream implements them. This ensures a host cannot accidentally downgrade a charm-only reward into an all-player reward.
 
 ### 45 rows, precisely
 
