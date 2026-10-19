@@ -2,7 +2,7 @@ name: .NET Core Desktop
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, benefit ]
   pull_request:
     branches: [ main ]
 
@@ -30,6 +30,9 @@ jobs:
     - name: Restore the solution
       run: dotnet restore
     
+    - name: Run core unit tests
+      run: dotnet test RaidCrawler.Tests/RaidCrawler.Tests.csproj --configuration $env:Configuration --no-restore
+
     - name: Publish
       run: |
         dotnet build --configuration $env:Configuration --no-restore
