@@ -107,7 +107,13 @@ public sealed partial class RaidRewardDiagnosticForm : Form
             }
             catch (Exception ex) { Append("error", "打开日志目录失败：" + ex.GetType().Name); }
         };
-        FormClosing += (_,_) => { closing = true; stop.Cancel(); trace.Dispose(); };
+        FormClosing += (_,_) => {
+            closing = true;
+            integrityTimer.Stop();
+            integrityTimer.Dispose();
+            stop.Cancel();
+            trace.Dispose();
+        };
     }
 
     private void Append(string stage, string message, object? detail=null)
