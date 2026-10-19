@@ -50,6 +50,7 @@ public sealed partial class RaidRewardDiagnosticForm
         var snapshot = Add("只读 Hook 快照", async (_, _) =>
             await CaptureEvidenceSnapshotAsync("manual-snapshot"));
         var import = Add("导入 LDN 证据 JSONL", (_, _) => ImportPokeLdnEvidence());
+        Add("导入 A/B/C 奖励追踪", (_, _) => ImportAbcCaptureEvidence());
         var bag = Add("记录背包前后数量", (_, _) => RecordBagDelta());
         Add("关联结算截图", (_, _) => RecordEvidenceScreenshot());
         Add("输出证据结论", (_, _) => AppendEvidenceSummary());
