@@ -39,6 +39,9 @@ public sealed record RemoteInlineHookEvidence
     // Callers must read and compare the expected mode word for each operation.
     public bool ModeReadbackVerified { get; init; }
     public bool OriginalEntryRestoredVerified { get; init; }
+    // True only after validating the new Reader's epoch mismatch fallback;
+    // not inferred from a matching protocol magic alone.
+    public bool VersionedRollbackVerified { get; init; }
 }
 
 public sealed class RemoteInlineHookLifecycle
@@ -71,16 +74,20 @@ public sealed class RemoteInlineHookLifecycle
 
             RemoteInlineHookAction.Enable =>
                 Phase == RemoteInlineHookPhase.InstalledDisarmed &&
-                common && quiescent && evidence.TemplateReadbackVerified &&
-                evidence.EntryReadbackVerified && evidence.ModeReadbackVerified,
+                common && (quiescent || evidence.VersionedRollbackVerified) &&
+                evidence.TemplateReadbackVerified && evidence.EntryReadbackVerified &&
+                evidence.ModeReadbackVerified,
 
             RemoteInlineHookAction.Disable =>
                 Phase == RemoteInlineHookPhase.Armed &&
-                common && quiescent && evidence.ModeReadbackVerified,
+                common && (quiescent || evidence.VersionedRollbackVerified) &&
+                evidence.ModeReadbackVerified,
 
             RemoteInlineHookAction.UpdateTemplate =>
-                Phase == RemoteInlineHookPhase.InstalledDisarmed &&
-                common && quiescent && evidence.TemplateReadbackVerified &&
+                (Phase == RemoteInlineHookPhase.InstalledDisarmed && quiescent ||
+                 Phase is (RemoteInlineHookPhase.InstalledDisarmed or RemoteInlineHookPhase.Armed) &&
+                 evidence.VersionedRollbackVerified) &&
+                common && evidence.TemplateReadbackVerified &&
                 evidence.ModeReadbackVerified,
 
             RemoteInlineHookAction.ConfirmUninstall =>
