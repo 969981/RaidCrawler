@@ -1,18 +1,26 @@
+using System.Text;
 using System.Text.Json;
+using PKHeX.Core;
 using RaidCrawler.Core.Structures;
 
 namespace RaidCrawler.WinForms.SubForms;
 
-/// <summary>Local reward row editing/exports. Does NOT change live Switch memory.</summary>
+/// <summary>
+/// Editable 45-position SV reward preset. Only changes a local configuration.
+/// The official Nintendo online-host injection point has NOT been verified.
+/// </summary>
 public sealed class RewardEditorForm : Form
 {
-    private readonly IReadOnlyList<string> itemNames;
-    private readonly IReadOnlyList<string> moveNames;
+    private readonly IReadOnlyList<string> names;
+    private readonly IReadOnlyList<string> moves;
     private readonly IReadOnlyList<(int, int, int)> calculated;
-    private readonly IReadOnlyList<RaidRewardEntry?> defaults;
-    private readonly PokeLdnRaidSelection? selectedRaid;
+    private readonly RaidRewardItemCatalog catalog;
     private readonly DataGridView grid = new();
     private readonly Label counter = new();
+    private readonly RaidRewardEntry?[] defaults = RaidRewardPresets.ScreenshotCharm45Slots();
+    private readonly ContextMenuStrip actions = new();
+    private RewardItemPickerPopup? picker;
+    private bool populating;
 
     public IReadOnlyList<RaidRewardEntry?>? AppliedSlots { get; private set; }
 
@@ -21,334 +29,412 @@ public sealed class RewardEditorForm : Form
         IReadOnlyList<RaidRewardEntry?>? existingPreview = null,
         PokeLdnRaidSelection? selectedRaid = null)
     {
-        itemNames = items;
-        moveNames = moves;
+        names = items;
+        this.moves = moves;
         this.calculated = calculated;
-        this.selectedRaid = selectedRaid;
-        // This editor defaults to the requested 20-item Charm-999 template; seed drops are view-only.
-        defaults = RaidRewardPresets.ScreenshotCharm45Slots();
+        catalog = RaidRewardItemCatalog.FromGameStrings(items, GameInfo.GetStrings("en").Item);
 
-        Text = BenefitLanguage.T("太晶坑奖励编辑器 - benefit", "Rewards - benefit (offline editor)");
-        Size = new Size(940, 625);
-        MinimumSize = new Size(780, 450);
+        Text = BenefitLanguage.T("太晶坑奖励编辑器 - benefit", "SV Raid Reward Editor - benefit");
+        MinimumSize = new Size(760, 520);
+        Size = new Size(990, 690);
         StartPosition = FormStartPosition.CenterParent;
 
-        var panel = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 3, ColumnCount = 1 };
-        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 72));
-        panel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 84));
-        Controls.Add(panel);
+        var outer = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3, Padding = new Padding(8) };
+        outer.RowStyles.Add(new RowStyle(SizeType.Absolute, 62));
+        outer.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        outer.RowStyles.Add(new RowStyle(SizeType.Absolute, 53));
+        Controls.Add(outer);
 
-        var header = new Panel { Dock = DockStyle.Fill };
-        header.Controls.Add(new Label
+        var top = new Panel { Dock = DockStyle.Fill };
+        var notice = new Label
         {
-            Dock = DockStyle.Top, Height = 40, Padding = new Padding(10, 7, 5, 0),
-            ForeColor = Color.DarkRed, AutoEllipsis = true,
-            Text = BenefitLanguage.T("默认前20行晶耀护符999，剩余25行空白。本界面准备奖励，尚未实现游戏原生联网写入；不必启动 PokéLDN 主持。",
-                "Default: 20 charm-only ×999 rows, 25 empty slots. Game-native online injection is NOT implemented."),
-        });
+            Dock = DockStyle.Top, Height = 32, AutoEllipsis = true,
+            ForeColor = Color.DarkRed, Padding = new Padding(6, 3, 0, 0),
+            Text = BenefitLanguage.T(
+                "默认20行 ×999 晶耀护符奖励，剩余25槽留空。官方联网写入 Hook 尚未验证；本版不会修改游戏内存。",
+                "Default: 20 charm-only ×999 rows, 25 blank slots. Native online write hook is not verified."),
+        };
         counter.Dock = DockStyle.Bottom;
-        counter.Height = 28;
-        counter.Padding = new Padding(10, 1, 0, 0);
-        header.Controls.Add(counter);
-        panel.Controls.Add(header, 0, 0);
+        counter.Height = 24;
+        counter.Padding = new Padding(6, 3, 0, 0);
+        top.Controls.AddRange([notice, counter]);
+        outer.Controls.Add(top, 0, 0);
 
         grid.Dock = DockStyle.Fill;
         grid.AllowUserToAddRows = false;
         grid.AllowUserToDeleteRows = false;
         grid.RowHeadersVisible = false;
         grid.MultiSelect = false;
-        grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+        grid.SelectionMode = DataGridViewSelectionMode.CellSelect;
         grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-        grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "ItemId", HeaderText = BenefitLanguage.T("道具 ID", "Item ID"), FillWeight = 14 });
-        grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "ItemName", HeaderText = BenefitLanguage.T("道具名称", "Item"), ReadOnly = true, FillWeight = 37 });
-        grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = BenefitLanguage.T("数量", "Quantity"), FillWeight = 19 });
-        grid.Columns.Add(new DataGridViewCheckBoxColumn { Name = "Rare", HeaderText = BenefitLanguage.T("稀有", "Rare"), FillWeight = 10 });
+        grid.EditMode = DataGridViewEditMode.EditOnKeystrokeOrF2;
+        grid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "Slot", HeaderText = BenefitLanguage.T("槽位", "Slot"), FillWeight = 11, ReadOnly = true,
+            SortMode = DataGridViewColumnSortMode.NotSortable,
+        });
+        grid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "Item", HeaderText = BenefitLanguage.T("奖励道具（点击搜索） ▼", "Item (click to search) ▼"),
+            FillWeight = 62, ReadOnly = true, SortMode = DataGridViewColumnSortMode.NotSortable,
+        });
+        grid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "Quantity", HeaderText = BenefitLanguage.T("数量", "Quantity"), FillWeight = 18,
+            SortMode = DataGridViewColumnSortMode.NotSortable,
+        });
         var subject = new DataGridViewComboBoxColumn
         {
-            Name = "Subject",
-            HeaderText = BenefitLanguage.T("发放条件", "Subject (0-5)"),
-            FillWeight = 27,
-            DataSource = BenefitLanguage.RewardSubjects.ToArray(),
-            DisplayMember = nameof(BenefitLanguage.Choice.Label),
+            Name = "Subject", HeaderText = BenefitLanguage.T("发放条件", "Subject"),
+            FillWeight = 35, DataSource = BenefitLanguage.RewardSubjects.ToArray(),
             ValueMember = nameof(BenefitLanguage.Choice.Value),
-            ToolTipText = BenefitLanguage.T(
-                "0 全体玩家；1 房主；2 参与者；3 一次性；4 团体战料理；5 晶耀护符（道具 2481）",
-                "0 Everyone; 1 Host; 2 Guest; 3 Once; 4 Raid Power; 5 Glimmering Charm (item 2481)"),
+            DisplayMember = nameof(BenefitLanguage.Choice.Label),
+            SortMode = DataGridViewColumnSortMode.NotSortable,
         };
         grid.Columns.Add(subject);
-        grid.CellEndEdit += (_, e) =>
+        grid.Columns.Add(new DataGridViewCheckBoxColumn { Name = "Rare", HeaderText = "Rare", Visible = false });
+        grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "ItemId", Visible = false });
+
+        grid.CellClick += (_, e) =>
         {
-            if (e.RowIndex >= 0 && e.ColumnIndex == 0)
-            {
-                var cells = grid.Rows[e.RowIndex].Cells;
-                cells[1].Value = ItemName(cells[0].Value?.ToString());
-                if (!string.IsNullOrWhiteSpace(cells[0].Value?.ToString()))
-                {
-                    cells[2].Value ??= 999;
-                    cells[4].Value ??= 5;
-                }
-            }
-            UpdateCounter();
+            if (!populating && e.RowIndex >= 0 && e.ColumnIndex == grid.Columns["Item"]!.Index)
+                ShowPicker(e.RowIndex);
         };
-        grid.RowsAdded += (_, _) => UpdateCounter();
-        grid.RowsRemoved += (_, _) => UpdateCounter();
-        panel.Controls.Add(grid, 0, 1);
-
-        var buttons = new FlowLayoutPanel
+        grid.CellDoubleClick += (_, e) =>
         {
-            Dock = DockStyle.Fill, WrapContents = true,
-            Padding = new Padding(5, 6, 3, 3),
+            if (!populating && e.RowIndex >= 0 && e.ColumnIndex == grid.Columns["Item"]!.Index)
+                ShowPicker(e.RowIndex);
         };
-        panel.Controls.Add(buttons, 0, 2);
-        Button(buttons, BenefitLanguage.T("新增奖励", "Add row"), (_, _) => AddRow(new RaidRewardEntry(1, 999, 0, 5)));
-        Button(buttons, BenefitLanguage.T("清空选中槽", "Clear selected"), (_, _) =>
+        grid.KeyDown += OnGridKeyDown;
+        grid.CellMouseDown += (_, e) =>
         {
-            if (grid.CurrentRow is { } row)
+            if (e.Button == MouseButtons.Right && e.RowIndex >= 0 && e.ColumnIndex >= 0)
+                grid.CurrentCell = grid.Rows[e.RowIndex].Cells[e.ColumnIndex];
+        };
+        grid.CellEndEdit += (_, _) => UpdateCounter();
+        grid.DataError += (_, e) =>
+        {
+            e.ThrowException = false;
+            if (!populating)
+                MessageBox.Show(this, BenefitLanguage.T("无效的发放条件，请选择 0～5。", "Invalid subject. Choose 0–5."));
+        };
+        grid.ContextMenuStrip = actions;
+        AddContextMenu();
+        outer.Controls.Add(grid, 0, 1);
+
+        var controls = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill, WrapContents = false, FlowDirection = FlowDirection.LeftToRight,
+            Padding = new Padding(5, 5, 0, 0), AutoScroll = true,
+        };
+        outer.Controls.Add(controls, 0, 2);
+        AddButton(controls, BenefitLanguage.T("写入奖励", "Write Rewards"), (_, _) => ExplainWriteStatus());
+        AddButton(controls, BenefitLanguage.T("导入 JSON", "Import JSON"), (_, _) => ImportJson());
+        AddButton(controls, BenefitLanguage.T("导出 JSON", "Export JSON"), (_, _) => ExportJson());
+        AddButton(controls, BenefitLanguage.T("查看", "Preview"), (_, _) => Preview());
+
+        LoadSlots(existingPreview ?? defaults);
+        FormClosing += SaveOnClose;
+    }
+
+    private static void AddButton(FlowLayoutPanel target, string caption, EventHandler click)
+    {
+        var button = new Button { Text = caption, AutoSize = true, MinimumSize = new Size(106, 32), Margin = new Padding(4) };
+        button.Click += click;
+        target.Controls.Add(button);
+    }
+
+    private void AddContextMenu()
+    {
+        actions.Items.Add(BenefitLanguage.T("选择道具／搜索…", "Choose item / search..."), null,
+            (_, _) => { if (grid.CurrentCell is not null) ShowPicker(grid.CurrentCell.RowIndex); });
+        actions.Items.Add(BenefitLanguage.T("清空当前槽位（Delete）", "Clear current slot (Delete)"), null,
+            (_, _) => ClearSelected());
+        actions.Items.Add(BenefitLanguage.T("恢复默认20行", "Restore 20 default rows"), null, (_, _) => LoadSlots(defaults));
+        actions.Items.Add(BenefitLanguage.T("清空所有45个槽位", "Clear all 45 slots"), null,
+            (_, _) => { if (MessageBox.Show(this, BenefitLanguage.T("确定清空全部槽位？", "Clear all slots?"),
+                BenefitLanguage.T("确认", "Confirm"), MessageBoxButtons.YesNo) == DialogResult.Yes)
+                LoadSlots(new RaidRewardEntry?[45]); });
+        actions.Items.Add(new ToolStripSeparator());
+        actions.Items.Add(BenefitLanguage.T("当前行 Subject = 5（晶耀护符）", "Selected row Subject 5"), null,
+            (_, _) => SetSelectedSubject(5));
+        actions.Items.Add(BenefitLanguage.T("所有非空行 Subject = 5", "All filled rows Subject 5"), null,
+            (_, _) => SetAllSubject(5));
+        actions.Items.Add(BenefitLanguage.T("所有非空行 Subject = 0", "All filled rows Subject 0"), null,
+            (_, _) => SetAllSubject(0));
+        actions.Items.Add(BenefitLanguage.T("切换当前行 Rare 标记", "Toggle selected row rare flag"), null,
+            (_, _) =>
             {
-                row.Cells["ItemId"].Value = null;
-                row.Cells["ItemName"].Value = null;
-                row.Cells["Quantity"].Value = null;
-                row.Cells["Rare"].Value = false;
-                row.Cells["Subject"].Value = null;
-                UpdateCounter();
-            }
-        });
-        Button(buttons, BenefitLanguage.T("恢复20行默认", "Reset 20 defaults"), (_, _) => PopulateSlots(defaults));
-        Button(buttons, BenefitLanguage.T("选中设护符(5)", "Set selected Charm (5)"), (_, _) => SetSelectedSubject(5));
-        Button(buttons, BenefitLanguage.T("全部设护符(5)", "All Charm (5)"), (_, _) => SetAllSubject(5));
-        Button(buttons, BenefitLanguage.T("全部全员(0)", "All players (0)"), (_, _) => SetAllSubject(0));
-        Button(buttons, BenefitLanguage.T("应用预览", "Apply preview"), (_, _) => Export(rows =>
-        {
-            AppliedSlots = ReadSlots();
-            DialogResult = DialogResult.OK;
-            Close();
-        }));
-        Button(buttons, BenefitLanguage.T("查看原奖励", "View calculated"), (_, _) =>
-        {
-            if (this.calculated.Count == 0) return;
-            using var window = new RewardsView(itemNames, moveNames, this.calculated);
-            window.ShowDialog(this);
-        });
-        Button(buttons, BenefitLanguage.T("导入 JSON", "Load JSON"), (_, _) => LoadJson());
-        Button(buttons, BenefitLanguage.T("导出 JSON", "Save JSON"), (_, _) => SaveJson());
-        Button(buttons, BenefitLanguage.T("导入 BIN", "Import .bin"), (_, _) => ImportBinary());
-        Button(buttons, BenefitLanguage.T("导出 BIN", "Export .bin"), (_, _) => ExportBinary());
-        Button(buttons, BenefitLanguage.T("复制 PokéLDN 参数", "Copy PokéLDN"), (_, _) => CopyPokeLdn());
-        Button(buttons, BenefitLanguage.T("原生联网写入检查", "Online write preflight"), (_, _) => OnlinePreflight());
-        Button(buttons, BenefitLanguage.T("PokéLDN本地主持(可选)", "PokéLDN LAN host (optional)"), (_, _) => HostSelectedRaid());
-        Button(buttons, BenefitLanguage.T("关闭", "Close"), (_, _) => Close());
-        PopulateSlots(existingPreview ?? defaults);
+                if (grid.CurrentCell is null) return;
+                var row = grid.Rows[grid.CurrentCell.RowIndex];
+                if (Empty(row)) return;
+                row.Cells["Rare"].Value = row.Cells["Rare"].Value is not true;
+            });
+        actions.Items.Add(new ToolStripSeparator());
+        actions.Items.Add(BenefitLanguage.T("导入720字节 BIN", "Import 720-byte BIN"), null,
+            (_, _) => ImportBin());
+        actions.Items.Add(BenefitLanguage.T("导出720字节 BIN", "Export 720-byte BIN"), null,
+            (_, _) => ExportBin());
     }
 
-    private static void Button(FlowLayoutPanel host, string text, EventHandler action)
+    private void OnGridKeyDown(object? sender, KeyEventArgs e)
     {
-        var button = new Button { Text = text, AutoSize = true, Height = 29, Margin = new Padding(3) };
-        button.Click += action;
-        host.Controls.Add(button);
-    }
-
-    private string ItemName(string? raw)
-    {
-        if (!int.TryParse(raw, out var id) || id < 0 || id >= itemNames.Count)
-            return BenefitLanguage.T("（未知道具，请检查 ID）", "(unknown - check item ID)");
-        try
+        if (grid.CurrentCell is null) return;
+        if (e.KeyCode is Keys.Delete or Keys.Back && !grid.IsCurrentCellInEditMode)
         {
-            return Rewards.IsTM(id)
-                ? Rewards.GetNameTM(id, itemNames, moveNames, Rewards.TMIndexes)
-                : itemNames[id];
+            ClearSelected();
+            e.Handled = true;
+            e.SuppressKeyPress = true;
         }
-        catch (ArgumentOutOfRangeException)
+        else if (e.KeyCode is Keys.F2 or Keys.Enter &&
+                 grid.CurrentCell.OwningColumn.Name == "Item")
         {
-            return itemNames[id];
-        }
-        catch (IndexOutOfRangeException)
-        {
-            return itemNames[id];
+            ShowPicker(grid.CurrentCell.RowIndex);
+            e.Handled = true;
+            e.SuppressKeyPress = true;
         }
     }
 
-    private void SetSelectedSubject(int value)
+    private void ShowPicker(int rowIndex)
     {
-        grid.EndEdit();
-        if (grid.CurrentRow is { } row)
-            row.Cells["Subject"].Value = value;
-    }
-
-    private void SetAllSubject(int value)
-    {
-        grid.EndEdit();
-        foreach (DataGridViewRow row in grid.Rows)
-            if (!IsEmpty(row)) row.Cells["Subject"].Value = value;
-    }
-
-    private static bool IsEmpty(DataGridViewRow row) =>
-        string.IsNullOrWhiteSpace(row.Cells["ItemId"].Value?.ToString());
-
-    private void UpdateCounter()
-    {
-        int used = grid.Rows.Cast<DataGridViewRow>().Count(row => !IsEmpty(row));
-        counter.Text = BenefitLanguage.T(
-            $"已配置 {used}/45 行，空位 {45-used}；Subject 0全员 / 1房主 / 2参与者 / 3一次性 / 4料理 / 5晶耀护符(2481)",
-            $"Configured {used}/45, empty {45-used}; Subject 0 all, 1 host, 2 guest, 3 once, 4 raid power, 5 charm.");
-    }
-
-    private void SetSlot(int index, RaidRewardEntry? entry)
-    {
-        if (index < 0 || index >= RaidRewardEditor.MaxRows)
-            throw new ArgumentOutOfRangeException(nameof(index));
-        var cells = grid.Rows[index].Cells;
-        cells["ItemId"].Value = entry?.ItemId;
-        cells["ItemName"].Value = entry is null ? null : ItemName(entry.ItemId.ToString());
-        cells["Quantity"].Value = entry?.Quantity;
-        cells["Rare"].Value = entry?.Rare == 1;
-        cells["Subject"].Value = entry?.Subject;
-    }
-
-    private void AddRow(RaidRewardEntry entry)
-    {
-        for (int i = 0; i < grid.Rows.Count; i++)
+        if (rowIndex < 0 || rowIndex >= grid.Rows.Count) return;
+        picker?.Close();
+        picker?.Dispose();
+        picker = new RewardItemPickerPopup(catalog, option =>
         {
-            if (!IsEmpty(grid.Rows[i])) continue;
-            SetSlot(i, entry);
-            grid.CurrentCell = grid.Rows[i].Cells["ItemId"];
+            var row = grid.Rows[rowIndex];
+            row.Cells["ItemId"].Value = option.Id;
+            row.Cells["Item"].Value = option.Name + $"  ·  #{option.Id}";
+            if (row.Cells["Quantity"].Value is null) row.Cells["Quantity"].Value = 999;
+            if (row.Cells["Subject"].Value is null) row.Cells["Subject"].Value = 5;
+            if (row.Cells["Rare"].Value is null) row.Cells["Rare"].Value = false;
             UpdateCounter();
-            return;
-        }
-        MessageBox.Show(this, BenefitLanguage.T("最多 45 行奖励。", "Maximum of 45 reward rows."),
-            BenefitLanguage.T("奖励行数上限", "Reward capacity"));
+        });
+        picker.ShowForCell(grid, rowIndex, grid.Columns["Item"]!.Index);
     }
 
-    private void PopulateSlots(IReadOnlyList<RaidRewardEntry?> rows)
+    private static bool Empty(DataGridViewRow row) => row.Cells["ItemId"].Value is null;
+
+    private void ClearSelected()
     {
-        if (rows.Count > RaidRewardEditor.MaxRows)
-            throw new ArgumentException("Only 45 reward slots are supported.");
-        var full = new RaidRewardEntry?[RaidRewardEditor.MaxRows];
-        for (int i = 0; i < rows.Count; i++) full[i] = rows[i];
-        RaidRewardEditor.EncodeSlots(full); // enforce all six subjects/row bounds
-        grid.Rows.Clear();
-        for (int i = 0; i < RaidRewardEditor.MaxRows; i++) grid.Rows.Add();
-        for (int i = 0; i < RaidRewardEditor.MaxRows; i++) SetSlot(i, full[i]);
+        if (grid.CurrentCell is null) return;
+        SetRow(grid.CurrentCell.RowIndex, null);
         UpdateCounter();
     }
 
-    private IReadOnlyList<RaidRewardEntry?> ReadSlots()
+    private void SetSelectedSubject(int subject)
     {
         grid.EndEdit();
-        var slots = new RaidRewardEntry?[RaidRewardEditor.MaxRows];
-        for (int i = 0; i < grid.Rows.Count; i++)
-        {
-            var cells = grid.Rows[i].Cells;
-            string? itemText = cells["ItemId"].Value?.ToString();
-            if (string.IsNullOrWhiteSpace(itemText))
-            {
-                if (!string.IsNullOrWhiteSpace(cells["Quantity"].Value?.ToString()) ||
-                    cells["Subject"].Value is not null)
-                    throw new ArgumentException($"第 {i+1} 个空槽含有其他字段，请填入道具 ID 或清空整行。");
-                continue;
-            }
-            if (!int.TryParse(itemText, out int item) ||
-                !int.TryParse(cells["Quantity"].Value?.ToString(), out int quantity) ||
-                !int.TryParse(cells["Subject"].Value?.ToString(), out int subject))
-                throw new ArgumentException($"第 {i+1} 行：道具 ID、数量及发放条件必须有效。");
-            slots[i] = new RaidRewardEntry(item, quantity, cells["Rare"].Value is true ? 1 : 0, subject);
-        }
-        RaidRewardEditor.EncodeSlots(slots);
-        if (slots.All(row => row is null))
-            throw new ArgumentException("至少需要 1 行奖励。");
-        return slots;
+        if (grid.CurrentCell is null) return;
+        var row = grid.Rows[grid.CurrentCell.RowIndex];
+        if (!Empty(row)) row.Cells["Subject"].Value = subject;
     }
 
-    private IReadOnlyList<RaidRewardEntry> ReadRows() =>
-        ReadSlots().OfType<RaidRewardEntry>().ToArray();
-
-    private void OnlinePreflight()
+    private void SetAllSubject(int subject)
     {
-        string info = BenefitLanguage.T(
-            "当前未发现已经过官方互联网联机场景验证的原生奖励 Hook。\\n" +
-            "已确认：20+25 槽编辑、Subject 0–5、720 字节离线数据，以及《紫》4.0.0 的序列化和接收 RVA。\\n" +
-            "尚缺：运行时主机角色确认、发送前稳定拦截、内存对象生命周期验证、4.0.0 以外版本适配和实机对照。\\n" +
-            "因此当前不会对 Switch 写入，也不会显示虚假的『写入成功』。你可以导出 BIN 并阅读研究文档。",
-            "Native online raid reward injection is unverified. This version only prepares and exports 45 reward slots; it does not write to your console.");
-        MessageBox.Show(this, info, BenefitLanguage.T("官方联网写入预检（未就绪）", "Native online write preflight"),
+        grid.EndEdit();
+        foreach (DataGridViewRow row in grid.Rows)
+            if (!Empty(row)) row.Cells["Subject"].Value = subject;
+    }
+
+    private void SetRow(int index, RaidRewardEntry? entry)
+    {
+        var cells = grid.Rows[index].Cells;
+        cells["Slot"].Value = $"{index+1:00}";
+        cells["ItemId"].Value = entry?.ItemId;
+        cells["Item"].Value = entry is null ? BenefitLanguage.T("选择奖励道具…", "Choose item…")
+            : NameOf(entry.ItemId) + $"  ·  #{entry.ItemId}";
+        cells["Quantity"].Value = entry?.Quantity;
+        cells["Subject"].Value = entry?.Subject;
+        cells["Rare"].Value = entry?.Rare == 1;
+    }
+
+    private string NameOf(int id)
+    {
+        if (catalog.TryFind(id, out var found)) return found!.Name;
+        if (id >= 0 && id < names.Count) return names[id];
+        return BenefitLanguage.T("未知道具", "Unknown item");
+    }
+
+    private void LoadSlots(IReadOnlyList<RaidRewardEntry?> source)
+    {
+        if (source.Count > 45) throw new ArgumentException("Maximum 45 slots");
+        var slots = new RaidRewardEntry?[45];
+        for (int i=0; i<source.Count; i++) slots[i] = source[i];
+        RaidRewardEditor.EncodeSlots(slots);
+        populating = true;
+        try
+        {
+            grid.Rows.Clear();
+            grid.Rows.Add(45);
+            for (int i=0; i<45; i++) SetRow(i, slots[i]);
+        }
+        finally { populating = false; }
+        UpdateCounter();
+    }
+
+    private IReadOnlyList<RaidRewardEntry?> ReadSlots(bool allowEmpty = true)
+    {
+        grid.EndEdit();
+        var values = new RaidRewardEntry?[45];
+        for (int i=0; i<45; i++)
+        {
+            var c = grid.Rows[i].Cells;
+            if (c["ItemId"].Value is null) continue;
+            if (!int.TryParse(c["ItemId"].Value?.ToString(), out int id) ||
+                !int.TryParse(c["Quantity"].Value?.ToString(), out int amount) ||
+                !int.TryParse(c["Subject"].Value?.ToString(), out int subject))
+                throw new ArgumentException(BenefitLanguage.T($"第 {i+1} 槽的道具、数量或 Subject 不正确。", $"Invalid item, quantity or subject in slot {i+1}."));
+            if (!catalog.TryFind(id, out _))
+                throw new ArgumentException(BenefitLanguage.T($"第 {i+1} 槽的道具 ID {id} 不在朱／紫可用道具目录中。", $"Invalid SV item #{id} in slot {i+1}."));
+            values[i] = new RaidRewardEntry(id, amount, c["Rare"].Value is true ? 1 : 0, subject);
+        }
+        RaidRewardEditor.EncodeSlots(values);
+        if (!allowEmpty && values.All(r => r is null))
+            throw new ArgumentException(BenefitLanguage.T("至少配置一行奖励。", "At least one reward is needed."));
+        return values;
+    }
+
+    private void UpdateCounter()
+    {
+        if (populating) return;
+        int count = grid.Rows.Cast<DataGridViewRow>().Count(r => !Empty(r));
+        counter.Text = BenefitLanguage.T(
+            $"已配置 {count}/45，剩余 {45-count} 个空槽。单击道具列可搜索；右键有恢复默认、清空槽位和 BIN 导入导出。",
+            $"Configured {count}/45, {45-count} empty. Click Item to search; right-click for reset, clear and BIN.");
+    }
+
+    private void SaveOnClose(object? sender, FormClosingEventArgs e)
+    {
+        picker?.Close();
+        try
+        {
+            AppliedSlots = ReadSlots();
+        }
+        catch (ArgumentException ex)
+        {
+            var result = MessageBox.Show(this,
+                BenefitLanguage.Error(ex.Message) + Environment.NewLine +
+                BenefitLanguage.T("选择“是”继续编辑，“否”放弃本次修改。", "Yes to continue editing; No to discard changes."),
+                BenefitLanguage.T("奖励检查", "Reward validation"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (result == DialogResult.Yes) e.Cancel = true;
+        }
+    }
+
+    private void ExplainWriteStatus()
+    {
+        try { _ = ReadSlots(allowEmpty:false); }
+        catch (ArgumentException ex)
+        {
+            MessageBox.Show(this, BenefitLanguage.Error(ex.Message), BenefitLanguage.T("配置检查", "Validation"));
+            return;
+        }
+        MessageBox.Show(this, BenefitLanguage.T(
+            "奖励模板已通过本地检查，但 Switch 官方互联网主持端的原生 Hook 仍缺少发送时机与内存对象验证。\n\n本次没有对 Switch 写入任何字节，也不会报告“写入成功”。可先导出 JSON 保存模板，或右键导出 720 字节供离线核验。",
+            "Reward data is valid, but native online-host injection has not been verified. No bytes have been written to the console."),
+            BenefitLanguage.T("写入奖励－尚未就绪", "Write Rewards - not ready"),
             MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
-    private void Export(Action<IReadOnlyList<RaidRewardEntry>> writer)
-    {
-        try { writer(ReadRows()); }
-        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
-        {
-            MessageBox.Show(this, BenefitLanguage.Error(ex.Message), BenefitLanguage.T("奖励编辑器", "Reward editor"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        }
-    }
-
-    private void SaveJson() => Export(rows =>
-    {
-        using var dialog = new SaveFileDialog { Filter = BenefitLanguage.T("奖励 JSON (*.json)|*.json", "JSON (*.json)|*.json"), FileName = "raid-rewards-45.json" };
-        if (dialog.ShowDialog(this) == DialogResult.OK)
-            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(ReadSlots(), new JsonSerializerOptions { WriteIndented = true }));
-    });
-
-    private void LoadJson()
+    private void ImportJson()
     {
         using var dialog = new OpenFileDialog { Filter = "JSON (*.json)|*.json" };
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
         try
         {
-            var rows = JsonSerializer.Deserialize<List<RaidRewardEntry?>>(File.ReadAllText(dialog.FileName))
-                ?? throw new InvalidDataException(BenefitLanguage.T("JSON 中没有找到奖励行。", "No entries found."));
-            PopulateSlots(rows);
+            var data = JsonSerializer.Deserialize<List<RaidRewardEntry?>>(File.ReadAllText(dialog.FileName))
+                ?? throw new ArgumentException("Empty JSON file");
+            LoadSlots(data);
         }
-        catch (Exception ex) when (ex is ArgumentException or JsonException or InvalidDataException or IOException)
+        catch (Exception ex) when (ex is ArgumentException or JsonException or IOException)
         {
-            MessageBox.Show(this, BenefitLanguage.Error(ex.Message), BenefitLanguage.T("导入失败", "Import failed"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(this, BenefitLanguage.Error(ex.Message), BenefitLanguage.T("导入失败", "Import failed"));
         }
     }
 
-    private void ImportBinary()
+    private void ExportJson()
     {
-        using var dialog = new OpenFileDialog { Filter = BenefitLanguage.T("奖励数据 720 字节 (*.bin)|*.bin", "720-byte reward rows (*.bin)|*.bin") };
-        if (dialog.ShowDialog(this) != DialogResult.OK) return;
-        try { PopulateSlots(RaidRewardEditor.DecodeSlots(File.ReadAllBytes(dialog.FileName))); }
+        try
+        {
+            var slots = ReadSlots();
+            using var dialog = new SaveFileDialog { Filter = "JSON (*.json)|*.json", FileName = "raid-rewards-45.json" };
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+                return;
+            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(slots, new JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
+        {
+            MessageBox.Show(this, BenefitLanguage.Error(ex.Message), BenefitLanguage.T("导出失败", "Export failed"));
+        }
+    }
+
+    private void ImportBin()
+    {
+        using var dlg = new OpenFileDialog { Filter = "BIN (*.bin)|*.bin" };
+        if (dlg.ShowDialog(this) != DialogResult.OK) return;
+        try { LoadSlots(RaidRewardEditor.DecodeSlots(File.ReadAllBytes(dlg.FileName))); }
         catch (Exception ex) when (ex is ArgumentException or IOException)
         {
-            MessageBox.Show(this, ex.Message, "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(this, BenefitLanguage.Error(ex.Message), BenefitLanguage.T("导入失败", "Import failed"));
         }
     }
 
-    private void HostSelectedRaid()
+    private void ExportBin()
     {
-        if (selectedRaid is null)
+        try
         {
-            MessageBox.Show(this, BenefitLanguage.T("没有找到已选中的太晶坑。", "No selected raid snapshot is available."), BenefitLanguage.T("无法主持", "Host unavailable"));
-            return;
+            var slots = ReadSlots();
+            using var dlg = new SaveFileDialog { Filter = "BIN (*.bin)|*.bin", FileName = "raid-rewards-720.bin" };
+            if (dlg.ShowDialog(this) != DialogResult.OK) return;
+            File.WriteAllBytes(dlg.FileName, RaidRewardEditor.EncodeSlots(slots));
         }
-        Export(rows =>
+        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
         {
-            using var window = new PokeLdnHostForm(selectedRaid, rows);
-            window.ShowDialog(this);
-        });
+            MessageBox.Show(this, BenefitLanguage.Error(ex.Message), BenefitLanguage.T("导出失败", "Export failed"));
+        }
     }
 
-    private void CopyPokeLdn() => Export(rows =>
+    private void Preview()
     {
-        string args = RaidRewardEditor.BuildPokeLdnRewardArguments(rows);
-        Clipboard.SetText(args);
-        MessageBox.Show(this,
-            BenefitLanguage.T("已复制 PokéLDN 主持奖励参数。不会修改 Switch 中的坑位或任天堂官方互联网房间。",
-                "Copied PokéLDN --raid-reward flags for local hosting. This does not modify the connected Switch or official internet raids."),
-            BenefitLanguage.T("参数已复制", "Host arguments copied"));
-    });
-
-    private void ExportBinary() => Export(rows =>
-    {
-        using var dialog = new SaveFileDialog
+        try
         {
-            Filter = "720-byte reward rows (*.bin)|*.bin", FileName = "raid-reward-rows.bin",
-        };
-        if (dialog.ShowDialog(this) != DialogResult.OK) return;
-        File.WriteAllBytes(dialog.FileName, RaidRewardEditor.EncodeSlots(ReadSlots()));
-        MessageBox.Show(this, BenefitLanguage.T("已导出 720 字节奖励行。该文件不是完整 RaidPoint、压缩网络包或 Switch 实时补丁。", "Exported 720 raw reward bytes ONLY. This is not a complete RaidPoint, compressed packet, or live Switch patch."), BenefitLanguage.T("导出完成", "Exported"));
-    });
+            var slots = ReadSlots();
+            using var dialog = new Form
+            {
+                Text = BenefitLanguage.T("奖励查看（当前配置／游戏预测）", "Reward Preview"),
+                Size = new Size(760, 610), MinimumSize = new Size(580, 400),
+                StartPosition = FormStartPosition.CenterParent,
+            };
+            var tabs = new TabControl { Dock = DockStyle.Fill };
+            var current = new TabPage(BenefitLanguage.T("当前配置", "Current configuration"));
+            var original = new TabPage(BenefitLanguage.T("游戏原始计算奖励", "Calculated game drops"));
+            var configText = new TextBox { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical,
+                Dock = DockStyle.Fill, Font = new Font("Consolas", 10) };
+            var originalText = new TextBox { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical,
+                Dock = DockStyle.Fill, Font = new Font("Consolas", 10) };
+            var builder = new StringBuilder();
+            for (int i=0; i<slots.Count; i++)
+            {
+                var r = slots[i];
+                builder.AppendLine(r is null ? $"{i+1:00}  {BenefitLanguage.T("（空槽）", "(empty)")}"
+                    : $"{i+1:00}  {NameOf(r.ItemId)} [#{r.ItemId}] ×{r.Quantity}  Subject {r.Subject}  Rare {r.Rare}");
+            }
+            configText.Text = builder.ToString();
+            builder.Clear();
+            foreach (var (item, count, subject) in calculated)
+                builder.AppendLine($"{NameOf(item)} [#{item}] ×{count}  Subject {subject}");
+            originalText.Text = builder.Length > 0 ? builder.ToString()
+                : BenefitLanguage.T("该坑没有原始奖励数据。", "No predicted rewards.");
+            current.Controls.Add(configText);
+            original.Controls.Add(originalText);
+            tabs.TabPages.Add(current);
+            tabs.TabPages.Add(original);
+            dialog.Controls.Add(tabs);
+            dialog.ShowDialog(this);
+        }
+        catch (ArgumentException ex)
+        {
+            MessageBox.Show(this, BenefitLanguage.Error(ex.Message), BenefitLanguage.T("配置检查", "Validation"));
+        }
+    }
 }
