@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Read-only exact-SHA Violet 4.0.0 ELF audit of LDN serializer references.
 
-Reports direct ARM64 B/BL references and data pointers to main+0xE327FC.
+Reports direct ARM64 B/BL references and RELA dynamic pointer initializers to main+0xE327FC.
 A zero direct-call count does not prove the function is never executed.
 No runtime memory operations, patch generation, or game modification.
 """
@@ -16,12 +16,12 @@ from pathlib import Path
 SHA = "d17403eaa9d844db82f647fd2f1518806b10c0518d53602fc0ac1766298fdba0"
 TEXT_OFFSET = 0x8D8
 TEXT_LENGTH = 0x343FC90
-RODATA_OFFSET = 0x3440568
-RODATA_RVA = 0x3440000
+RELA_DYN_FILE_OFFSET = 0x34405D8
+RELA_DYN_SIZE = 0x678CD8
+R_AARCH64_RELATIVE = 0x403
 TARGET = 0xE327FC
-POINTER_FILE_OFFSET = 0x359C720
-TABLE_TYPE_WORD = 0x403
-
+RELA_ADDEND_FILE_OFFSET = 0x359C720
+EXPECTED_RUNTIME_POINTER_RVA = 0x44592E0
 
 def direct_references(code: bytes, text_rva: int, target: int):
     branches = []
@@ -49,38 +49,34 @@ def audit(data: bytes):
         raise ValueError("Unexpected binary size or ELF type")
     text = data[TEXT_OFFSET:TEXT_OFFSET + TEXT_LENGTH]
     direct = direct_references(text, 0, TARGET)
-    needle = struct.pack("<Q", TARGET)
-    occurrences = []
-    pos = 0
-    while True:
-        pos = data.find(needle, pos)
-        if pos < 0:
-            break
-        if pos % 8 == 0:
-            occurrences.append(pos)
-        pos += 1
-
-    table = []
-    for file_offset in occurrences:
-        va = file_offset - RODATA_OFFSET + RODATA_RVA
-        preceding = struct.unpack_from("<Q", data, file_offset - 8)[0]
-        following = struct.unpack_from("<Q", data, file_offset + 8)[0]
-        table.append({
-            "file_offset": f"0x{file_offset:X}",
-            "rva": f"0x{va:X}",
-            "preceding_word": f"0x{preceding:X}",
-            "following_word": f"0x{following:X}",
-        })
+    # These are ELF64 Rela triples, NOT native dispatch-table triples.
+    # r_offset identifies the runtime .data address to receive the pointer.
+    records = []
+    for off in range(RELA_DYN_FILE_OFFSET,
+                     RELA_DYN_FILE_OFFSET + RELA_DYN_SIZE, 24):
+        r_offset, r_info, r_addend = struct.unpack_from("<QQq", data, off)
+        if r_addend == target:
+            records.append({
+                "rela_record_file_offset": f"0x{off:X}",
+                "r_offset_rva": f"0x{r_offset:X}",
+                "r_info": f"0x{r_info:X}",
+                "r_addend": f"0x{r_addend:X}",
+                "relative_relocation": r_info == R_AARCH64_RELATIVE,
+            })
+    expected = any(
+        record["rela_record_file_offset"] ==
+            f"0x{RELA_ADDEND_FILE_OFFSET - 16:X}" and
+        record["r_offset_rva"] == f"0x{EXPECTED_RUNTIME_POINTER_RVA:X}" and
+        record["relative_relocation"]
+        for record in records
+    )
     return {
         "source": "EXACT_ELF_STATIC_ONLY",
         "serializer_entry": f"0x{TARGET:X}",
         "direct_calls": direct,
-        "aligned_u64_references": table,
-        "expected_pointer_present": POINTER_FILE_OFFSET in occurrences,
-        "function_ptr_table_type_word": f"0x{TABLE_TYPE_WORD:X}",
-        "supports_indirect_dispatch_hypothesis": not direct and
-            POINTER_FILE_OFFSET in occurrences and
-            struct.unpack_from("<Q", data, POINTER_FILE_OFFSET - 8)[0] == TABLE_TYPE_WORD,
+        "rela_dyn_pointer_initializers": records,
+        "expected_relative_relocation": expected,
+        "supports_indirect_dispatch_hypothesis": not direct and expected,
         "solo_execution_proven": False,
         "native_runtime_hook_hit_proven": False,
     }
