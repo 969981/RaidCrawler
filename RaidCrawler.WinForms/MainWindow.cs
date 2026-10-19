@@ -104,7 +104,8 @@ public partial class MainWindow : Form
         Text = formTitle;
 
         // load raids
-        RaidContainer = new(Config.Game);
+        BenefitLanguage.Configure(Config.Language);
+        RaidContainer = new(Config.Game, Config.Language);
 
         SpriteBuilder.ShowTeraThicknessStripe = 0x4;
         SpriteBuilder.ShowTeraOpacityStripe = 0xAF;
@@ -121,6 +122,7 @@ public partial class MainWindow : Form
 
         Webhook = new(Config);
         InitializeComponent();
+        BenefitLanguage.ApplyMain(this);
 
         btnOpenMap.Enabled = false;
         Rewards.Enabled = false;
@@ -145,7 +147,7 @@ public partial class MainWindow : Form
 
     private void UpdateStatus(string status)
     {
-        ToolStripStatusLabel.Text = status;
+        ToolStripStatusLabel.Text = BenefitLanguage.Status(status);
     }
 
     private void ButtonEnable(bool enable, params object[] obj)
@@ -488,7 +490,7 @@ public partial class MainWindow : Form
             _WindowState = WindowState;
 
             var advanceTextInit =
-                $"Day Skip Successes {GetStatDaySkipSuccess()} / {GetStatDaySkipTries()}";
+                $"{BenefitLanguage.T("日期推进成功", "Day Skip Successes")} {GetStatDaySkipSuccess()} / {GetStatDaySkipTries()}";
             Invoke(() => Label_DayAdvance.Text = advanceTextInit);
             if (teraRaidView is not null)
                 Invoke(() => teraRaidView.DaySkips.Text = advanceTextInit);
@@ -534,7 +536,7 @@ public partial class MainWindow : Form
                 stop = StopAdvanceDate(previousSeeds);
                 skips++;
                 var advanceText =
-                    $"Day Skip Successes {GetStatDaySkipSuccess()} / {GetStatDaySkipTries()}";
+                    $"{BenefitLanguage.T("日期推进成功", "Day Skip Successes")} {GetStatDaySkipSuccess()} / {GetStatDaySkipTries()}";
                 Invoke(() => Label_DayAdvance.Text = advanceText);
                 if (teraRaidView is not null)
                     Invoke(() => teraRaidView.DaySkips.Text = advanceText);
@@ -925,7 +927,7 @@ public partial class MainWindow : Form
             EC.Text = !HideSeed ? $"{raid.EC:X8}" : "Hidden";
             PID.Text = GetPIDString(raid, encounter);
             Area.Text =
-                $"{Areas.GetArea((int)(raid.Area - 1), raid.MapParent)} - Den {raid.Den}";
+                $"{Areas.GetArea((int)(raid.Area - 1), raid.MapParent)} - {BenefitLanguage.T("坑位", "Den")} {raid.Den}";
             labelEvent.Visible = raid.IsEvent;
 
             var teraType = raid.GetTeraType(encounter);
@@ -959,7 +961,7 @@ public partial class MainWindow : Form
             Species.Text = $"{RaidContainer.Strings.Species[encounter.Species]}{form}";
             Sprite.Image = img;
             GemIcon.Image = GetDisplayGemImage(teraType, raid);
-            Gender.Text = $"{(Gender)blank.Gender}";
+            Gender.Text = BenefitLanguage.Chinese ? blank.Gender switch { 0 => "雄性", 1 => "雌性", _ => "无性别" } : $"{(Gender)blank.Gender}";
 
             var nature = blank.Nature;
             Nature.Text = $"{RaidContainer.Strings.Natures[(int)nature]}";
@@ -1566,9 +1568,9 @@ public partial class MainWindow : Form
         var filterMatchCount = Enumerable.Range(0, allRaids.Count)
             .Count(c => RaidFilters.Any(z => z.FilterSatisfied(RaidContainer, allEncounters[c], allRaids[c], GetRaidBoost())));
         if (InvokeRequired)
-            Invoke(() => LabelLoadedRaids.Text = $"Matches: {filterMatchCount}");
+            Invoke(() => LabelLoadedRaids.Text = $"{BenefitLanguage.T("匹配", "Matches")}: {filterMatchCount}");
         else
-            LabelLoadedRaids.Text = $"Matches: {filterMatchCount}";
+            LabelLoadedRaids.Text = $"{BenefitLanguage.T("匹配", "Matches")}: {filterMatchCount}";
 
         if (allRaids.Count > 0)
         {
@@ -1680,12 +1682,12 @@ public partial class MainWindow : Form
             if (form.AppliedPreview is { } applied)
             {
                 RewardPreviews[key] = applied;
-                UpdateStatus($"Saved a local preview of {applied.Count} reward rows; nothing written to Switch.");
+                UpdateStatus(BenefitLanguage.T($"已暂存 {applied.Count} 行奖励预览；未写入 Switch。", $"Saved a local preview of {applied.Count} reward rows; nothing written to Switch."));
             }
         }
         catch (ArgumentException ex)
         {
-            MessageBox.Show(this, ex.Message, "Reward editor", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(this, ex.Message, BenefitLanguage.T("奖励编辑器", "Reward editor"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
 

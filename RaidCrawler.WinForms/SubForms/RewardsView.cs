@@ -8,6 +8,7 @@ public partial class RewardsView : Form
     public RewardsView(IReadOnlyList<string> itemStrings, IReadOnlyList<string> moveStrings, IReadOnlyList<(int, int, int)> rewards)
     {
         InitializeComponent();
+        Text = BenefitLanguage.T("默认奖励预览", "Calculated Rewards");
         var rare = PKHeX.Drawing.PokeSprite.Properties.Resources.rare_icon;
         var pictures = new PictureBox[rewards.Count];
         var labels = new Label[rewards.Count];
@@ -24,8 +25,8 @@ public partial class RewardsView : Form
             var reward = rewards[i];
             var item = reward.Item1 switch
             {
-                10000 => "Material",
-                20000 => "Tera Shard",
+                10000 => BenefitLanguage.T("宝可梦素材", "Material"),
+                20000 => BenefitLanguage.T("太晶碎块", "Tera Shard"),
                 _ => Rewards.IsTM(reward.Item1)
                    ? Rewards.GetNameTM(reward.Item1, itemStrings, moveStrings, Rewards.TMIndexes)
                    : itemStrings[reward.Item1],
@@ -33,9 +34,9 @@ public partial class RewardsView : Form
 
             var subject = reward.Item3 switch
             {
-                1 => "(Host)",
-                2 => "(Client)",
-                3 => "(Once)",
+                1 => BenefitLanguage.T("（房主）", "(Host)"),
+                2 => BenefitLanguage.T("（参与者）", "(Client)"),
+                3 => BenefitLanguage.T("（一次性）", "(Once)"),
                 _ => string.Empty,
             };
 
