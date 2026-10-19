@@ -27,9 +27,7 @@ public sealed class RemoteRewardEpochUpdaterTests
                 BinaryPrimitives.WriteUInt32LittleEndian(
                     Cave.AsSpan(0x94), RemoteRewardEpochUpdater.ProtocolMagic);
                 "RaidPoin"u8.CopyTo(Cave.AsSpan(0x98));
-                foreach (var (offset, opcode) in RemoteRewardEpochUpdater.ReaderAnchors)
-                    BinaryPrimitives.WriteUInt32LittleEndian(
-                        Cave.AsSpan(checked((int)offset)), opcode);
+                RemoteViolet400HookPayload.CodeSpan.CopyTo(Cave);
             }
         }
 
