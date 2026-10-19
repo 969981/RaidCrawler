@@ -10,7 +10,7 @@
 
 ## 二、新定位：旧版 Lua 中有直接创建 BattleRewardData 的 FieldRaidJewelry
 
-证据来源：公开 [SV-Script-RE 固定 commit 1f843bd](https://github.com/Martmists-GH/SV-Script-RE/tree/1f843bd2517c707fbb47491dad58856eaa2c2cc7)，README 约 3.0.1。**目前没有《紫》4.0.0 实际 RomFS Lua 原件，不把旧 Lua 当成新 ELF 已独立验证的 Lua 代码。**
+证据来源：公开 [SV-Script-RE 固定 commit 1f843bd](https://github.com/Martmists-GH/SV-Script-RE/tree/1f843bd2517c707fbb47491dad58856eaa2c2cc7)，README 基线约 3.0.1。**版本兼容性校正**：《紫》3.0.1 与 4.0.0 使用同一 Main NSO Build ID 前缀 `709BFD6611529864`、社区已确认相同 Native 代码偏移；4.0.0 官方更新主要涉及 Switch 2 画面/帧率。因此本研究直接沿用该 Lua 作为 4.0.0 的**高置信业务链路参考**，不要求先再次取得 RomFS 才能分析。严格的逐字节 Lua 相等仍未验证，且静态源码≠实机函数命中。
 
 ### 2.1 本地事件初始化 → 生成奖励
 
@@ -83,7 +83,7 @@ FieldRaidJewelry
 1. 上述 ELF 文件偏移处是 **ELF RELA 重定位记录**，**不是**可直接读写的游戏运行时函数表。重定位实际把名字指针和函数指针写入所列 `r_offset` 目标位置。
 2. 对三组记录，名称槽与函数槽都相距 8B，原生函数入口的 AArch64 序言也已直接核验。研究脚本仅校验真实重定位及机器码，无任何内存修改操作。
 3. 这三个 Native 包装方法与 `LotteryRewardItem` 的生成表初始化相关，**尚非已证实的单人奖励最终生成/发放 Hook 点**。Lua `FieldRaidJewelry` 本身的调用边界不必对应一个可直接替换的 AArch64 函数地址。
-4. 当前仍缺少《紫》4.0.0 的 `C81390F82EADEF632` 等**原始 Lua/RomFS 字节**及实机对象生命周期证据，不能在这里直接给出安全、稳定、覆盖单人的奖励对象指针。
+4. Native Build ID 与地址兼容已有社区及本机证据，三个 Lua 业务链路可直接作为追踪基线；**真正缺失的是实机对象生命周期与源奖励数据如何进入结果事件的动态证据**。即使 Lua 字节逐位相等，也不能直接从静态类名推导安全的运行时奖励指针。
 
 已提交工具：
 - [只读 ELF Native bridge 审计器](../../tools/research/audit_violet400_reward_source_bridges.py)
@@ -97,7 +97,7 @@ python3 tools/research/audit_violet400_reward_source_bridges.py /path/to/Violet4
 
 ## 四、下一阶段验证次序（不能跳过）
 
-1. **P0 / Lua 版本闭合**：核对用户自有 4.0.0 RomFS 中 `FieldRaidJewelry`、`BattleRewardData`、`GameEventNetworkBattleRaid`、`GameEventBattleResult` 的模块哈希/实际脚本。若无法取得，保留「3.0.1 Lua 与 4.0.0 ELF 跨版本映射」的证据等级。
+1. **P0 / 使用兼容脚本直接闭合对象链**：不再等待新的 4.0.0 Lua dump；从 SV-Script-RE 的 `FieldRaidJewelry` → `GameEventNetworkBattleRaid` → `GameEventBattleResult` 三段逻辑追查 `setupData[92]` 从何处继承上一事件 `context[92]`，标明中途复制或重建点。对照原 4.0.0 ELF 的 Native 注册，动态函数命中仍需实机观察。
 2. **P0 / 单人对象链**：在受控离线测试中分别观察 FieldRaidJewelry 构造结果、传给事件的 `raidBattleRewardData`、过滤后的 `context[92][3]`，确认它们是否为同一次战斗、是否确实包含预期原始奖励。不能以网络 `x23+0x79C` 作为单人对象的代替。
 3. **P0 / 本地结算**：确认 `GameEventBattleResult.RaidResultAddItem` 实际遍历的对象及 `Bag.AddItem` 的实测数量；玩家已经有晶耀护符，不需重复“有无护符”归因。
 4. **P1 / 保存独立验收**：将入包、存档访问器调用、自动保存请求、Native Commit 结果及重载验证分层。
