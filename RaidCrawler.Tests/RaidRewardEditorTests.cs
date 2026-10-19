@@ -67,4 +67,20 @@ public class RaidRewardEditorTests
         Assert.Equal(1863, rows[1].ItemId);
         Assert.Equal(5, rows[1].Subject);
     }
+    [Fact]
+    public void PokeLdnHostFlagsUseOnlySupportedSubjects()
+    {
+        var command = RaidRewardEditor.BuildPokeLdnRewardArguments([
+            new RaidRewardEntry(1, 999, 0, 5),
+            new RaidRewardEntry(796, 7, 0, 0),
+        ]);
+        Assert.Equal("--raid-reward 1:999:5 --raid-reward 796:7", command);
+        Assert.Throws<ArgumentException>(() => RaidRewardEditor.BuildPokeLdnRewardArguments([
+            new RaidRewardEntry(1, 10, 0, 4),
+        ]));
+        Assert.Throws<ArgumentException>(() => RaidRewardEditor.BuildPokeLdnRewardArguments([
+            new RaidRewardEntry(1, 10, 1, 5),
+        ]));
+    }
+
 }
