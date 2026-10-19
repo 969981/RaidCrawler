@@ -10,8 +10,8 @@ spec.loader.exec_module(plan)
 class PatchPlanTests(unittest.TestCase):
     def test_branch_reaches_both_directions(self):
         for pc,target,link in [(plan.HOOK,plan.CAVE,False),
-                               (plan.CAVE+0x54,plan.MEMCPY,True),
-                               (plan.CAVE+0x80,plan.HOOK+4,False)]:
+                               (plan.CAVE+0x48,plan.MEMCPY,True),
+                               (plan.CAVE+0x54,plan.HOOK+4,False)]:
             value=plan.arm64_b(pc,target,link)
             displacement=value & 0x03FFFFFF
             if displacement & (1<<25):

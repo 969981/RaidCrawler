@@ -62,12 +62,12 @@ def build(elf: Path, asm: Path, out: Path, rewards: Path | None = None) -> dict:
     subprocess.run(["clang","--target=aarch64-none-elf","-c",str(asm),"-o",str(obj)],check=True)
     subprocess.run(["llvm-objcopy","-j",".text","-O","binary",str(obj),str(raw)],check=True)
     stub=bytearray(raw.read_bytes())
-    if len(stub) != END-CAVE or stub[0x54:0x58] != bytes(4) or stub[0x80:0x84] != bytes(4):
+    if len(stub) != END-CAVE or stub[0x48:0x4c] != bytes(4) or stub[0x54:0x58] != bytes(4):
         raise ValueError("unexpected stub layout or relocation slots")
     if any(stub[0x90:]):
         raise ValueError("stub data should be zero-initialized")
-    stub[0x54:0x58] = struct.pack("<I", arm64_b(CAVE+0x54, MEMCPY, True))
-    stub[0x80:0x84] = struct.pack("<I", arm64_b(CAVE+0x80, HOOK+4))
+    stub[0x48:0x4c] = struct.pack("<I", arm64_b(CAVE+0x48, MEMCPY, True))
+    stub[0x54:0x58] = struct.pack("<I", arm64_b(CAVE+0x54, HOOK+4))
 
     count=0
     if rewards is not None:
@@ -84,8 +84,8 @@ def build(elf: Path, asm: Path, out: Path, rewards: Path | None = None) -> dict:
         "hook_rva":hex(HOOK), "hook_original":orig.hex(),
         "code_cave_candidate_rva":hex(CAVE), "cave_end_rva":hex(END),
         "candidate_bytes":len(stub), "payload_sha256":hashlib.sha256(stub).hexdigest(),
-        "mode_rva":hex(CAVE+0x90), "hit_count_rva":hex(CAVE+0x94),
-        "copy_count_rva":hex(CAVE+0x98), "rejected_count_rva":hex(CAVE+0x9c),
+        "mode_rva":hex(CAVE+0x90),
+        "game_side_telemetry":"UNAVAILABLE: code RX page may not be written by game's CPU; requires a separate verified writable buffer",
         "reward_data_rva":hex(CAVE+0xA0), "configured_rows":count,
         "default_mode":"observe",
         "runtime_checks_required":[
