@@ -174,6 +174,12 @@ public sealed partial class RaidRewardDiagnosticForm
                     });
             }
             lastAutoError = null;
+            // The user's first live sample included L=255, D=1, O=17.
+            // O=17 is the upstream overworld value; a simultaneous
+            // nonzero lobby byte is contradictory, NOT an open lobby.
+            if (v.OverworldFlag == 0x11 &&
+                (v.LobbyFlag is > 0 || v.LoadedFlag == 2))
+                phaseStatusLabel.Text = "团战：状态冲突，待校准";
             var t = autoPhase.Observe(v);
             if (t is not null)
                 RecordAutomaticPhaseTransition(t,v);
