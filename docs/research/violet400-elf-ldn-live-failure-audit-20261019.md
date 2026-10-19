@@ -22,10 +22,17 @@
   `main+0xE32968` 以 `x20+0x78` 为源，连续复制 `0x3C8` 字节至 `x23+0x6D8`。
 - 实际奖励区：RaidPoint `+0xE4` = `x20+0x13C`；Bootstrap `+0x79C` = `x23+0x79C`；45 行 × 16B。
 - Hook `main+0xE32984` 正位于 memcpy 返回后，因此就算 Hook 确实进入，**当前替换的也是发送端的 `x23` 缓冲，非持久修改 `x20` 源对象／结算列表／背包**。
-- 对整个 0x343FC90 字节代码段扫描，**没有直接 AArch64 `BL` 或 `B` 指向 `0xE327FC`**；在原始 ELF file offset `0x359C720`（映射 RVA `0x359C1B8`）发现唯一对齐的 `u64 0xE327FC` 函数指针。该区连续存有类似三元数据 `0x403, function_pointer, metadata_pointer`，是函数表间接分发的依据，但**尚未证明全部触发条件以及表项语义**。
+- 对整个 0x343FC90 字节代码段扫描，**没有直接 AArch64 BL/B 到 0xE327FC**。此前把 file offset 0x359C720 解释为普通函数指针表是不准确的。该地址位于 ELF 的 .rela.dyn 重定位记录中：ELF64 Rela 三元组为 r_offset=0x44592E0、r_info=0x403（R_AARCH64_RELATIVE）、r_addend=0xE327FC。加载器会把目标函数地址填入运行时数据指针 0x44592E0。这支持后续可能间接调用，却不证明单人团战必经该入口，也不是网络消息 type=0x403。
 - 原始 ELF 没有找到 ASCII 字节序列 `RaidPoint_`，这并不证明零售 RaidPoint 名称不同（名称可能来自外部资源／动态生成）。**补充核对 PokéLDN 零售记录：`docs/sv_raid.md` 在 Battle Bootstrap 表中将原始 RaidPoint 名称字段标为 ASCII `RaidPoint_` 加后缀，依据已经观察的零售 LDN 数据，这使当前 8B 前缀条件看起来合理**。但仍没有本次实机 `x23` 的现场观测，不能据此声称每个玩法都已通过。
 - 当前跳板在版本号检查后，还要求 `x23+0x6B8` 的开头 8 字节为 `RaidPoin`，否则**静默跳过**。对于 PokéLDN 已记录的零售 LDN RaidPoint，前缀应相符；它仍属于未被本次运行时事件确认的条件，不能凭此认定 Hook 命中。
 
+## 第二次实机完整日志的分析（2026-10-19）
+
+上传的 raid-20261019-162502-2f64d2a2.jsonl 共 129 条事件，64 次 Hook 只读快照全部满足 EXPECTED_BRANCH / V2_CODE_AND_HEADER_MATCH / epoch=2 / StableEpoch=True / HASH_MATCH。**这些只代表采样时的代码与奖励模板完整；全部记录仍是 nativeHookHit=NOT_OBSERVED，不能说 CPU 执行了 64 次。**
+
+这次是用户明确标注的**单人离线**测试，且用户已确认有晶耀护符。原始数据少量奖励不变，最符合的解释是 E32984 仅改动 x23 输出 Bootstrap，不是单人模式真正读取的源 RaidPoint 或 BattleRewardData / Bag 结算列表。但是当前尚无 CPU 命中证据，不能以此单独宣称已排除其他原因。
+
+SVRaidBot 候选标志 L=255 在野外 (O=17) 和单人战斗 (D=2) 均不变，所以此前生成的 auto-lobby-open 为误判；0xFF 在本实机上不能用于确认联机房间。结束时 title/version 检查开始失败，L/D/O 出现异常值；只能推断当时进程身份或读内存目标发生变化，无法直接证明游戏崩溃。
 ## 与 PokéLDN 的源代码和实际测试对照
 
 [`pokeldn/sv/raid.py`](https://github.com/969981/pokeldn/blob/research/pokeldn/sv/raid.py) 构建 `RaidPoint` (`0x3E8`) 和 `0xAA0` Bootstrap：
