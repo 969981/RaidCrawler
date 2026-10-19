@@ -22,6 +22,10 @@ public sealed class RaidRewardDiagnosticForm : Form
     {
         Text = "读取实机信息（只读）", AutoSize = true,
     };
+    private readonly Button testWrite = new()
+    {
+        Text = "验证写入并恢复", AutoSize = true,
+    };
     private readonly CancellationTokenSource stop = new();
     private bool closing;
 
@@ -38,21 +42,22 @@ public sealed class RaidRewardDiagnosticForm : Form
             ColumnCount = 1, RowCount = 3 };
         panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 75));
         panel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 45));
+        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 80));
         Controls.Add(panel);
         var header = new Label
         {
             Dock = DockStyle.Fill,
-            Text = "全局奖励模板（不限地图/Seed）：Windows 不写 Switch 内存。\r\n" +
-                "方案 A 现可只读检测代码段末尾 880B 空间；仍未实现远程代码写入安装器。Skyline 为备选。",
+            Text = "纯 Windows 通信：使用现有 sys-botbase，无须 Skyline / NRO。\\r\\n" +
+                "可只读检测，或临时写入 4B NOP 后立即恢复；尚未启用真正的 ARM64 跳转 Hook。",
             ForeColor = Color.DarkRed,
             AutoEllipsis = true,
         };
         panel.Controls.Add(header, 0, 0);
         panel.Controls.Add(logText, 0, 1);
 
-        var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill };
+        var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = true, AutoScroll = true };
         buttons.Controls.Add(inspect);
+        buttons.Controls.Add(testWrite);
         var markLobby = new Button { Text = "标记：已开房", AutoSize = true };
         var markBattle = new Button { Text = "标记：已开战", AutoSize = true };
         var markResult = new Button { Text = "标记：已结算", AutoSize = true };
@@ -77,6 +82,7 @@ public sealed class RaidRewardDiagnosticForm : Form
         Append("log", "诊断日志：" + trace.Path);
 
         inspect.Click += async (_,_) => await RunInspectionAsync();
+        testWrite.Click += async (_,_) => await RunWriteProbeAsync();
         markLobby.Click += (_,_) => Append("manual-lobby", "用户标记：已开房（可能为本地或互联网）。不是实际 Hook 命中。");
         markBattle.Click += (_,_) => Append("manual-battle", "用户手动标记：已进入战斗。并非发送回调证据。");
         markResult.Click += (_,_) => Append("manual-result", "用户手动标记：已结算。实际奖励增量和保存尚需独立核验。");
@@ -149,6 +155,93 @@ public sealed class RaidRewardDiagnosticForm : Form
         }
     }
 
+    private async Task RunWriteProbeAsync()
+    {
+        if (connection is null)
+        {
+            Append("write-probe-blocked", "未连接 Switch；拒绝代码段测试。");
+            return;
+        }
+        if (MessageBox.Show(this,
+                "此操作仅在《紫》4.0.0 的候选全零代码间隔临时写入 4B ARM64 NOP，" +
+                "立即读取并尝试恢复为 0。不修改 Hook 入口，也不发放奖励。\\r\\n" +
+                "代码写入仍存在游戏崩溃风险；建议先备份存档、退出联网对战。\\r\\n" +
+                "确定使用现有 sys-botbase 进行一次写入测试吗？",
+                "确认直接通信测试", MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning) != DialogResult.Yes)
+            return;
+
+        inspect.Enabled = false;
+        testWrite.Enabled = false;
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stop.Token);
+        timeout.CancelAfter(TimeSpan.FromSeconds(25));
+        try
+        {
+            var ct = timeout.Token;
+            var title = (await connection.GetTitleID(ct)).Trim();
+            var version = (await connection.GetGameInfo("version", ct)).Trim();
+            if (title != Offsets.VioletID || version != "4.0.0")
+            {
+                Append("write-probe-blocked", "只支持《紫》4.0.0，当前版本不匹配。");
+                return;
+            }
+            bool useCrlf = connection is SwitchSocketAsync;
+            byte[] rawBuild = await connection.ReadRaw(SwitchCommand.GetBuildID(useCrlf), 17, ct);
+            string build = Encoding.ASCII.GetString(rawBuild).Trim('\\0','\\r','\\n',' ');
+            if (!build.Equals(RaidRewardHookContract.VerifiedViolet400BuildId[..16],
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                Append("write-probe-blocked", "NSO Build ID 前缀不匹配，禁止写入。");
+                return;
+            }
+            ulong beforeBase = await connection.GetMainNsoBaseAsync(ct);
+            foreach (var anchor in NativeRaidCodeFingerprint.Violet400)
+            {
+                byte[] actual = await connection.ReadBytesMainAsync(anchor.Rva, 4, ct);
+                if (!NativeRaidCodeFingerprint.Check(anchor, actual).Matches)
+                {
+                    Append("write-probe-blocked",
+                        $"main+0x{anchor.Rva:X} 指令不同于原版，避免与已有 Hook 冲突，拒绝写入。");
+                    return;
+                }
+            }
+            ulong afterBase = await connection.GetMainNsoBaseAsync(ct);
+            if (afterBase != beforeBase)
+            {
+                Append("write-probe-blocked", "Main NSO base 在检查期间变化，拒绝写入。");
+                return;
+            }
+            Append("write-probe-start",
+                "版本、Build ID 前缀和 8/8 指令指纹通过；即将验证候选全零区域并临时写入 NOP。",
+                new { mainBase=$"0x{beforeBase:X}",
+                      probeRva=$"0x{RemoteCodeGapWriteProbe.ProbeRva:X}",
+                      modifiesHookEntry=false, fullBuildConfirmed=false });
+            var result = await RemoteCodeGapWriteProbe.RunAsync(
+                (offset,size,token) => connection.ReadBytesMainAsync(offset,size,token),
+                (data,offset,token) => connection.WriteBytesMainAsync(data,offset,token),
+                ct);
+            Append("write-probe-result", result.Reason,
+                new {result.Accepted, result.WriteVerified, result.RestoreVerified,
+                     executableVerified=false, hookInstalled=false});
+        }
+        catch (OperationCanceledException)
+        {
+            Append("write-probe-error", "连接超时或取消；若测试已开始，重新进入游戏后应复查全零区域。");
+        }
+        catch (Exception ex)
+        {
+            Append("write-probe-error", "远程测试异常：" + ex.GetType().Name + "：" + ex.Message);
+        }
+        finally
+        {
+            if (!IsDisposed && !Disposing)
+            {
+                inspect.Enabled = true;
+                testWrite.Enabled = true;
+            }
+        }
+    }
+
     private async Task RunInspectionAsync()
     {
         if (connection is null)
@@ -157,6 +250,7 @@ public sealed class RaidRewardDiagnosticForm : Form
             return;
         }
         inspect.Enabled = false;
+        testWrite.Enabled = false;
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(stop.Token);
         deadline.CancelAfter(TimeSpan.FromSeconds(18));
         try
@@ -252,7 +346,11 @@ public sealed class RaidRewardDiagnosticForm : Form
         }
         finally
         {
-            if (!IsDisposed && !Disposing) inspect.Enabled = true;
+            if (!IsDisposed && !Disposing)
+            {
+                inspect.Enabled = true;
+                testWrite.Enabled = true;
+            }
         }
     }
 }
