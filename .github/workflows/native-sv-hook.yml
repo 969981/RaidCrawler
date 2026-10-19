@@ -1,0 +1,47 @@
+name: Native SV reward Hook
+on:
+  push:
+    branches: [benefit]
+    paths:
+      - "native/sv_raid_reward_hook/**"
+      - ".github/workflows/native-sv-hook.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  portable-reward-tests:
+    name: Portable reward format tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile & run isolated 45-row format tests
+        run: |
+          rustc --edition 2021 --test native/sv_raid_reward_hook/src/format.rs -o /tmp/raid_reward_tests
+          /tmp/raid_reward_tests --nocapture
+
+  skyline-nro-build:
+    name: Native Skyline NRO build (experimental toolchain)
+    needs: portable-reward-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-skyline builder
+        run: cargo install cargo-skyline --locked
+      - name: Install modified Skyline Rust toolchain
+        run: cargo skyline update-std
+        working-directory: native/sv_raid_reward_hook
+      - name: Compile Skyline module (.nro)
+        run: cargo skyline build --release
+        working-directory: native/sv_raid_reward_hook
+      - name: Archive experimental game-side plugin (not an end-to-end validation)
+        uses: actions/upload-artifact@v4
+        with:
+          name: RaidCrawler-SV-Violet400-Skyline-NRO
+          path: |
+            native/sv_raid_reward_hook/target/**/*.nro
+          if-no-files-found: error
