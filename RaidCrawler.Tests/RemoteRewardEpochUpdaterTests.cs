@@ -26,6 +26,9 @@ public sealed class RemoteRewardEpochUpdaterTests
                 BinaryPrimitives.WriteUInt32LittleEndian(
                     Cave.AsSpan(0x94), RemoteRewardEpochUpdater.ProtocolMagic);
                 "RaidPoin"u8.CopyTo(Cave.AsSpan(0x98));
+                foreach (var (offset, opcode) in RemoteRewardEpochUpdater.ReaderAnchors)
+                    BinaryPrimitives.WriteUInt32LittleEndian(
+                        Cave.AsSpan(checked((int)offset)), opcode);
             }
         }
 
@@ -128,6 +131,16 @@ public sealed class RemoteRewardEpochUpdaterTests
         var c = f.Controller();
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             c.ReplaceAsync(Reward(15, 999)));
+        Assert.Empty(f.Writes);
+    }
+
+    [Fact]
+    public async Task StaleOrCorruptedReaderInstructionsFailClosed()
+    {
+        var f = new FakeRemote();
+        f.Cave[0x4c] ^= 0x01;
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            f.Controller().ReplaceAsync(Reward(15, 999)));
         Assert.Empty(f.Writes);
     }
 
