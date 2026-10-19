@@ -112,7 +112,9 @@ public sealed partial class RaidRewardDiagnosticForm
         string title = (await connection.GetTitleID(ct)).Trim();
         string version = (await connection.GetGameInfo("version", ct)).Trim();
         if (title != Offsets.VioletID || version != "4.0.0")
-            throw new InvalidOperationException("仅支持《紫》4.0.0 的精确指令地址。");
+            throw new InvalidOperationException(
+                $"目标游戏进程身份已变化：TitleID={title}；version={version}。" +
+                " 本窗口不再允许使用旧地址。");
         bool crlf = connection is SwitchSocketAsync;
         byte[] raw = await connection.ReadRaw(SwitchCommand.GetBuildID(crlf), 17, ct);
         string build = Encoding.ASCII.GetString(raw).Trim('\0', '\r', '\n', ' ');
