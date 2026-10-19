@@ -22,6 +22,35 @@
 
 方案 A1 不需要每次安装游戏插件，但**仍需要有相应权限和代码的 Switch 侧 sysmodule**。如果要求 Switch 上除现有原版 sys-botbase 外绝不增添或替换任何软件，则 A0 当前只能做读取、写入和离线验证，**不能宣称拥有安全的自动 Hook 安装能力**。
 
+## A1 的优先尝试：调试断点式 Hook（不在游戏中写跳转）
+
+**这是比内存注入 trampoline 更值得优先验证的候选路径**，但还没有实机验证。
+
+Horizon/libnx 提供以下底层能力：
+- `svcDebugActiveProcess` 附加目标游戏进程并获取 debug handle。
+- `svcSetHardwareBreakPoint` 设置处理器调试断点（**能否安全绑定《紫》的目标执行上下文及其权限，需要单独实测**）。
+- `svcGetDebugEvent` / `svcGetDebugThreadContext` 接收事件、取得被暂停线程的 ARM64 寄存器。
+- `svcReadDebugProcessMemory` / `svcWriteDebugProcessMemory` 在目标进程内读写游戏数据。
+- `svcContinueDebugEvent` 恢复执行；发生异常、连接断开也必须优先自动解除断点并继续线程。
+
+候选处理：
+
+```text
+Windows: 发送全局 720B 模板 → 增强 sys-botbase 内部缓存
+Switch sysmodule: 长寿命 debug session → 为《紫》4.0.0 已校验的序列化指令注册断点
+命中事件: 暂停线程，读取 PC 和 x23 → 核验 0xAA0 RaidPoint_
+             → 仅替换 x23+0x79C 起的 720B → 读回对比/必要时恢复
+             → 立即继续当前 debug event → Windows 异步拉取 HOOK_HIT 日志
+```
+
+**理论优点：** 不需要在游戏代码里植入新的 ARM64 trampoline，也无需分配额外可执行页面或处理 I-cache 跳转一致性；实际上更接近“由 Windows 控制调试器临时监控游戏”的体验。
+
+**待验证难点：** 指令断点权限与进程绑定、断点配额/作用域、调试事件中的寄存器有效性、是否与 Atmosphère/dmnt 争抢唯一的 DebugActiveProcess 会话、断点命中频率对游戏帧率的影响、超时自动续行，以及《紫》4.0.0 在单人、本地 LDN、官方互联网几种模式下是否执行该指令。不能把“sysmodule 进程 ACL 允许 svcSetHardwareBreakPoint”误认为游戏实际断点调试必然成功。
+
+源码补了 `RemoteBreakpointHookCapabilities` 独立能力矩阵：**普通 sys-botbase 缺少持久调试会话、事件循环、断点控制与寄存器捕获，所以默认不可用**。若此路线无法工作，再继续 A1 的可执行 trampoline / 指令跳转路径；不建议先用 `pokeMain` 盲测重定向。
+
+参考：[libnx Debugging API](https://switchbrew.github.io/libnx/svc_8h.html)。此处是*可行性假设和 API 研究*，不是已存在的可运行 Hook。
+
 ## 已核验的静态依据
 
 《紫》4.0.0 原始 ELF，Build ID 前 20 字节 `709bfd66115298640155fcc4979dba151c7cc79a`。
