@@ -19,6 +19,19 @@ public sealed class RemoteHookCapabilitiesTests
     }
 
     [Fact]
+    public void StandardBotbaseDoesNotSupportPrivilegedHardwareBreakpointHooks()
+    {
+        var caps = RemoteBreakpointHookCapabilities.StandardSysBotBase;
+        Assert.False(caps.Ready);
+        Assert.Contains("断点调试事件循环", caps.Missing());
+        Assert.Contains("暂停态 x23 等 ARM64 寄存器读取", caps.Missing());
+        var enhanced = new RemoteBreakpointHookCapabilities(true,true,true,true,true,true,true);
+        Assert.True(enhanced.Ready);
+        Assert.Empty(enhanced.Missing());
+        Assert.False((enhanced with {GuaranteedThreadContinue = false}).Ready);
+    }
+
+    [Fact]
     public void EvenFullyExtendedServiceRequiresAllRuntimeChecks()
     {
         var caps = new RemoteHookCapabilities(true,true,true,true,true,true,true,true,true,true);
