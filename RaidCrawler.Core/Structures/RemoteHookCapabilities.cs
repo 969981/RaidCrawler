@@ -60,3 +60,43 @@ public static class RemoteHookInstallationGate
                userExplicitlyArmed;
     }
 }
+
+/// <summary>
+/// Alternative route: a privileged Switch-side debug service keeps the
+/// process suspended at a verified instruction breakpoint, reads x23,
+/// patches the per-call reward bytes and continues the debug event.
+/// Unlike a trampoline, this does not need allocated RX code or an I-cache
+/// rewrite, but no such event-handling command exists in stock botbase.
+/// Hardware breakpoints, debug event behavior and firmware permissions
+/// must be validated on the target console before ever arming this.
+/// </summary>
+public sealed record RemoteBreakpointHookCapabilities(
+    bool PersistentDebugSession,
+    bool PrivilegedInstructionBreakpoint,
+    bool DebugEventLoop,
+    bool CapturePausedThreadRegisters,
+    bool DebugWriteWhilePaused,
+    bool GuaranteedThreadContinue,
+    bool HookEventTelemetry)
+{
+    public static RemoteBreakpointHookCapabilities StandardSysBotBase => new(
+        false, false, false, false, true, false, false);
+
+    public bool Ready => PersistentDebugSession &&
+        PrivilegedInstructionBreakpoint && DebugEventLoop &&
+        CapturePausedThreadRegisters && DebugWriteWhilePaused &&
+        GuaranteedThreadContinue && HookEventTelemetry;
+
+    public IReadOnlyList<string> Missing()
+    {
+        var result = new List<string>();
+        if (!PersistentDebugSession) result.Add("持久调试会话");
+        if (!PrivilegedInstructionBreakpoint) result.Add("可绑定目标游戏的指令断点");
+        if (!DebugEventLoop) result.Add("断点调试事件循环");
+        if (!CapturePausedThreadRegisters) result.Add("暂停态 x23 等 ARM64 寄存器读取");
+        if (!DebugWriteWhilePaused) result.Add("线程暂停时的奖励区写入");
+        if (!GuaranteedThreadContinue) result.Add("调试事件总能恢复执行");
+        if (!HookEventTelemetry) result.Add("回调事件及错误状态回传");
+        return result;
+    }
+}
