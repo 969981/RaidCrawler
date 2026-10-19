@@ -2,6 +2,8 @@
 
 **Scope / state (2026-10-19):** This branch includes a functioning *local* reward-row editor plus an optional **explicitly launched** one-raid PokéLDN WSL host, not a game memory patch. See the original project README for ordinary raid scanning.
 
+**跨项目原生技术研究：** [PokéLDN × 《紫》4.0.0 ELF 单场奖励注入、动态指针、Subject=5 及保存调用链](pokeldn-elf-single-raid-hosting.md)。
+
 ## What was implemented
 
 When a raid is selected, use the existing **Rewards** button. The editor starts from the RaidCrawler-calculated default rewards and provides editable Item ID, Quantity, Rare flag and Subject columns. Actions include Add/Remove (up to 45), Reset defaults, View calculated, **Apply preview (session-only)**, Load/Save JSON, Import/Export 720-byte reward rows, and **Copy PokéLDN** host flags.
