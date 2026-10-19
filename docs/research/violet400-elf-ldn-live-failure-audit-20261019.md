@@ -33,6 +33,14 @@
 这次是用户明确标注的**单人离线**测试，且用户已确认有晶耀护符。原始数据少量奖励不变，最符合的解释是 E32984 仅改动 x23 输出 Bootstrap，不是单人模式真正读取的源 RaidPoint 或 BattleRewardData / Bag 结算列表。但是当前尚无 CPU 命中证据，不能以此单独宣称已排除其他原因。
 
 SVRaidBot 候选标志 L=255 在野外 (O=17) 和单人战斗 (D=2) 均不变，所以此前生成的 auto-lobby-open 为误判；0xFF 在本实机上不能用于确认联机房间。结束时 title/version 检查开始失败，L/D/O 出现异常值；只能推断当时进程身份或读内存目标发生变化，无法直接证明游戏崩溃。
+## 2026-10-20 新的本地奖励生成入口已定位（纠正旧范围判断）
+
+继续核对固定版公开 Lua 后，发现 `FieldRaidJewelry.LotteryRewardItem`（C81390F82EADEF632.lua 第 820–1335 行）直接生成 `BattleRewardData[3]`，并在同文件 469–485 行由团战初始化调用，777–791 行作为 `GameEventNetworkBattleRaid` 的奖励实参传递。后一个事件类名带有 Network，但事件参数有独立 `isComm` 布尔位（C849FF496D0E93636.lua 第 54–95 行），**不能再用事件类名直接推断整个 Lua 结算链只支持 LDN**。
+
+因此：`main+0xE32984` 确实是原生 Bootstrap 发送缓冲的修改位置，但**不能以此推断 Lua `GameEventNetworkBattleRaid` 整个类及其 `BattleRewardData` 对象只在联网时运行**。单人模式的生成对象路径现已具备旧 Lua 证据，仍缺少《紫》4.0.0 本机实况及 Lua 模块版本闭合。
+
+另外已在该《紫》4.0.0 ELF 直接定位与奖励表初始化相关的 Native Lua 注册：`f21AF1B35 → 0x1AF24F0`、`f66894ABE → 0x1AF2670`，但这两个地址是表初始化桥接包装函数，**不是已经证实的单人发奖 Hook 位置**。完整调用链及审计脚本见 [本地奖励源头研究](violet400-local-raid-reward-source-callchain.md)。
+
 ## 与 PokéLDN 的源代码和实际测试对照
 
 [`pokeldn/sv/raid.py`](https://github.com/969981/pokeldn/blob/research/pokeldn/sv/raid.py) 构建 `RaidPoint` (`0x3E8`) 和 `0xAA0` Bootstrap：
