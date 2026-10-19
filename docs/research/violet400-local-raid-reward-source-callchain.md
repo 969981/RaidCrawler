@@ -67,6 +67,23 @@ FieldRaidJewelry
 
 **这条 Lua 路径比 LDN serializer `main+0xE32984` 更适合调查单人奖励的来源。**
 
+## 新增：事件上下文到实际结算的直接代码交接
+
+固定仓库 `Martmists-GH/SV-Script-RE@1f843bd` 的 `decompiled/C849FF496D0E93636.lua:1987–1995`：
+
+```text
+L39_2 = C889F6553EDFCD011
+L39_2 = L39_2.SFCE091807173F6E9   # GameEventBattleResult.Call
+L40_2 = 2
+L41_2 = self[19]                  # 本场经过 RewardData 过滤的上下文
+L42_2 = self[18].F357A65DD82CA566E(...) # 战斗结果/其他实参
+L39_2 = L39_2(L40_2, L41_2, L42_2, ...)
+```
+
+接收方 `C889F6553EDFCD011.lua:65-95` 将 `A1_2` 保存为 `setupData`，`onCreate:103-115` 将其挂到 `self[18]`。 `RaidResultAddItem:1625-1696` 则从 `self[18][92][3]` 消费。**此前 N2→N3 的静态调用缺口因此已经闭合**。
+
+这里只能推导逻辑值/传参关联，`onCreate` 对 `setupData` 另有包装，不能从源代码直接推出不同事件实例的物理地址恒等；单人实机有没有运行该分支、Bag 实际变更、保存成功仍待验证。
+
 ## 三、新的《紫》4.0.0 ELF 实证：三个原生 Lua 桥接
 
 本次直接读取用户的原始 `Violet4.0.0.elf`：SHA256 `d17403eaa9d844db82f647fd2f1518806b10c0518d53602fc0ac1766298fdba0`，ELF64 AArch64。
