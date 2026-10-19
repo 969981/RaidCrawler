@@ -12,7 +12,6 @@ namespace RaidCrawler.WinForms.SubForms;
 public sealed class RaidRewardDiagnosticForm : Form
 {
     private readonly ISwitchConnectionAsync? connection;
-    private readonly PokeLdnRaidSelection? selection;
     private readonly RaidRewardDiagnosticLog trace = new();
     private readonly TextBox logText = new()
     {
@@ -27,10 +26,9 @@ public sealed class RaidRewardDiagnosticForm : Form
     private bool closing;
 
     public RaidRewardDiagnosticForm(ISwitchConnectionAsync? connection,
-        PokeLdnRaidSelection? selection, IReadOnlyList<RaidRewardEntry?> slots)
+        IReadOnlyList<RaidRewardEntry?> slots)
     {
         this.connection = connection;
-        this.selection = selection;
         Text = "太晶坑奖励写入／Hook 实机诊断";
         StartPosition = FormStartPosition.CenterParent;
         MinimumSize = new Size(720, 440);
@@ -45,8 +43,8 @@ public sealed class RaidRewardDiagnosticForm : Form
         var header = new Label
         {
             Dock = DockStyle.Fill,
-            Text = "诊断模式（不写内存）：记录版本、连接状态、当前坑 Seed 和奖励配置哈希。\r\n" +
-                "原版官方联网发送端 Hook 尚未安装，也没有奖励写入确认。开房／战斗节点需要手动标记。",
+            Text = "全局奖励模板（与所选坑位无关）：记录配置、版本和连接状态。\r\n" +
+                "尚未安装原生对战构建 Hook；本窗口不写内存，开战节点需要手动标记。",
             ForeColor = Color.DarkRed,
             AutoEllipsis = true,
         };
@@ -71,16 +69,13 @@ public sealed class RaidRewardDiagnosticForm : Form
             subjects=slots.Where(s => s is not null).GroupBy(s => s!.Subject)
                 .ToDictionary(g=>g.Key.ToString(),g=>g.Count()),
         });
-        if (selection is not null)
-            Append("selection", $"选择快照：{selection.Version}/{selection.Map} " +
-                $"seed={selection.Seed:X8}, den={selection.Den}, event={selection.IsEvent}",
-                new { selection.Version,selection.Map,selection.Seed,selection.Den,
-                    selection.Area,selection.Species,selection.Stars,selection.IsEvent });
-        Append("hook", "原生 Hook：未安装；不具备官方联网奖励写入能力。");
+        Append("scope", "全局奖励模板：不限地图、Seed、坑位、活动标记；尚未绑定任何实际战斗。",
+            new { mode="all-raids", actualBattleSeed=(uint?)null, targetDen=(int?)null });
+        Append("hook", "原生构建 Hook：尚未安装；未捕获实际对战事件，也没有修改奖励。");
         Append("log", "诊断日志：" + trace.Path);
 
         inspect.Click += async (_,_) => await RunInspectionAsync();
-        markLobby.Click += (_,_) => Append("manual-lobby", "用户手动标记：已进入官方联网房间。并非 Hook 触发证据。");
+        markLobby.Click += (_,_) => Append("manual-lobby", "用户标记：已开房（可能为本地或互联网）。不是实际 Hook 命中。");
         markBattle.Click += (_,_) => Append("manual-battle", "用户手动标记：已进入战斗。并非发送回调证据。");
         markResult.Click += (_,_) => Append("manual-result", "用户手动标记：已结算。实际奖励增量和保存尚需独立核验。");
         openFolder.Click += (_,_) =>
@@ -130,11 +125,6 @@ public sealed class RaidRewardDiagnosticForm : Form
                 Append("blocked", "不是《朱／紫》游戏。无法继续原生 Hook 的任何判断。");
                 return;
             }
-            if (selection is not null && (selection.Version=="violet") != (title==Offsets.VioletID))
-            {
-                Append("blocked", "当前连接的游戏版本与编辑时的朱／紫快照不一致，不能写入。");
-                return;
-            }
             // The ASLR-dependent NSO base is useful for later native callback
             // research, but this read does not execute a hook or find a live RaidPoint.
             ulong mainBase = await connection.GetMainNsoBaseAsync(token);
@@ -143,7 +133,7 @@ public sealed class RaidRewardDiagnosticForm : Form
                 Append("elf", "《紫》4.0.0：有静态 ELF 序列化 RVA 参考，但尚未观测到官方在线房主执行这条回调。");
             else
                 Append("elf", "此游戏版本尚无受信任的在线奖励 Hook RVA；禁止使用《紫》4.0.0 的静态地址。");
-            Append("blocked", "HOOK_NOT_INSTALLED: 只读连接检查结束，没有执行任何游戏内存写入。");
+            Append("blocked", "HOOK_NOT_INSTALLED: 只读环境检查结束，未截获对战构建，也未写入奖励。");
         }
         catch(OperationCanceledException)
         {

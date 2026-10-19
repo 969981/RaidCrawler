@@ -29,8 +29,8 @@ public partial class MainWindow : Form
     private readonly NotificationHandler Webhook;
 
     private List<RaidFilter> RaidFilters = [];
-    // Session-only preview, indexed by actual raid identity; never modifies raid blocks or filtering.
-    private readonly Dictionary<string, IReadOnlyList<RaidRewardEntry?>> RewardPreviews = new();
+    // Shared across all game modes, locations and raid seeds. NOT a live game-memory patch.
+    private IReadOnlyList<RaidRewardEntry?> GlobalRewardProfile = RaidRewardPresets.ScreenshotCharm45Slots();
     private static readonly Image MapBase = Image.FromStream(
         new MemoryStream(Utils.GetBinaryResource("paldea.png"))
     );
@@ -122,10 +122,21 @@ public partial class MainWindow : Form
 
         Webhook = new(Config);
         InitializeComponent();
+        try
+        {
+            GlobalRewardProfile = RaidRewardGlobalProfileStore.Load(RaidRewardGlobalProfileStore.DefaultPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or System.Text.Json.JsonException)
+        {
+            MessageBox.Show(this,
+                BenefitLanguage.T("全局奖励模板无法加载，已临时显示默认20行，原文件未修改：", "Global reward profile couldn't be read; original file kept: ") +
+                Environment.NewLine + ex.Message, BenefitLanguage.T("奖励模板读取失败", "Reward profile error"),
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
         BenefitLanguage.ApplyMain(this);
 
         btnOpenMap.Enabled = false;
-        Rewards.Enabled = false;
+        Rewards.Enabled = true; // Global editor no longer requires reading or selecting any raid.
         SendScreenshot.Enabled = false;
         CheckEnableFilters.Checked = Config.EnableFilters;
 
@@ -248,7 +259,7 @@ public partial class MainWindow : Form
         Task.Run(
             async () =>
             {
-                ButtonEnable(false, ButtonConnect, SendScreenshot, btnOpenMap, Rewards);
+                ButtonEnable(false, ButtonConnect, SendScreenshot, btnOpenMap);
                 try
                 {
                     (bool success, string err) = await ConnectionWrapper
@@ -1652,43 +1663,47 @@ public partial class MainWindow : Form
 
     private void Rewards_Click(object sender, EventArgs e)
     {
-        if (RaidContainer.Raids.Count == 0)
-        {
-            Task.Run(async () => await this.DisplayMessageBox(Webhook, "Raids not loaded.", Source.Token).ConfigureAwait(false), Source.Token);
-            return;
-        }
-
-        var rewards = RaidContainer.Rewards[ComboIndex.SelectedIndex];
-        if (rewards is null)
-        {
-            Task.Run(async () => await this.DisplayMessageBox(Webhook, "Error while displaying rewards.", Source.Token).ConfigureAwait(false), Source.Token);
-            return;
-        }
-
+        // The editor configures a GLOBAL template. A selected den is optional and
+        // only used to show the game's unmodified predicted drops on the View tab.
+        // Its seed, map, stars or event flag do NOT select an injection target.
+        IReadOnlyList<(int, int, int)> predicted = [];
+        int species = 0;
+        int teraType = 0;
         int index = ComboIndex.SelectedIndex;
-        if (index < 0 || index >= RaidContainer.Encounters.Count)
-            return;
+        if (index >= 0 && index < RaidContainer.Raids.Count &&
+            index < RaidContainer.Encounters.Count && index < RaidContainer.Rewards.Count)
+        {
+            var calculated = RaidContainer.Rewards[index];
+            if (calculated is not null)
+            {
+                var encounter = RaidContainer.Encounters[index];
+                var raid = RaidContainer.Raids[index];
+                predicted = calculated;
+                species = encounter.Species;
+                teraType = raid.GetTeraType(encounter);
+            }
+        }
 
-        var encounter = RaidContainer.Encounters[index];
-        var raid = RaidContainer.Raids[index];
         try
         {
-            string key = $"{raid.MapParent}:{raid.Area}:{raid.Den}:{raid.Seed:X8}:boost={RaidBoost.SelectedIndex}";
-            RewardPreviews.TryGetValue(key, out var preview);
-            var selection = PokeLdnRaidSelection.FromRaid(raid, encounter, RaidContainer.Game);
-            using var form = new RewardEditorForm(RaidContainer.Strings.Item, RaidContainer.Strings.Move,
-                rewards, encounter.Species, raid.GetTeraType(encounter), preview, selection,
+            using var form = new RewardEditorForm(
+                RaidContainer.Strings.Item, RaidContainer.Strings.Move, predicted,
+                species, teraType, GlobalRewardProfile,
                 ConnectionWrapper is { Connected: true } ? ConnectionWrapper.Connection : null);
             ShowDialog(form);
             if (form.AppliedSlots is { } applied)
             {
-                RewardPreviews[key] = applied;
-                UpdateStatus(BenefitLanguage.T($"已暂存 {applied.Count(row => row is not null)} 行奖励／45 槽；未写入 Switch。", $"Saved {applied.Count(row => row is not null)} / 45 preview rows; nothing written to Switch."));
+                RaidRewardGlobalProfileStore.Save(RaidRewardGlobalProfileStore.DefaultPath, applied);
+                GlobalRewardProfile = applied.ToArray();
+                UpdateStatus(BenefitLanguage.T(
+                    $"已保存全局奖励：{applied.Count(row => row is not null)}/45 槽，任何地图／坑位可复用；未写入 Switch。",
+                    $"Saved global reward profile ({applied.Count(row => row is not null)}/45), independent of raid seed. No Switch write."));
             }
         }
-        catch (ArgumentException ex)
+        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
         {
-            MessageBox.Show(this, ex.Message, BenefitLanguage.T("奖励编辑器", "Reward editor"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(this, ex.Message, BenefitLanguage.T("全局奖励模板", "Global reward profile"),
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
 

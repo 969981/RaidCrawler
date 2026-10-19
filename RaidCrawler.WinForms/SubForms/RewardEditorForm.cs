@@ -17,7 +17,6 @@ public sealed class RewardEditorForm : Form
     private readonly IReadOnlyList<(int, int, int)> calculated;
     private readonly RaidRewardItemCatalog catalog;
     private readonly ISwitchConnectionAsync? consoleConnection;
-    private readonly PokeLdnRaidSelection? selectedRaid;
     private readonly DataGridView grid = new();
     private readonly Label counter = new();
     private readonly RaidRewardEntry?[] defaults = RaidRewardPresets.ScreenshotCharm45Slots();
@@ -30,13 +29,11 @@ public sealed class RewardEditorForm : Form
     public RewardEditorForm(IReadOnlyList<string> items, IReadOnlyList<string> moves,
         IReadOnlyList<(int, int, int)> calculated, int species, int teraType,
         IReadOnlyList<RaidRewardEntry?>? existingPreview = null,
-        PokeLdnRaidSelection? selectedRaid = null,
         ISwitchConnectionAsync? consoleConnection = null)
     {
         names = items;
         this.moves = moves;
         this.calculated = calculated;
-        this.selectedRaid = selectedRaid;
         this.consoleConnection = consoleConnection;
         catalog = RaidRewardItemCatalog.FromGameStrings(items, GameInfo.GetStrings("en").Item);
 
@@ -57,8 +54,8 @@ public sealed class RewardEditorForm : Form
             Dock = DockStyle.Top, Height = 32, AutoEllipsis = true,
             ForeColor = Color.DarkRed, Padding = new Padding(6, 3, 0, 0),
             Text = BenefitLanguage.T(
-                "默认20行 ×999 晶耀护符奖励，剩余25槽留空。官方联网写入 Hook 尚未验证；本版不会修改游戏内存。",
-                "Default: 20 charm-only ×999 rows, 25 blank slots. Native online write hook is not verified."),
+                "全局奖励模板：适用于任意坑位／地图，前20行默认×999晶耀护符，25行留空。游戏内 Hook 尚未安装。",
+                "Global reward template for any raid; 20 default charm-only ×999 rows, 25 empty. No runtime hook installed."),
         };
         counter.Dock = DockStyle.Bottom;
         counter.Height = 24;
@@ -337,7 +334,17 @@ public sealed class RewardEditorForm : Form
             return;
         }
         // A diagnostic run is safe on a connected console, but it is not a native hook.
-        using var diagnostic = new RaidRewardDiagnosticForm(consoleConnection, selectedRaid, slots);
+        try
+        {
+            // Preparing a template never means the console has accepted it.
+            RaidRewardGlobalProfileStore.Save(RaidRewardGlobalProfileStore.DefaultPath, slots);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            MessageBox.Show(this, ex.Message, BenefitLanguage.T("保存全局模板失败", "Global template save failed"));
+            return;
+        }
+        using var diagnostic = new RaidRewardDiagnosticForm(consoleConnection, slots);
         diagnostic.ShowDialog(this);
     }
 
