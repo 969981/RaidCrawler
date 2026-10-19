@@ -1677,7 +1677,8 @@ public partial class MainWindow : Form
             RewardPreviews.TryGetValue(key, out var preview);
             var selection = PokeLdnRaidSelection.FromRaid(raid, encounter, RaidContainer.Game);
             using var form = new RewardEditorForm(RaidContainer.Strings.Item, RaidContainer.Strings.Move,
-                rewards, encounter.Species, raid.GetTeraType(encounter), preview, selection);
+                rewards, encounter.Species, raid.GetTeraType(encounter), preview, selection,
+                ConnectionWrapper is { Connected: true } ? ConnectionWrapper.Connection : null);
             ShowDialog(form);
             if (form.AppliedSlots is { } applied)
             {
