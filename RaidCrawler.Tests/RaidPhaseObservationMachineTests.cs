@@ -53,6 +53,23 @@ public sealed class RaidPhaseObservationMachineTests
     }
 
     [Fact]
+    public void Violet400SolePlayerFlag0xffDoesNotFabricateLobby()
+    {
+        var machine = new RaidPhaseObservationMachine();
+        for (int i = 0; i < 6; i++)
+            Assert.Null(machine.Observe(Flags(255, 1, 0x11)));
+        Assert.Equal(RaidPhaseObservationMachine.Phase.Idle, machine.Current);
+        for (int i = 0; i < 4; i++)
+            Assert.Null(machine.Observe(Flags(255, 1, 18)));
+        Assert.Equal(RaidPhaseObservationMachine.Phase.Idle, machine.Current);
+        machine.Observe(Flags(255, 2, 5));
+        var battle = machine.Observe(Flags(255, 2, 5));
+        Assert.Equal(RaidPhaseObservationMachine.Phase.Battle, battle!.To);
+        Assert.Equal("battle-late-attach", battle.Trigger);
+        Assert.False(machine.HasObservedLobby);
+    }
+
+    [Fact]
     public void SoloBattleNeverEndsJustBecauseLobbyFlagStaysZero()
     {
         var m = new RaidPhaseObservationMachine();
