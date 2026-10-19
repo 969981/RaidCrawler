@@ -9,7 +9,7 @@ namespace RaidCrawler.WinForms.SubForms;
 /// User-initiated, one-session console diagnostic. This window intentionally
 /// has no method that writes game memory or installs a native hook.
 /// </summary>
-public sealed class RaidRewardDiagnosticForm : Form
+public sealed partial class RaidRewardDiagnosticForm : Form
 {
     private readonly ISwitchConnectionAsync? connection;
     private readonly RaidRewardDiagnosticLog trace = new();
@@ -42,13 +42,13 @@ public sealed class RaidRewardDiagnosticForm : Form
             ColumnCount = 1, RowCount = 3 };
         panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 75));
         panel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 80));
+        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 122));
         Controls.Add(panel);
         var header = new Label
         {
             Dock = DockStyle.Fill,
             Text = "纯 Windows 通信：使用现有 sys-botbase，无须 Skyline / NRO。\r\n" +
-                "可只读检测，或临时写入 4B NOP 后立即恢复；尚未启用真正的 ARM64 跳转 Hook。",
+                "实验性《紫》4.0.0 Hook 控制：请仅在离线、已备份存档环境手动安装。写入成功并不等于奖励已生效。",
             ForeColor = Color.DarkRed,
             AutoEllipsis = true,
         };
@@ -58,6 +58,7 @@ public sealed class RaidRewardDiagnosticForm : Form
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = true, AutoScroll = true };
         buttons.Controls.Add(inspect);
         buttons.Controls.Add(testWrite);
+        ConfigureRemoteHookControls(buttons, slots);
         var markLobby = new Button { Text = "标记：已开房", AutoSize = true };
         var markBattle = new Button { Text = "标记：已开战", AutoSize = true };
         var markResult = new Button { Text = "标记：已结算", AutoSize = true };
@@ -76,7 +77,7 @@ public sealed class RaidRewardDiagnosticForm : Form
         });
         Append("scope", "全局奖励模板：不限地图、Seed、坑位、活动标记；尚未绑定任何实际战斗。",
             new { mode="all-raids", actualBattleSeed=(uint?)null, targetDen=(int?)null });
-        Append("hook-status", "纯 Windows 通信方案：尚未安装 ARM64 inline Hook；当前只提供只读验证和 4B 写入/恢复测试。");
+        Append("hook-status", "已提供实验性 v2 Hook 操作；不会自动安装。请从‘查询状态’开始。");
         Append("log", "诊断日志：" + trace.Path);
 
         inspect.Click += async (_,_) => await RunInspectionAsync();
@@ -142,6 +143,7 @@ public sealed class RaidRewardDiagnosticForm : Form
 
     private async Task RunWriteProbeAsync()
     {
+        if (remoteBusy) return;
         if (connection is null)
         {
             Append("write-probe-blocked", "未连接 Switch；拒绝代码段测试。");
@@ -158,6 +160,8 @@ public sealed class RaidRewardDiagnosticForm : Form
 
         inspect.Enabled = false;
         testWrite.Enabled = false;
+        remoteBusy = true;
+        remoteHookButtons.ForEach(x => x.Enabled = false);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stop.Token);
         timeout.CancelAfter(TimeSpan.FromSeconds(25));
         try
@@ -219,16 +223,19 @@ public sealed class RaidRewardDiagnosticForm : Form
         }
         finally
         {
+            remoteBusy = false;
             if (!IsDisposed && !Disposing)
             {
                 inspect.Enabled = true;
                 testWrite.Enabled = true;
+                remoteHookButtons.ForEach(x => x.Enabled = true);
             }
         }
     }
 
     private async Task RunInspectionAsync()
     {
+        if (remoteBusy) return;
         if (connection is null)
         {
             Append("disconnected", "没有已连接的 Switch。请回主界面连接并读取坑位后重试。");
@@ -236,6 +243,8 @@ public sealed class RaidRewardDiagnosticForm : Form
         }
         inspect.Enabled = false;
         testWrite.Enabled = false;
+        remoteBusy = true;
+        remoteHookButtons.ForEach(x => x.Enabled = false);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(stop.Token);
         deadline.CancelAfter(TimeSpan.FromSeconds(18));
         try
@@ -348,10 +357,12 @@ public sealed class RaidRewardDiagnosticForm : Form
         }
         finally
         {
+            remoteBusy = false;
             if (!IsDisposed && !Disposing)
             {
                 inspect.Enabled = true;
                 testWrite.Enabled = true;
+                remoteHookButtons.ForEach(x => x.Enabled = true);
             }
         }
     }
