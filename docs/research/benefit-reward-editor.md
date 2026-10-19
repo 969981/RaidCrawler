@@ -4,6 +4,16 @@
 
 **跨项目原生技术研究：** [PokéLDN × 《紫》4.0.0 ELF 单场奖励注入、动态指针、Subject=5 及保存调用链](pokeldn-elf-single-raid-hosting.md)。
 
+## 2026-10-19 简体中文界面（benefit-host-v0.1.1）
+
+- 默认语言为 `zh-Hans`，通过 **PKHeX.Core `GameInfo.GetStrings("zh-Hans")`** 直接加载道具、招式、性格、特性和宝可梦名称，不维护静态手工对照表。
+- 主界面常用按钮、数据标签、奖励编辑器、查看默认奖励、单场 PokéLDN 主持窗口，以及设置窗口的常用控件已经加入简体中文。
+- Subject 下拉框使用“0－所有玩家／1－房主／2－参与者／3－一次性奖励／4－团体战料理／5－晶耀护符”。`Subject` 背后仍然保存整数，二进制 `u32` 与 CLI `:5` 不变。
+- PokéLDN 的故事进度下拉框显示中文，但继续向 Python 发送 `4star`、`5star`、`6star` 等英文协议枚举。
+- 需要英文界面时，在程序目录 `config.json` 中增加或修改 `"Language": "en"`，**重新启动**程序。缺省字段视为 `zh-Hans`；不会改变语言以外的存档与奖励数据。
+- 汉化不会自动实现活动坑主持、任天堂官方联网，也不会修改任何道具 ID。
+- Windows CI 新增 `ChineseGameStringsTests`，验证真实 PKHeX 简体中文资源是否可读取，以及与英文字串共享 ID。
+
 ## What was implemented
 
 When a raid is selected, use the existing **Rewards** button. The editor starts from the RaidCrawler-calculated default rewards and provides editable Item ID, Quantity, Rare flag and Subject columns. Actions include Add/Remove (up to 45), Reset defaults, View calculated, **Apply preview (session-only)**, Load/Save JSON, Import/Export 720-byte reward rows, and **Copy PokéLDN** host flags.

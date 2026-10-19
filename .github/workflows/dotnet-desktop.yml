@@ -41,7 +41,7 @@ jobs:
       run: dotnet build --configuration $env:Configuration --no-restore
 
     - name: Reward editor tests (blocking)
-      run: dotnet test RaidCrawler.Tests/RaidCrawler.Tests.csproj --configuration $env:Configuration --no-build --no-restore --filter 'FullyQualifiedName~RaidRewardEditorTests|FullyQualifiedName~PokeLdnHostPlanTests'
+      run: dotnet test RaidCrawler.Tests/RaidCrawler.Tests.csproj --configuration $env:Configuration --no-build --no-restore --filter 'FullyQualifiedName~RaidRewardEditorTests|FullyQualifiedName~PokeLdnHostPlanTests|FullyQualifiedName~ChineseGameStringsTests'
 
     - name: Existing raid baseline tests (nonblocking)
       continue-on-error: true
@@ -68,13 +68,13 @@ jobs:
       run: |
         $folder = "./RaidCrawler.WinForms/bin/x64/Release/net10.0-windows/win-x64/publish"
         if (!(Test-Path $folder)) { throw "Missing published WinForms directory" }
-        $asset = "RaidCrawler-benefit-host-win-x64.zip"
+        $asset = "RaidCrawler-benefit-zh-Hans-win-x64.zip"
         Compress-Archive -Path "$folder/*" -DestinationPath $asset -Force
-        $tag = "benefit-host-v0.1.0"
-        $notes = "Experimental single-raid PokéLDN WSL launcher and reward editor. LOCAL LDN only. No official Nintendo internet raid support; requires separately installed PokéLDN, legal host Pokémon .pk9, correct WSL/network setup. 45-row editor, explicit subject 0/5 hosting, logs and stop control."
+        $tag = "benefit-host-v0.1.1"
+        $notes = "RaidCrawler benefit 简体中文预览版。默认使用 PKHeX.Core 的 zh-Hans 宝可梦／招式／特性／道具名称；奖励编辑器、Subject 0-5、晶耀护符快捷设置、单场 PokéLDN 主持界面及主要设置窗口已汉化。可在 config.json 设置 Language=en 回到英文。仍是本地 LDN 主持，不支持任天堂官方互联网匹配，也不会修改 Switch 存档；需要单独安装 PokéLDN／WSL 及合法的 .pk9 文件。"
         gh release view $tag --repo "${{ github.repository }}" *> $null
         if ($LASTEXITCODE -eq 0) {
           gh release upload $tag $asset --repo "${{ github.repository }}" --clobber
         } else {
-          gh release create $tag $asset --repo "${{ github.repository }}" --target "${{ github.sha }}" --title "Benefit Host v0.1.0 — preview" --notes $notes --prerelease
+          gh release create $tag $asset --repo "${{ github.repository }}" --target "${{ github.sha }}" --title "Benefit Host v0.1.1 — 简体中文预览版" --notes $notes --prerelease
         }
