@@ -8,8 +8,6 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationIcon>Resources\MightiestMark.ico</ApplicationIcon>
-    <AssemblyVersion>1.1.0</AssemblyVersion>
-    <FileVersion>1.1.0</FileVersion>
     <Platforms>x64</Platforms>
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
@@ -172,14 +170,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NLog" Version="5.2.7" />
-    <PackageReference Include="GitVersion.MsBuild" Version="5.12.0">
+    <PackageReference Include="NLog" Version="6.1.3" />
+    <PackageReference Include="GitVersion.MsBuild" Version="6.7.0">
     <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-<!--    <PackageReference Include="PKHeX.Core" Version="25.6.9" />-->
-<!--    <PackageReference Include="PKHeX.Core" Version="25.12.21" />-->
-<!--    <PackageReference Include="PKHeX.Core" Version="26.1.7" />-->
+    <PackageReference Include="PKHeX.Core" Version="26.7.7" Condition="!Exists('..\..\..\PKHeX.Core\PKHeX.Core.csproj')" />
   </ItemGroup>
 
   <ItemGroup>
@@ -187,25 +183,25 @@
   </ItemGroup>
 
   <ItemGroup>
-<!--     <Reference Include="PKHeX.Drawing">
+    <Reference Include="PKHeX.Drawing" Condition="!Exists('..\..\..\PKHeX.Drawing\PKHeX.Drawing.csproj')">
       <HintPath>deps\PKHeX.Drawing.dll</HintPath>
     </Reference>
-    <Reference Include="PKHeX.Drawing.Misc">
+    <Reference Include="PKHeX.Drawing.Misc" Condition="!Exists('..\..\..\PKHeX.Drawing.Misc\PKHeX.Drawing.Misc.csproj')">
       <HintPath>deps\PKHeX.Drawing.Misc.dll</HintPath>
     </Reference>
-    <Reference Include="PKHeX.Drawing.PokeSprite">
+    <Reference Include="PKHeX.Drawing.PokeSprite" Condition="!Exists('..\..\..\PKHeX.Drawing.PokeSprite\PKHeX.Drawing.PokeSprite.csproj')">
       <HintPath>deps\PKHeX.Drawing.PokeSprite.dll</HintPath>
-    </Reference> -->
+    </Reference>
     <Reference Include="SysBot.Base">
       <HintPath>deps\SysBot.Base.dll</HintPath>
     </Reference>
 <!--    <Reference Include="PKHeX.Core">
       <HintPath>..\RaidCrawler.Core\deps\PKHeX.Core.dll</HintPath>
     </Reference> -->
-    <ProjectReference Include="..\..\..\PKHeX.Core\PKHeX.Core.csproj" />
-    <ProjectReference Include="..\..\..\PKHeX.Drawing\PKHeX.Drawing.csproj" />
-    <ProjectReference Include="..\..\..\PKHeX.Drawing.Misc\PKHeX.Drawing.Misc.csproj" />
-    <ProjectReference Include="..\..\..\PKHeX.Drawing.PokeSprite\PKHeX.Drawing.PokeSprite.csproj" />
+    <ProjectReference Include="..\..\..\PKHeX.Core\PKHeX.Core.csproj" Condition="Exists('..\..\..\PKHeX.Core\PKHeX.Core.csproj')" />
+    <ProjectReference Include="..\..\..\PKHeX.Drawing\PKHeX.Drawing.csproj" Condition="Exists('..\..\..\PKHeX.Drawing\PKHeX.Drawing.csproj')" />
+    <ProjectReference Include="..\..\..\PKHeX.Drawing.Misc\PKHeX.Drawing.Misc.csproj" Condition="Exists('..\..\..\PKHeX.Drawing.Misc\PKHeX.Drawing.Misc.csproj')" />
+    <ProjectReference Include="..\..\..\PKHeX.Drawing.PokeSprite\PKHeX.Drawing.PokeSprite.csproj" Condition="Exists('..\..\..\PKHeX.Drawing.PokeSprite\PKHeX.Drawing.PokeSprite.csproj')" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,6 @@
 using FlatSharp.Attributes;
 using PKHeX.Core;
 using System.ComponentModel;
-using System.Text.Json.Serialization;
 
 namespace RaidCrawler.Core.Structures;
 

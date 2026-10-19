@@ -3,6 +3,7 @@
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
 	<Platforms>x64</Platforms>
+  <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,14 +13,14 @@
 	</PackageReference>
 	<PackageReference Include="FlatSharp.Runtime" Version="7.9.0" />
     <PackageReference Include="LibUsbDotNet" Version="2.2.75" />
-<!--    <PackageReference Include="PKHeX.Core" Version="26.1.7" />-->
+    <PackageReference Include="PKHeX.Core" Version="26.7.7" Condition="!Exists('..\..\..\PKHeX.Core\PKHeX.Core.csproj')" />
 	<Reference Include="SysBot.Base">
 	  <HintPath>deps\SysBot.Base.dll</HintPath>
 	</Reference>
 <!--    <Reference Include="PKHeX.Core">
       <HintPath>deps\PKHeX.Core.dll</HintPath>
     </Reference> -->
-      <ProjectReference Include="..\..\..\PKHeX.Core\PKHeX.Core.csproj" />
+      <ProjectReference Include="..\..\..\PKHeX.Core\PKHeX.Core.csproj" Condition="Exists('..\..\..\PKHeX.Core\PKHeX.Core.csproj')" />
 	<FlatSharpSchema Include="Schemas\*.fbs" />
   </ItemGroup>
 
