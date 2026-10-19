@@ -30,7 +30,7 @@ public partial class MainWindow : Form
 
     private List<RaidFilter> RaidFilters = [];
     // Session-only preview, indexed by actual raid identity; never modifies raid blocks or filtering.
-    private readonly Dictionary<string, IReadOnlyList<RaidRewardEntry>> RewardPreviews = new();
+    private readonly Dictionary<string, IReadOnlyList<RaidRewardEntry?>> RewardPreviews = new();
     private static readonly Image MapBase = Image.FromStream(
         new MemoryStream(Utils.GetBinaryResource("paldea.png"))
     );
@@ -1679,10 +1679,10 @@ public partial class MainWindow : Form
             using var form = new RewardEditorForm(RaidContainer.Strings.Item, RaidContainer.Strings.Move,
                 rewards, encounter.Species, raid.GetTeraType(encounter), preview, selection);
             ShowDialog(form);
-            if (form.AppliedPreview is { } applied)
+            if (form.AppliedSlots is { } applied)
             {
                 RewardPreviews[key] = applied;
-                UpdateStatus(BenefitLanguage.T($"已暂存 {applied.Count} 行奖励预览；未写入 Switch。", $"Saved a local preview of {applied.Count} reward rows; nothing written to Switch."));
+                UpdateStatus(BenefitLanguage.T($"已暂存 {applied.Count(row => row is not null)} 行奖励／45 槽；未写入 Switch。", $"Saved {applied.Count(row => row is not null)} / 45 preview rows; nothing written to Switch."));
             }
         }
         catch (ArgumentException ex)
