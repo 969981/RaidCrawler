@@ -82,6 +82,55 @@ public static class RaidRewardEditor
         return result;
     }
 
+    /// <summary>
+    /// Encodes 45 fixed positions, including arbitrary empty positions. Unlike Encode(rows),
+    /// this does NOT compact rows; subject=4 reward order must remain stable.
+    /// </summary>
+    public static byte[] EncodeSlots(IReadOnlyList<RaidRewardEntry?> slots)
+    {
+        ArgumentNullException.ThrowIfNull(slots);
+        if (slots.Count != MaxRows)
+            throw new ArgumentException($"Exactly {MaxRows} slot positions are required.");
+        var present = slots.Where(r => r is not null).Select(r => r!).ToArray();
+        Validate(present);
+        var bytes = new byte[RewardBytes];
+        for (int i = 0; i < slots.Count; i++)
+        {
+            var entry = slots[i];
+            if (entry is null) continue;
+            int offset = i * RowSize;
+            BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(offset), (uint)entry.ItemId);
+            BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(offset+4), (uint)entry.Quantity);
+            BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(offset+8), (uint)entry.Rare);
+            BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(offset+12), (uint)entry.Subject);
+        }
+        return bytes;
+    }
+
+    /// <summary>Reads 45 physical positions, retaining any zero-filled holes.</summary>
+    public static IReadOnlyList<RaidRewardEntry?> DecodeSlots(ReadOnlySpan<byte> bytes)
+    {
+        if (bytes.Length != RewardBytes)
+            throw new ArgumentException($"Expected {RewardBytes} reward bytes.");
+        var slots = new RaidRewardEntry?[MaxRows];
+        for (int i = 0; i < MaxRows; i++)
+        {
+            var row = bytes.Slice(i * RowSize, RowSize);
+            uint item = BinaryPrimitives.ReadUInt32LittleEndian(row);
+            uint quantity = BinaryPrimitives.ReadUInt32LittleEndian(row[4..]);
+            uint rare = BinaryPrimitives.ReadUInt32LittleEndian(row[8..]);
+            uint subject = BinaryPrimitives.ReadUInt32LittleEndian(row[12..]);
+            if (item == 0 && quantity == 0 && rare == 0 && subject == 0)
+                continue;
+            if (item > int.MaxValue || quantity > int.MaxValue || rare > int.MaxValue || subject > int.MaxValue)
+                throw new ArgumentException($"Row {i+1}: unsupported value.");
+            var entry = new RaidRewardEntry((int)item, (int)quantity, (int)rare, (int)subject);
+            Validate([entry]);
+            slots[i] = entry;
+        }
+        return slots;
+    }
+
     public static IReadOnlyList<RaidRewardEntry> Decode(ReadOnlySpan<byte> bytes)
     {
         if (bytes.Length != RewardBytes)
