@@ -49,6 +49,22 @@ public static class RaidRewardEditor
         }
     }
 
+    /// <summary>
+    /// Builds command-line reward flags for PokéLDN's actual supported custom-host grammar.
+    /// This is separate from the raw row format: PokéLDN accepts only subjects 0 and 5
+    /// and forces custom rare flags to zero.
+    /// </summary>
+    public static string BuildPokeLdnRewardArguments(IReadOnlyList<RaidRewardEntry> rows)
+    {
+        Validate(rows);
+        if (rows.Count == 0)
+            throw new ArgumentException("Choose at least one reward for PokéLDN.");
+        if (rows.Any(r => r.Subject is not (0 or 5) || r.Rare != 0))
+            throw new ArgumentException("PokéLDN custom rewards support only subject 0/5 and rare=0. Export raw rows for other values.");
+        return string.Join(" ", rows.Select(r =>
+            $"--raid-reward {r.ItemId}:{r.Quantity}" + (r.Subject == 5 ? ":5" : "")));
+    }
+
     /// <summary>Returns ONLY the 720 reward bytes, not a full RaidPoint or network packet.</summary>
     public static byte[] Encode(IReadOnlyList<RaidRewardEntry> rows)
     {
