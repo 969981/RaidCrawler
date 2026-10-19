@@ -297,6 +297,23 @@ public sealed class RaidRewardDiagnosticForm : Form
                 }
                 Append("fingerprint", $"《紫》4.0.0 当前指令匹配 {matched}/{NativeRaidCodeFingerprint.Violet400.Count}。已安装 inline Hook 时补丁位置可能不再匹配，需 Switch 原生日志确认。",
                     new { matched, total=NativeRaidCodeFingerprint.Violet400.Count });
+                // Extra read-only evidence from the exact ELF: the 880B
+                // candidate shares its 4KiB page with the last .plt instruction.
+                // No sys-botbase API here queries actual runtime X permissions.
+                var pltBytes = await connection.ReadBytesMainAsync(
+                    NativeRaidCodeFingerprint.LastPltInstructionRva, 4, token);
+                bool pltMatches = NativeRaidCodeFingerprint.Check(
+                    new NativeRaidCodeFingerprint.Anchor(
+                        NativeRaidCodeFingerprint.LastPltInstructionRva,
+                        NativeRaidCodeFingerprint.LastPltInstructionOpcode,
+                        "Last executable PLT br x17"), pltBytes).Matches;
+                Append("rx-page-layout",
+                    $"末尾 PLT 指令匹配={pltMatches}；候选区域与已有 RX .plt 同属 4KiB 页=" +
+                    NativeRaidCodeFingerprint.CandidateSharesLastPltPage +
+                    "。这是 ELF/地址布局推断，不等于实机 X 权限查询。",
+                    new { pltMatches,
+                        same4KPage=NativeRaidCodeFingerprint.CandidateSharesLastPltPage,
+                        executableVerified=false, runtimePermissionQueried=false });
                 // The 880-byte gap is not a named ELF allocation. Probe
                 // mapping/bytes only. Reading zeroes does NOT prove +X access.
                 try
