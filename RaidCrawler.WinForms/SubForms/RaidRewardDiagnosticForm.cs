@@ -44,7 +44,7 @@ public sealed class RaidRewardDiagnosticForm : Form
         {
             Dock = DockStyle.Fill,
             Text = "全局奖励模板（不限地图/Seed）：Windows 不写 Switch 内存。\r\n" +
-                "Switch 侧 Skyline Hook 需单独安装；可导入其 hook.log 核对真实命中。",
+                "方案 A 现可只读检测代码段末尾 880B 空间；仍未实现远程代码写入安装器。Skyline 为备选。",
             ForeColor = Color.DarkRed,
             AutoEllipsis = true,
         };
@@ -192,7 +192,7 @@ public sealed class RaidRewardDiagnosticForm : Form
             }
             var capability=RemoteHookCapabilities.StandardSysBotBase;
             Append("remote-hook-a",
-                "方案A检查：当前标准 botbase 只支持内存读写，不具备线程上下文、可执行代码管理及安全回滚协议；拒绝安装。",
+                "方案A：调试断点协议仍不支持；普通 botbase 理论上可修补 ARM64 代码段，但需实机验证 880B 空间与恢复机制。",
                 new { ready=capability.RemoteInlineHookReady, missing=capability.Missing() });
             if (title is not (Offsets.ScarletID or Offsets.VioletID))
             {
