@@ -3,6 +3,18 @@
 **状态：实验性。ELF/LLVM 静态检查已完成；在你的 Switch 上的执行命中、奖励领取及保存仍未验证。**
 **限制：现有 sys-botbase 即可；无需 Skyline/NRO；不要求重启才能修改下一场奖励。**
 
+## 2026-10-19 首次实机结果与覆盖范围纠正
+
+用户实机日志显示：TitleID/4.0.0/Build ID 前缀与 8 条原版指纹匹配，880B 全零候选已读回；之后状态为 `InstalledDisarmed epoch=1`，再 `InstalledArmed epoch=2`。但同机五星梦妖魔战斗的结算截图仍是正常奖励，**没有 Hook 命中或接收方数据证据**。
+
+本次配置的 20 个非空行全部为 `Subject=5`（需要晶耀护符资格）。因此无法用这次图片证明版本协议或发奖修改逻辑成功/失败。
+
+**关键范围澄清**：`main+0xE32984` 对应 PokéLDN 研究的本地 LDN `kind=0x2F` Battle Bootstrap **发送端序列化缓冲**；绝非所有普通/单人/官方互联网太晶坑都会经过此函数，也非游戏的通用 `Bag.AddItem` 或单人发奖函数。修改的是 `x23` 输出数据，不是原始 `x20` RaidPoint、房主自己的奖励结算列表或存档。即使发包路径命中，房主本机仍显示原始奖励也是合理的可能性，真正要比的是接收端。
+
+首次证伪测试应使用一个合法物品 `Subject=0, Rare=0, Quantity=5`，且**明确记录模式**：单人离线 / 本地 LDN 房主 / 本地 LDN 加入者 / 官方互联网。若研究的是 LDN 发送端，请在受控的本地联机中从**房主安装当前 Hook**，记录**其他参与者**的奖励；从另一台主机的截图判定，不要只看房主结算画面。若目标是单人离线奖励，则必须另做单人生成/发奖路径定位，不能依赖当前发送端跳板或仅改其 `Subject` 解决。
+
+当前无安全的 `HOOK_HIT` 计数和接收端 0x2F 采集，本轮最严格状态仍是 `PATCH_READBACK_PASS / CALLBACK_UNOBSERVED / REWARD_UNVERIFIED`。未经验证的官方互联网奖励不得宣称生效。
+
 ## 准备
 1. 给研究机的游戏存档做独立备份；退出官方互联网联机及任何正在进行的团战。关闭其他向同一进程写内存的软件。
 2. 从 [benefit 的 GitHub Actions](https://github.com/969981/RaidCrawler/actions?query=branch%3Abenefit) 选择**最新成功**的 .NET Core Desktop 构建，下载 Artifacts 的 RaidCrawler Windows 程序。勿使用旧 Skyline 发布包。
