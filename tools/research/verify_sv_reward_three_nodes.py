@@ -44,7 +44,8 @@ CHECKS = {
         r"L31_2\s*=\s*L31_2\.F316609DEA110601D",
     ],
     "AWARD_AND_BAG": [
-        r"L2_2\s*=\s*self\[17\]\.setupData",
+        r"L2_2\s*=\s*self\[17\]",
+        r"L2_2\s*=\s*L2_2\.setupData",
         r"self\[18\]\s*=\s*L1_2",
         r"L1_2\s*=\s*self\.FCBBD4D63B93E4C04",
         r"L2_2\s*=\s*L2_2\[92\]",
