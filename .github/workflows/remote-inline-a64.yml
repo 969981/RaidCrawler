@@ -4,6 +4,8 @@ on:
     branches: [benefit]
     paths:
       - "native/sv_remote_code_patch/**"
+      - "tools/research/audit_violet400_elf_readonly.py"
+      - "tools/research/test_audit_violet400_elf_readonly.py"
       - ".github/workflows/remote-inline-a64.yml"
   workflow_dispatch:
 
@@ -21,6 +23,8 @@ jobs:
           sudo apt-get install -y clang llvm binutils
       - name: Run branch and reward validation tests
         run: python3 -m unittest discover -s native/sv_remote_code_patch -p 'test_*.py' -v
+      - name: Read-only ELF audit selftests (ELF is not committed)
+        run: python3 -m unittest discover -s tools/research -p 'test_audit_violet400_elf_readonly.py' -v
       - name: Cross-assemble 880-byte AArch64 proof only
         run: |
           clang --target=aarch64-none-elf -c native/sv_remote_code_patch/stub.S -o /tmp/raid_stub.o
