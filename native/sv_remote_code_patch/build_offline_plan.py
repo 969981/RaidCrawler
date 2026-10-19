@@ -42,8 +42,8 @@ def build(elf: Path, asm: Path, out: Path, rewards: Path | None = None) -> dict:
         raise ValueError("ELF does not match exact verified Violet 4.0.0 SHA-256")
     sections = subprocess.check_output(["readelf", "-W", "-S", str(elf)], text=True)
     def section(name: str) -> tuple[int,int,int]:
-        match = re.search(r"\\." + name +
-                          r"\\s+PROGBITS\\s+([0-9a-fA-F]+)\\s+([0-9a-fA-F]+)\\s+([0-9a-fA-F]+)",
+        match = re.search(r"\." + name +
+                          r"\s+PROGBITS\s+([0-9a-fA-F]+)\s+([0-9a-fA-F]+)\s+([0-9a-fA-F]+)",
                           sections)
         if not match:
             raise ValueError(f"missing section {name}")
