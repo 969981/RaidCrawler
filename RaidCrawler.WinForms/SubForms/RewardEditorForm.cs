@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using PKHeX.Core;
 using RaidCrawler.Core.Structures;
+using SysBot.Base;
 
 namespace RaidCrawler.WinForms.SubForms;
 
@@ -15,6 +16,8 @@ public sealed class RewardEditorForm : Form
     private readonly IReadOnlyList<string> moves;
     private readonly IReadOnlyList<(int, int, int)> calculated;
     private readonly RaidRewardItemCatalog catalog;
+    private readonly ISwitchConnectionAsync? consoleConnection;
+    private readonly PokeLdnRaidSelection? selectedRaid;
     private readonly DataGridView grid = new();
     private readonly Label counter = new();
     private readonly RaidRewardEntry?[] defaults = RaidRewardPresets.ScreenshotCharm45Slots();
@@ -27,11 +30,14 @@ public sealed class RewardEditorForm : Form
     public RewardEditorForm(IReadOnlyList<string> items, IReadOnlyList<string> moves,
         IReadOnlyList<(int, int, int)> calculated, int species, int teraType,
         IReadOnlyList<RaidRewardEntry?>? existingPreview = null,
-        PokeLdnRaidSelection? selectedRaid = null)
+        PokeLdnRaidSelection? selectedRaid = null,
+        ISwitchConnectionAsync? consoleConnection = null)
     {
         names = items;
         this.moves = moves;
         this.calculated = calculated;
+        this.selectedRaid = selectedRaid;
+        this.consoleConnection = consoleConnection;
         catalog = RaidRewardItemCatalog.FromGameStrings(items, GameInfo.GetStrings("en").Item);
 
         Text = BenefitLanguage.T("太晶坑奖励编辑器 - benefit", "SV Raid Reward Editor - benefit");
@@ -323,17 +329,16 @@ public sealed class RewardEditorForm : Form
 
     private void ExplainWriteStatus()
     {
-        try { _ = ReadSlots(allowEmpty:false); }
+        IReadOnlyList<RaidRewardEntry?> slots;
+        try { slots = ReadSlots(allowEmpty:false); }
         catch (ArgumentException ex)
         {
             MessageBox.Show(this, BenefitLanguage.Error(ex.Message), BenefitLanguage.T("配置检查", "Validation"));
             return;
         }
-        MessageBox.Show(this, BenefitLanguage.T(
-            "奖励模板已通过本地检查，但 Switch 官方互联网主持端的原生 Hook 仍缺少发送时机与内存对象验证。\n\n本次没有对 Switch 写入任何字节，也不会报告“写入成功”。可先导出 JSON 保存模板，或右键导出 720 字节供离线核验。",
-            "Reward data is valid, but native online-host injection has not been verified. No bytes have been written to the console."),
-            BenefitLanguage.T("写入奖励－尚未就绪", "Write Rewards - not ready"),
-            MessageBoxButtons.OK, MessageBoxIcon.Information);
+        // A diagnostic run is safe on a connected console, but it is not a native hook.
+        using var diagnostic = new RaidRewardDiagnosticForm(consoleConnection, selectedRaid, slots);
+        diagnostic.ShowDialog(this);
     }
 
     private void ImportJson()
