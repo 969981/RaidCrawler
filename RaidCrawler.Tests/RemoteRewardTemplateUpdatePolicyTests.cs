@@ -56,6 +56,35 @@ public sealed class RemoteRewardTemplateUpdatePolicyTests
     }
 
     [Fact]
+    public void VerifiedEpochRollbackEnablesNoRestartUpdate()
+    {
+        var a = Reward(15, 100);
+        var b = Reward(15, 999);
+        Assert.Equal(RemoteTemplateUpdateDecision.UpdateWithVerifiedEpochFallback,
+            RemoteRewardTemplateUpdatePolicy.Decide(a, b,
+                RemoteInlineHookPhase.Armed,
+                independentlyVerifiedCallbackQuiescence: false,
+                safeEpochRollbackInstalled: true));
+        Assert.Equal(RemoteTemplateUpdateDecision.UpdateWithVerifiedEpochFallback,
+            RemoteRewardTemplateUpdatePolicy.Decide(a, b,
+                RemoteInlineHookPhase.InstalledDisarmed,
+                independentlyVerifiedCallbackQuiescence: false,
+                safeEpochRollbackInstalled: true));
+    }
+
+    [Fact]
+    public void VerifiedProtocolCannotBypassRecoveryRequired()
+    {
+        var a = Reward(15, 100);
+        var b = Reward(15, 999);
+        Assert.Equal(RemoteTemplateUpdateDecision.QueueForVerifiedProcessRestart,
+            RemoteRewardTemplateUpdatePolicy.Decide(a, b,
+                RemoteInlineHookPhase.RecoveryRequired,
+                independentlyVerifiedCallbackQuiescence: false,
+                safeEpochRollbackInstalled: true));
+    }
+
+    [Fact]
     public void SameTemplateNeedsNoWrite()
     {
         var a = Reward(15, 100);
