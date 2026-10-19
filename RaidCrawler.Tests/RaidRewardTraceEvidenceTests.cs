@@ -94,6 +94,23 @@ public sealed class RaidRewardTraceEvidenceTests
     }
 
     [Fact]
+    public void DifferentStationsCannotBeMistakenForSameBootstrap()
+    {
+        string hostStation1 = Row("S2_HOST_BOOTSTRAP");
+        string wireStation2 = Row("S2_WIRE_LOOPBACK")
+            .Replace("\\"station_index\\":1", "\\"station_index\\":2");
+        var result = RaidRewardTraceEvidence.Analyze(
+            Row("S1_SOURCE") + "\\n" + hostStation1 + "\\n" + wireStation2);
+        Assert.Equal(2, result.Runs.Count);
+        var station1 = Assert.Single(result.Runs.Where(x => x.Station == 1));
+        var station2 = Assert.Single(result.Runs.Where(x => x.Station == 2));
+        Assert.Equal("HASH_MATCH", station1.Host);
+        Assert.Equal("NOT_OBSERVED", station1.WireLoopback);
+        Assert.Equal("NOT_OBSERVED", station2.Host);
+        Assert.Equal("NOT_OBSERVED", station2.WireLoopback);
+    }
+
+    [Fact]
     public void OtherRunsAreNotMixed()
     {
         var analysis = RaidRewardTraceEvidence.Analyze(Row("S1_SOURCE","a") +
