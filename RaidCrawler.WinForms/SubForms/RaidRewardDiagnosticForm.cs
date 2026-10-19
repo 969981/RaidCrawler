@@ -128,23 +128,11 @@ public sealed partial class RaidRewardDiagnosticForm : Form
                 $"当前 {configured} 条奖励全部为 Subject=5（晶耀护符资格）；如果本机不具备晶耀护符，接收方会过滤这些行。请先使用 Subject=0 的单行小额奖励做 LDN 对照测试。",
                 new { subject5=charmOnly, subject0=subjectAll,
                       charmOwnershipVerified=false, noReceiptDoesNotProveNoHook=true });
-        Append("hook-status", "已提供实验性 v2 Hook 操作；不会自动安装。请从‘查询状态’开始。");
+        Append("hook-status", "自动监控会读取 Hook 状态，但不会自动安装或启用。");
         Append("log", "诊断日志：" + trace.Path);
 
         inspect.Click += async (_,_) => await RunInspectionAsync();
         testWrite.Click += async (_,_) => await RunWriteProbeAsync();
-        openFolder.Click += (_,_) =>
-        {
-            try
-            {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = System.IO.Path.GetDirectoryName(trace.Path)!,
-                    UseShellExecute = true
-                });
-            }
-            catch (Exception ex) { Append("error", "打开日志目录失败：" + ex.GetType().Name); }
-        };
         FormClosing += (_,_) => {
             closing = true;
             StopAutomaticPhaseMonitor("WINDOW_CLOSING");
