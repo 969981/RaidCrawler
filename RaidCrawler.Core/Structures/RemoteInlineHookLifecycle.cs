@@ -36,6 +36,8 @@ public sealed record RemoteInlineHookEvidence
     public bool EntryReadbackVerified { get; init; }
     public bool CallbacksQuiescentVerified { get; init; }
     public bool TemplateReadbackVerified { get; init; }
+    // Callers must read and compare the expected mode word for each operation.
+    public bool ModeReadbackVerified { get; init; }
     public bool OriginalEntryRestoredVerified { get; init; }
 }
 
@@ -59,24 +61,27 @@ public sealed class RemoteInlineHookLifecycle
                 Phase == RemoteInlineHookPhase.NotInstalled &&
                 common && evidence.OriginalInstructionVerified &&
                 evidence.MappingExecutableVerified && quiescent &&
-                evidence.PayloadReadbackVerified,
+                evidence.PayloadReadbackVerified &&
+                evidence.ModeReadbackVerified,
 
             RemoteInlineHookAction.ConfirmInstall =>
                 Phase == RemoteInlineHookPhase.Staged &&
-                common && quiescent && evidence.EntryReadbackVerified,
+                common && quiescent && evidence.EntryReadbackVerified &&
+                evidence.ModeReadbackVerified,
 
             RemoteInlineHookAction.Enable =>
                 Phase == RemoteInlineHookPhase.InstalledDisarmed &&
                 common && quiescent && evidence.TemplateReadbackVerified &&
-                evidence.EntryReadbackVerified,
+                evidence.EntryReadbackVerified && evidence.ModeReadbackVerified,
 
             RemoteInlineHookAction.Disable =>
                 Phase == RemoteInlineHookPhase.Armed &&
-                common && quiescent && evidence.TemplateReadbackVerified,
+                common && quiescent && evidence.ModeReadbackVerified,
 
             RemoteInlineHookAction.UpdateTemplate =>
                 Phase == RemoteInlineHookPhase.InstalledDisarmed &&
-                common && quiescent && evidence.TemplateReadbackVerified,
+                common && quiescent && evidence.TemplateReadbackVerified &&
+                evidence.ModeReadbackVerified,
 
             RemoteInlineHookAction.ConfirmUninstall =>
                 Phase == RemoteInlineHookPhase.InstalledDisarmed &&
