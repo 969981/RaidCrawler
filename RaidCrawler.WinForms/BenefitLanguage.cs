@@ -115,6 +115,82 @@ public static class BenefitLanguage
                 if (values.TryGetValue(item.Name, out var text)) item.Text = text;
     }
 
+    public static void ApplyConfig(Form window)
+    {
+        if (!Chinese) return;
+        var names = new Dictionary<string, string> {
+            ["tabGeneral"] = "常规",
+            ["tabMatch"] = "筛选与匹配",
+            ["tabAdvanceDate"] = "日期推进",
+            ["tabWebhook"] = "通知",
+            ["tabExperimental"] = "实验功能",
+            ["tabAbout"] = "关于",
+            ["FocusWindow"] = "匹配时切到窗口",
+            ["EnableAlert"] = "匹配时显示提示窗口",
+            ["PlayTone"] = "匹配时播放提示音",
+            ["LabelMatchFound"] = "找到匹配结果时：",
+            ["L_AdvanceDate"] = "日期推进设置（毫秒）：",
+            ["L_BaseDelay"] = "输入操作的基础延迟：",
+            ["L_DdownInput"] = "向下按键次数：",
+            ["L_OpenHOME"] = "打开 HOME 菜单延迟：",
+            ["L_NavigateSettings"] = "进入系统设置延迟：",
+            ["L_OpenSettingsDelay"] = "打开设置延迟：",
+            ["L_ScrollSystem"] = "滚动到“主机”项目持续时间：",
+            ["L_SubmenuDelay"] = "打开子菜单延迟：",
+            ["L_DateChangeDelay"] = "打开日期修改延迟：",
+            ["L_ReturnHomeDelay"] = "返回 HOME 菜单延迟：",
+            ["L_ReOpenGameDelay"] = "重新进入游戏延迟：",
+            ["L_DaysToSkip"] = "需要推进的天数／月份：",
+            ["UseTouch"] = "使用触屏输入（实验性）",
+            ["EnableDiscordNotifications"] = "发送 Discord Webhook 通知",
+            ["label13"] = "实验性设置：",
+            ["ExperimentalView"] = "显示直播用太晶坑视图",
+            ["LocationGroup"] = "扫描区域",
+            ["KitakamiScanCheck"] = "北上乡",
+            ["PaldeaScanCheck"] = "帕底亚",
+            ["BlueberryScanCheck"] = "蓝莓学院",
+            ["Protocol_label"] = "连接协议：",
+            ["label23"] = "程序设置",
+            ["LabelEventProgress"] = "活动进度：",
+            ["LabelGame"] = "游戏版本：",
+            ["LabelStoryProgress"] = "主线进度：",
+            ["ZyroMethod"] = "使用 Zyro 的 usb-botbase 方案",
+            ["UseMapTrick"] = "使用地图技巧减少卡顿",
+            ["L_ExtraOverworldWait"] = "等待地图加载的额外时长：",
+            ["L_RelaunchDelay"] = "重新启动游戏的额外等待：",
+            ["L_SystemReset"] = "推进多少次后重启游戏：",
+            ["UseSetStick"] = "使用 SetStick 操作",
+            ["DodgeSystemUpdate"] = "跳过系统更新提示",
+            ["L_SaveGame"] = "等待游戏存档的时间：",
+            ["SaveGame"] = "找到匹配结果后存档",
+            ["L_OvershootHold"] = "按住按键跳过目标项的时长：",
+            ["UseOvershoot"] = "使用越界跳转方式（实验性）",
+            ["EmojiConfig"] = "表情配置",
+            ["labelWebhooks"] = "Webhook 状态",
+            ["label21"] = "常规设置",
+            ["label14"] = "消息内容（可 @ 用户）",
+            ["btnTestWebHook"] = "测试 Webhook",
+            ["denToggle"] = "显示坑位",
+            ["LocationSettings_label"] = "地点设置",
+            ["IVverbose"] = "详细个体值",
+            ["label19"] = "个体值显示风格",
+            ["label18"] = "个体值设置",
+            ["EnableEmoji"] = "启用表情",
+            ["label17"] = "实例名称：",
+        };
+        static IEnumerable<Control> Descendants(Control parent)
+        {
+            foreach (Control child in parent.Controls)
+            {
+                yield return child;
+                foreach (var item in Descendants(child)) yield return item;
+            }
+        }
+        foreach (Control control in Descendants(window))
+            if (names.TryGetValue(control.Name, out var title)) control.Text = title;
+        window.Text = "RaidCrawler 设置";
+    }
+
     public static string Error(string source)
     {
         if (!Chinese) return source;

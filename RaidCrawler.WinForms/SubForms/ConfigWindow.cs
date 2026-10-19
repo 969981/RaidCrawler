@@ -15,6 +15,7 @@ public partial class ConfigWindow : Form
         var shaField = gitVersionInformationType?.GetField("ShortSha");
 
         InitializeComponent();
+        BenefitLanguage.ApplyConfig(this);
 
         InstanceName.Text = c.InstanceName;
         StoryProgress.SelectedIndex = c.Progress;
@@ -84,7 +85,7 @@ public partial class ConfigWindow : Form
         linkLabel1.Left = (tabAbout.Width - linkLabel1.Width) / 2;
 
         labelWebhooks.Text =
-            "Webhooks are " + (DiscordWebhook.Enabled ? "enabled." : "disabled.");
+            BenefitLanguage.T("Webhook 已", "Webhooks are ") + (DiscordWebhook.Enabled ? BenefitLanguage.T("启用", "enabled.") : BenefitLanguage.T("禁用", "disabled."));
     }
 
     private void EnableAlert_CheckedChanged(object sender, EventArgs e)
