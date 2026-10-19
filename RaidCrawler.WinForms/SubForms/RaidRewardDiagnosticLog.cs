@@ -10,6 +10,7 @@ internal sealed class RaidRewardDiagnosticLog : IDisposable
 {
     private readonly object sync = new();
     private readonly StreamWriter writer;
+    private long sequence;
     public string Path { get; }
     public string SessionId { get; } = Guid.NewGuid().ToString("N");
 
@@ -29,14 +30,19 @@ internal sealed class RaidRewardDiagnosticLog : IDisposable
     public void Write(string stage, string message, object? detail = null)
     {
         lock (sync)
+        {
+            sequence++;
             writer.WriteLine(JsonSerializer.Serialize(new
             {
+                schemaVersion = 2,
+                sequence,
                 utc = DateTimeOffset.UtcNow,
                 session = SessionId,
                 stage,
                 message,
                 detail,
             }));
+        }
     }
 
     public void Dispose()
