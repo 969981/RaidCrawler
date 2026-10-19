@@ -1,0 +1,37 @@
+name: Offline Violet400 A64 code-patch checks
+on:
+  push:
+    branches: [benefit]
+    paths:
+      - "native/sv_remote_code_patch/**"
+      - ".github/workflows/remote-inline-a64.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-a64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install LLVM toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang llvm binutils
+      - name: Run branch and reward validation tests
+        run: python3 -m unittest discover -s native/sv_remote_code_patch -p 'test_*.py' -v
+      - name: Cross-assemble 880-byte AArch64 proof only
+        run: |
+          clang --target=aarch64-none-elf -c native/sv_remote_code_patch/stub.S -o /tmp/raid_stub.o
+          llvm-objcopy -j .text -O binary /tmp/raid_stub.o /tmp/raid_stub.bin
+          python3 - <<'PY'
+          from pathlib import Path
+          b=Path('/tmp/raid_stub.bin').read_bytes()
+          assert len(b)==880
+          assert b[0x48:0x4c]==bytes(4)  # BL relocation placeholder
+          assert b[0x54:0x58]==bytes(4)  # B return placeholder
+          assert b[0x90:0xa0]==bytes(16) # RX page metadata, game never stores here
+          assert b[0xa0:]==bytes(720)   # no reward template in repository
+          print('ARM64 offline stub: 880 bytes, relocation sites and read-only table layout valid')
+          PY
