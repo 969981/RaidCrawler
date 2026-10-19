@@ -198,8 +198,16 @@ public sealed partial class RaidRewardDiagnosticForm
                     new { runId=raidRunId, errorType=ex.GetType().Name,
                         source="READ_ONLY_MONITOR", phase="UNOBSERVED" });
             }
-            // Re-check title, version and base after a failure, rather than
-            // interpreting communication failure as lobby=0.
+            // Title mismatch means these offsets no longer name the expected
+            // game process. Fail closed rather than logging nonsense bytes.
+            if (ex is InvalidOperationException &&
+                ex.Message.Contains("目标游戏进程身份已变化", StringComparison.Ordinal))
+            {
+                integrityTimer.Stop();
+                StopAutomaticPhaseMonitor("GAME_PROCESS_CHANGED");
+                phaseStatusLabel.Text = "团战：游戏进程已变化";
+            }
+            // Other temporary transport failures remain unknown, not lobby=0.
         }
         finally { autoPhaseBusy = false; }
     }
