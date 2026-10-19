@@ -92,6 +92,15 @@ public sealed class RaidPhaseObservationMachineTests
     }
 
     [Fact]
+    public void ContradictoryOverworldAndBattleFlagsAreRejected()
+    {
+        var m = new RaidPhaseObservationMachine();
+        for (int i = 0; i < 5; i++)
+            Assert.Null(m.Observe(Flags(1, 2, 0x11)));
+        Assert.Equal(RaidPhaseObservationMachine.Phase.Idle, m.Current);
+    }
+
+    [Fact]
     public async Task ReaderUsesBotbaseCandidateRvasAndTreatsBrokenPointerAsUnknown()
     {
         var offsets = new List<ulong>();
