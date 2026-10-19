@@ -65,6 +65,7 @@ public sealed partial class RaidRewardDiagnosticForm : Form
         var openFolder = new Button { Text = "打开诊断目录", AutoSize = true };
         buttons.Controls.AddRange([markLobby, markBattle, markResult, openFolder]);
         ConfigureRewardEvidenceControls(buttons);
+        ConfigureAutomaticRaidPhaseMonitor(buttons);
         panel.Controls.Add(buttons, 0, 2);
 
         var raw = RaidRewardEditor.EncodeSlots(slots);
@@ -109,6 +110,8 @@ public sealed partial class RaidRewardDiagnosticForm : Form
         };
         FormClosing += (_,_) => {
             closing = true;
+            StopAutomaticPhaseMonitor("WINDOW_CLOSING");
+            autoPhaseTimer.Dispose();
             integrityTimer.Stop();
             integrityTimer.Dispose();
             stop.Cancel();
