@@ -1,3 +1,5 @@
+using PKHeX.Core;
+
 namespace RaidCrawler.Core.Structures;
 
 /// <summary>A snapshot of ONE selected ordinary/black SV raid, never a global raid-table change.</summary>
