@@ -174,7 +174,7 @@ public sealed class RaidRewardDiagnosticForm : Form
             {
                 bool useCrlf = connection is SwitchSocketAsync;
                 byte[] rawBuild = await connection.ReadRaw(SwitchCommand.GetBuildID(useCrlf), 17, token);
-                string buildPrefix = Encoding.ASCII.GetString(rawBuild).Trim('\\0', '\\r', '\\n', ' ');
+                string buildPrefix = Encoding.ASCII.GetString(rawBuild).Trim('\0', '\r', '\n', ' ');
                 if (buildPrefix.Length == 16 && buildPrefix.All(Uri.IsHexDigit))
                 {
                     string expected = RaidRewardHookContract.VerifiedViolet400BuildId[..16];
