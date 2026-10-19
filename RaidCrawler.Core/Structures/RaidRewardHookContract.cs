@@ -5,13 +5,15 @@ namespace RaidCrawler.Core.Structures;
 /// <summary>
 /// Pure, offline model of the native on-console hook handoff. This does NOT
 /// install an AArch64 trampoline, discover a live pointer or write Switch RAM.
-/// Host identity/dispatch/build/seed must be attested by a FUTURE native agent.
+/// A future game-side hook identifies the ACTUAL battle; no selected UI den
+/// or selected seed is required. Current SelectedSeed is legacy telemetry only.
+/// Neither official Internet nor local LDN is assumed until runtime verified.
 /// </summary>
 public sealed record RaidRewardHookContext(
     string BuildId,
     string SessionId,
-    uint SelectedSeed,
-    uint ObservedSeed,
+    uint SelectedSeed, // deprecated: optional UI snapshot; NEVER a target selector
+    uint ObservedSeed, // the actual game-side battle value, captured at runtime
     bool NativeHostConfirmed,
     bool OutboundBootstrapConfirmed,
     bool BeforeCompression,
@@ -36,12 +38,8 @@ public sealed class RaidRewardHookContract
             return new(false, "Unknown build: exact 4.0.0 ELF build required.", null);
         if (string.IsNullOrWhiteSpace(context.SessionId))
             return new(false, "Missing per-battle session identity.", null);
-        if (!context.IsOfficialOnline)
-            return new(false, "This contract targets a separately verified native online host path.", null);
         if (!context.NativeHostConfirmed || !context.OutboundBootstrapConfirmed || !context.BeforeCompression)
             return new(false, "No verified outbound host bootstrap hook at the pre-compression stage.", null);
-        if (context.SelectedSeed == 0 || context.ObservedSeed != context.SelectedSeed)
-            return new(false, "Selected and observed raid seed do not match.", null);
         if (uncompressed.Length != RaidPointOfflinePatch.BootstrapSize)
             return new(false, "Unexpected bootstrap frame length.", null);
 
@@ -56,7 +54,7 @@ public sealed class RaidRewardHookContract
                         RaidPointOfflinePatch.BootstrapPointOffset))
                     return new(false, "Non-reward metadata changed.", null);
                 completedSessions.Add(context.SessionId);
-                return new(true, "Offline stage built; not written to any Switch.", output);
+                return new(true, "Battle-agnostic offline fixture staged; no Switch hook or memory write performed.", output);
             }
             catch (ArgumentException ex)
             {

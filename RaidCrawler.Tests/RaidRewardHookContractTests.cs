@@ -5,9 +5,9 @@ namespace RaidCrawler.Tests;
 
 public class RaidRewardHookContractTests
 {
-    private static readonly RaidRewardHookContext Valid = new(
+    private static readonly RaidRewardHookContext VerifiedFixture = new(
         RaidRewardHookContract.VerifiedViolet400BuildId,
-        "session-1", 0x1234ABCD, 0x1234ABCD, true, true, true, true);
+        "session-1", 0, 0x1234ABCD, true, true, true, false);
 
     private static byte[] FakeFrame()
     {
@@ -17,41 +17,54 @@ public class RaidRewardHookContractTests
     }
 
     [Fact]
-    public void OfflineValidSessionPatchesOnlyRewardRegionOnce()
+    public void AnyBattleSeedAndTransportAcceptOnceWithVerifiedRuntimePreconditions()
     {
         var handler = new RaidRewardHookContract();
         var frame = FakeFrame();
-        var copy = frame.ToArray();
-        var result = handler.TryStageOffline(Valid, frame, RaidRewardPresets.ScreenshotCharm45Slots());
+        var original = frame.ToArray();
+        var slots = RaidRewardPresets.ScreenshotCharm45Slots();
+        var context = VerifiedFixture with {
+            // Prior selected den is intentionally unrelated to the actual session.
+            SelectedSeed = 0x321EE013, ObservedSeed = 0x4EDCA321, IsOfficialOnline = false,
+        };
+        var result = handler.TryStageOffline(context, frame, slots);
         Assert.True(result.Accepted, result.Reason);
         Assert.NotNull(result.ModifiedPlaintext);
+        Assert.Equal(original, frame);
         Assert.True(RaidPointOfflinePatch.UntouchedFieldsEqual(frame,
             result.ModifiedPlaintext!, 0x6B8));
-        Assert.Equal(copy, frame); // never mutates source
-        Assert.Equal(1, BitConverter.ToInt32(result.ModifiedPlaintext!, 0x79C + 10*16));
-        Assert.Equal(5, BitConverter.ToInt32(result.ModifiedPlaintext!, 0x79C + 10*16+12));
-        Assert.False(handler.TryStageOffline(Valid, frame,
-            RaidRewardPresets.ScreenshotCharm45Slots()).Accepted);
+        Assert.Equal(1, BitConverter.ToInt32(result.ModifiedPlaintext!,0x79C+10*16));
+        Assert.Equal(5, BitConverter.ToInt32(result.ModifiedPlaintext!,0x79C+10*16+12));
+        Assert.False(handler.TryStageOffline(context, frame, slots).Accepted);
+        // New battle/session is independent, even when no UI den was selected.
+        var next = context with { SessionId="session-2", SelectedSeed=0, ObservedSeed=0,
+            IsOfficialOnline=true };
+        Assert.True(handler.TryStageOffline(next, frame, slots).Accepted);
     }
 
     [Theory]
-    [InlineData("wrong-build", true, true, true, true, 123, 123)]
-    [InlineData(RaidRewardHookContract.VerifiedViolet400BuildId, false, true, true, true, 123, 123)]
-    [InlineData(RaidRewardHookContract.VerifiedViolet400BuildId, true, false, true, true, 123, 123)]
-    [InlineData(RaidRewardHookContract.VerifiedViolet400BuildId, true, true, false, true, 123, 123)]
-    [InlineData(RaidRewardHookContract.VerifiedViolet400BuildId, true, true, true, false, 123, 123)]
-    [InlineData(RaidRewardHookContract.VerifiedViolet400BuildId, true, true, true, true, 123, 124)]
-    public void RejectsUnverifiedLiveConditions(string build, bool host,
-        bool outbound, bool preCompression, bool online, uint seed, uint observed)
+    [InlineData("wrong-build", true, true, true)]
+    [InlineData(RaidRewardHookContract.VerifiedViolet400BuildId, false, true, true)]
+    [InlineData(RaidRewardHookContract.VerifiedViolet400BuildId, true, false, true)]
+    [InlineData(RaidRewardHookContract.VerifiedViolet400BuildId, true, true, false)]
+    public void RejectsUnverifiedRuntimeCallbacks(string build, bool host, bool outbound, bool preCompression)
     {
-        var ctx = Valid with {
-            BuildId = build, NativeHostConfirmed = host,
-            OutboundBootstrapConfirmed = outbound, BeforeCompression = preCompression,
-            IsOfficialOnline = online, SelectedSeed = seed, ObservedSeed = observed,
-        };
+        var ctx = VerifiedFixture with { BuildId=build, NativeHostConfirmed=host,
+            OutboundBootstrapConfirmed=outbound, BeforeCompression=preCompression };
         var result = new RaidRewardHookContract().TryStageOffline(ctx,
             FakeFrame(), RaidRewardPresets.ScreenshotCharm45Slots());
         Assert.False(result.Accepted);
         Assert.Null(result.ModifiedPlaintext);
+    }
+
+    [Fact]
+    public void RejectsMissingSessionOrUnknownPacketFormat()
+    {
+        var hook = new RaidRewardHookContract();
+        var rows = RaidRewardPresets.ScreenshotCharm45Slots();
+        Assert.False(hook.TryStageOffline(VerifiedFixture with { SessionId="" },
+            FakeFrame(), rows).Accepted);
+        Assert.False(hook.TryStageOffline(VerifiedFixture,
+            new byte[0xAA0], rows).Accepted);
     }
 }
