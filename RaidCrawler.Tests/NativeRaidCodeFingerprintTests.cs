@@ -14,6 +14,10 @@ public sealed class NativeRaidCodeFingerprintTests
             (ulong)NativeRaidCodeFingerprint.EndOfTextPaddingLength);
         Assert.Equal(0x370, NativeRaidCodeFingerprint.EndOfTextPaddingLength);
         Assert.Equal((ulong)0xE32984, NativeRaidCodeFingerprint.SerializerHookRva);
+        Assert.Equal((ulong)0x343FC8C, NativeRaidCodeFingerprint.LastPltInstructionRva);
+        Assert.Equal(0xD61F0220U, NativeRaidCodeFingerprint.LastPltInstructionOpcode);
+        Assert.True(NativeRaidCodeFingerprint.CandidateSharesLastPltPage);
+
         var anchors = NativeRaidCodeFingerprint.Violet400;
         Assert.Equal(8, anchors.Count);
         Assert.Equal(8, anchors.Select(a=>a.Rva).Distinct().Count());
