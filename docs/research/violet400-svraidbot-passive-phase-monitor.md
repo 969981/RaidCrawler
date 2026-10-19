@@ -30,7 +30,7 @@
 1. 打开 **奖励 Hook 实机诊断**后，验证 TitleID、游戏版本、Build ID 前 8 字节、原始 ELF 指令锚点和 Main NSO base；通过后自动启动只读监视，2 秒一次。
 2. 读取 `main+0x43DF430`、`main+0x47D2020` 及 Overworld 指针（有可能不可用，记录 null）。**不读取 Raid Code / NID / 训练家隐私**。
 3. 只有连续两次一致才触发阶段事件；未知值、内存读错误、`Loaded > 5`、同时存在「Overworld+Lobby/Battle」的矛盾值均忽略。
-4. `L!=0` → **auto-lobby-open**；`Loaded==2` → **auto-battle-entered**；已经进入战斗之后 `L==0` → **auto-battle-connection-ended**（仅表示房间连接结束）；之后 Overworld==`0x11` → **auto-overworld-returned**（仅表示返回野外）。
+4. `L!=0` → **auto-lobby-open**；`Loaded==2` → **auto-battle-entered**；**仅限本次确实观察到房间存在过**，已进入战斗之后 `L==0` → **auto-battle-connection-ended**（仅表示房间连接结束）；之后 Overworld==`0x11` → **auto-overworld-returned**（仅表示返回野外）。**单人战斗如果整个过程中 L 恒为 0，不得在 loaded=2 时马上报告战斗结束；需等待 loaded 不再是 2 且返回 Overworld=0x11，才能报告“回到野外”，仍不能证实结算。**
 5. 若从房间直接回野外且从未进入战斗则 **auto-lobby-closed-no-battle**；窗口在战斗开始后才打开时为 `battle-late-attach`，不伪造本轮开房证据。
 6. 对每场生成唯一 `runId`，把自动阶段和此前的 Hook readback / 720B SHA / `Subject` 分布纳入同一份 JSONL。自动检测到战斗时沿用每 5 秒只读 Hook 完整性快照；返回野外后结束本场快照，输出证据结论。
 7. 诊断窗口有 **停止自动阶段监控／开始自动阶段监控** 控件，原来的手动标记保留为故障排查备用。
