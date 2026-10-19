@@ -47,7 +47,7 @@ public sealed class RaidRewardDiagnosticForm : Form
         var header = new Label
         {
             Dock = DockStyle.Fill,
-            Text = "纯 Windows 通信：使用现有 sys-botbase，无须 Skyline / NRO。\\r\\n" +
+            Text = "纯 Windows 通信：使用现有 sys-botbase，无须 Skyline / NRO。\r\n" +
                 "可只读检测，或临时写入 4B NOP 后立即恢复；尚未启用真正的 ARM64 跳转 Hook。",
             ForeColor = Color.DarkRed,
             AutoEllipsis = true,
@@ -164,8 +164,8 @@ public sealed class RaidRewardDiagnosticForm : Form
         }
         if (MessageBox.Show(this,
                 "此操作仅在《紫》4.0.0 的候选全零代码间隔临时写入 4B ARM64 NOP，" +
-                "立即读取并尝试恢复为 0。不修改 Hook 入口，也不发放奖励。\\r\\n" +
-                "代码写入仍存在游戏崩溃风险；建议先备份存档、退出联网对战。\\r\\n" +
+                "立即读取并尝试恢复为 0。不修改 Hook 入口，也不发放奖励。\r\n" +
+                "代码写入仍存在游戏崩溃风险；建议先备份存档、退出联网对战。\r\n" +
                 "确定使用现有 sys-botbase 进行一次写入测试吗？",
                 "确认直接通信测试", MessageBoxButtons.YesNo,
                 MessageBoxIcon.Warning) != DialogResult.Yes)
@@ -187,7 +187,7 @@ public sealed class RaidRewardDiagnosticForm : Form
             }
             bool useCrlf = connection is SwitchSocketAsync;
             byte[] rawBuild = await connection.ReadRaw(SwitchCommand.GetBuildID(useCrlf), 17, ct);
-            string build = Encoding.ASCII.GetString(rawBuild).Trim('\\0','\\r','\\n',' ');
+            string build = Encoding.ASCII.GetString(rawBuild).Trim('\0','\r','\n',' ');
             if (!build.Equals(RaidRewardHookContract.VerifiedViolet400BuildId[..16],
                     StringComparison.OrdinalIgnoreCase))
             {
