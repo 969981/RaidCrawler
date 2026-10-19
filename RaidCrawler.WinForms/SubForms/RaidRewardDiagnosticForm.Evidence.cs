@@ -191,10 +191,11 @@ public sealed partial class RaidRewardDiagnosticForm
                 });
             foreach (var run in analysis.Runs.Take(30))
                 Append("ldn-pipeline",
-                    $"LDN run={run.RunId}：S1={run.Source}; S2_host={run.Host}; " +
+                    $"LDN run={run.RunId}, station={run.Station?.ToString() ?? "N/A"}：" +
+                    $"S1={run.Source}; S2_host={run.Host}; " +
                     $"wire_loopback={run.WireLoopback}; receiver={run.Receiver}; " +
                     $"S3={run.Filtering}; 与本地模板={run.TemplateCompare}。",
-                    new { importedRunId=run.RunId, currentConsoleRunId=raidRunId,
+                    new { importedRunId=run.RunId, station=run.Station, currentConsoleRunId=raidRunId,
                         run.Events, run.Source, run.Host, run.WireLoopback,
                         run.Receiver, run.Filtering, run.TemplateCompare,
                         run.HostRows, nativeHookHit="NOT_OBSERVED",
