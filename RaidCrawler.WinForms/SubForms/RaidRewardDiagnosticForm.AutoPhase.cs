@@ -16,16 +16,24 @@ public sealed partial class RaidRewardDiagnosticForm
         Interval = 2000,
     };
     private Button? autoPhaseToggle;
+    private readonly Label phaseStatusLabel = new()
+    {
+        AutoSize = false, Width = 176, Height = 30,
+        Text = "团战：等待自动监控", TextAlign = ContentAlignment.MiddleLeft,
+        AutoEllipsis = true,
+    };
     private bool autoPhaseBusy;
     private bool autoPhaseStarted;
     private int autoPhaseReadCount;
     private string? lastAutoSignal;
     private string? lastAutoError;
 
-    private void ConfigureAutomaticRaidPhaseMonitor(FlowLayoutPanel buttons)
+    private void ConfigureAutomaticRaidPhaseMonitor(
+        FlowLayoutPanel primary, FlowLayoutPanel advanced)
     {
+        primary.Controls.Add(phaseStatusLabel);
         autoPhaseToggle = new Button { Text = "停止自动阶段监控", AutoSize = true };
-        buttons.Controls.Add(autoPhaseToggle);
+        advanced.Controls.Add(autoPhaseToggle);
         autoPhaseToggle.Click += async (_, _) =>
         {
             if (autoPhaseStarted)
@@ -43,7 +51,14 @@ public sealed partial class RaidRewardDiagnosticForm
         Shown += async (_, _) =>
         {
             if (connection is not null && !closing)
+            {
                 await StartAutomaticPhaseMonitorAsync();
+                // Status refresh follows the first phase read, not concurrently
+                // using the same sys-botbase socket as initial calibration.
+                await RefreshHookStatusOnOpenAsync();
+            }
+            else
+                phaseStatusLabel.Text = "团战：未连接";
         };
     }
 
@@ -65,6 +80,7 @@ public sealed partial class RaidRewardDiagnosticForm
             lastAutoSignal = null;
             lastAutoError = null;
             autoPhaseStarted = true;
+            phaseStatusLabel.Text = "团战：自动监控中";
             autoPhaseTimer.Start();
             if (autoPhaseToggle is not null)
                 autoPhaseToggle.Text = "停止自动阶段监控";
@@ -85,10 +101,14 @@ public sealed partial class RaidRewardDiagnosticForm
         catch (OperationCanceledException)
         {
             if (!closing)
+            {
+                phaseStatusLabel.Text = "团战：状态读取超时";
                 Append("auto-phase-start-failed", "身份验证超时：没有启动自动监控。");
+            }
         }
         catch (Exception ex)
         {
+            phaseStatusLabel.Text = "团战：监控启动失败";
             Append("auto-phase-start-failed",
                 "无法确认《紫》4.0.0 运行环境：" + ex.GetType().Name +
                 " / " + ex.Message);
@@ -99,6 +119,8 @@ public sealed partial class RaidRewardDiagnosticForm
     {
         autoPhaseStarted = false;
         autoPhaseTimer.Stop();
+        if (!closing && !phaseStatusLabel.IsDisposed)
+            phaseStatusLabel.Text = "团战：自动监控已停止";
         if (autoPhaseToggle is not null && !autoPhaseToggle.IsDisposed)
             autoPhaseToggle.Text = "开始自动阶段监控";
         if (!closing)
@@ -203,6 +225,15 @@ public sealed partial class RaidRewardDiagnosticForm
             RaidPhaseObservationMachine.Phase.LobbyClosedWithoutBattle =>
                 "auto-lobby-closed-no-battle",
             _ => "auto-phase-change"
+        };
+        phaseStatusLabel.Text = transition.To switch
+        {
+            RaidPhaseObservationMachine.Phase.Lobby => "团战：房间中（候选）",
+            RaidPhaseObservationMachine.Phase.Battle => "团战：战斗中（候选）",
+            RaidPhaseObservationMachine.Phase.BattleConnectionEnded => "团战：连接已结束",
+            RaidPhaseObservationMachine.Phase.ReturnedToOverworld => "团战：已回到地图",
+            RaidPhaseObservationMachine.Phase.LobbyClosedWithoutBattle => "团战：房间已关闭",
+            _ => "团战：状态变化"
         };
         string human = transition.To switch
         {
