@@ -10,6 +10,7 @@ public sealed class RewardEditorForm : Form
     private readonly IReadOnlyList<string> moveNames;
     private readonly IReadOnlyList<(int, int, int)> calculated;
     private readonly IReadOnlyList<RaidRewardEntry> defaults;
+    private readonly PokeLdnRaidSelection? selectedRaid;
     private readonly DataGridView grid = new();
     private readonly Label counter = new();
 
@@ -17,11 +18,13 @@ public sealed class RewardEditorForm : Form
 
     public RewardEditorForm(IReadOnlyList<string> items, IReadOnlyList<string> moves,
         IReadOnlyList<(int, int, int)> calculated, int species, int teraType,
-        IReadOnlyList<RaidRewardEntry>? existingPreview = null)
+        IReadOnlyList<RaidRewardEntry>? existingPreview = null,
+        PokeLdnRaidSelection? selectedRaid = null)
     {
         itemNames = items;
         moveNames = moves;
         this.calculated = calculated;
+        this.selectedRaid = selectedRaid;
         defaults = RaidRewardEditor.FromCalculated(
             calculated.Select(r => (r.Item1, r.Item2, r.Item3)), species, teraType);
 
@@ -41,7 +44,7 @@ public sealed class RewardEditorForm : Form
         {
             Dock = DockStyle.Top, Height = 40, Padding = new Padding(10, 7, 5, 0),
             ForeColor = Color.DarkRed, AutoEllipsis = true,
-            Text = "LOCAL PREVIEW / EXPORT ONLY - Apply keeps a local session copy; nothing is written to the Switch or online rooms.",
+            Text = "REWARD EDITOR — Apply saves a local preview; Host selected raid starts a separate PokéLDN WSL LDN host (not Nintendo online).",
         });
         counter.Dock = DockStyle.Bottom;
         counter.Height = 28;
@@ -101,6 +104,7 @@ public sealed class RewardEditorForm : Form
         Button(buttons, "Import .bin", (_, _) => ImportBinary());
         Button(buttons, "Export .bin", (_, _) => ExportBinary());
         Button(buttons, "Copy PokéLDN", (_, _) => CopyPokeLdn());
+        Button(buttons, "Host selected raid", (_, _) => HostSelectedRaid());
         Button(buttons, "Close", (_, _) => Close());
         Populate(existingPreview ?? defaults);
     }
@@ -217,6 +221,20 @@ public sealed class RewardEditorForm : Form
         {
             MessageBox.Show(this, ex.Message, "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
+    }
+
+    private void HostSelectedRaid()
+    {
+        if (selectedRaid is null)
+        {
+            MessageBox.Show(this, "No selected raid snapshot is available.", "Host unavailable");
+            return;
+        }
+        Export(rows =>
+        {
+            using var window = new PokeLdnHostForm(selectedRaid, rows);
+            window.ShowDialog(this);
+        });
     }
 
     private void CopyPokeLdn() => Export(rows =>
