@@ -29,6 +29,8 @@ public partial class MainWindow : Form
     private readonly NotificationHandler Webhook;
 
     private List<RaidFilter> RaidFilters = [];
+    // Session-only preview, indexed by actual raid identity; never modifies raid blocks or filtering.
+    private readonly Dictionary<string, IReadOnlyList<RaidRewardEntry>> RewardPreviews = new();
     private static readonly Image MapBase = Image.FromStream(
         new MemoryStream(Utils.GetBinaryResource("paldea.png"))
     );
@@ -1669,9 +1671,16 @@ public partial class MainWindow : Form
         var raid = RaidContainer.Raids[index];
         try
         {
+            string key = $"{raid.MapParent}:{raid.Area}:{raid.Den}:{raid.Seed:X8}:boost={RaidBoost.SelectedIndex}";
+            RewardPreviews.TryGetValue(key, out var preview);
             using var form = new RewardEditorForm(RaidContainer.Strings.Item, RaidContainer.Strings.Move,
-                rewards, encounter.Species, raid.GetTeraType(encounter));
+                rewards, encounter.Species, raid.GetTeraType(encounter), preview);
             ShowDialog(form);
+            if (form.AppliedPreview is { } applied)
+            {
+                RewardPreviews[key] = applied;
+                UpdateStatus($"Saved a local preview of {applied.Count} reward rows; nothing written to Switch.");
+            }
         }
         catch (ArgumentException ex)
         {
