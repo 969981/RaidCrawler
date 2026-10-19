@@ -79,6 +79,34 @@ public sealed class RemoteInlineHookLifecycleTests
     }
 
     [Fact]
+    public void ActiveHotUpdateNeedsVerifiedRollbackCapability()
+    {
+        var machine = new RemoteInlineHookLifecycle();
+        Assert.True(machine.TryAdvance(RemoteInlineHookAction.Stage, Verified, out _));
+        Assert.True(machine.TryAdvance(RemoteInlineHookAction.ConfirmInstall, Verified, out _));
+        Assert.True(machine.TryAdvance(RemoteInlineHookAction.Enable, Verified, out _));
+        Assert.False(machine.TryAdvance(RemoteInlineHookAction.UpdateTemplate,
+            Verified with { CallbacksQuiescentVerified = false }, out _));
+        Assert.True(machine.TryAdvance(RemoteInlineHookAction.UpdateTemplate,
+            Verified with { CallbacksQuiescentVerified = false,
+                            VersionedRollbackVerified = true }, out _));
+        Assert.Equal(RemoteInlineHookPhase.Armed, machine.Phase);
+    }
+
+    [Fact]
+    public void VersionedDisableDoesNotRequireGlobalThreadPause()
+    {
+        var machine = new RemoteInlineHookLifecycle();
+        Assert.True(machine.TryAdvance(RemoteInlineHookAction.Stage, Verified, out _));
+        Assert.True(machine.TryAdvance(RemoteInlineHookAction.ConfirmInstall, Verified, out _));
+        Assert.True(machine.TryAdvance(RemoteInlineHookAction.Enable, Verified, out _));
+        Assert.True(machine.TryAdvance(RemoteInlineHookAction.Disable,
+            Verified with { CallbacksQuiescentVerified = false,
+                            VersionedRollbackVerified = true }, out _));
+        Assert.Equal(RemoteInlineHookPhase.InstalledDisarmed, machine.Phase);
+    }
+
+    [Fact]
     public void FailureRequiresVerifiedRecovery()
     {
         var machine = new RemoteInlineHookLifecycle();
