@@ -26,7 +26,8 @@ def sample_source(patterns):
             "L31_2 = L31_2.F316609DEA110601D",
         ],
         "AWARD_AND_BAG": [
-            "L2_2 = self[17].setupData",
+            "L2_2 = self[17]",
+            "L2_2 = L2_2.setupData",
             "self[18] = L1_2",
             "L1_2 = self.FCBBD4D63B93E4C04",
             "L2_2 = L2_2[92]",
