@@ -3,8 +3,9 @@ namespace RaidCrawler.Core.Structures;
 /// <summary>
 /// Session-consistent template update decision, modeled after PokéLDN's
 /// one immutable Bootstrap per RaidGroup. No Switch I/O or executable patches.
-/// Standard sys-botbase does not prove callback quiescence: without stronger
-/// evidence, an active installation must not rewrite its 720-byte table.
+/// Standard sys-botbase does not prove callback quiescence. Hot updates are
+/// allowed only with an independently verified versioned-read-and-rollback
+/// trampoline, never merely because the transport can write memory.
 /// </summary>
 public enum RemoteTemplateUpdateDecision
 {
@@ -12,6 +13,7 @@ public enum RemoteTemplateUpdateDecision
     PrepareForNewProcess,
     QueueForVerifiedProcessRestart,
     UpdateInVerifiedQuiescence,
+    UpdateWithVerifiedEpochFallback,
 }
 
 public static class RemoteRewardTemplateUpdatePolicy
@@ -24,7 +26,8 @@ public static class RemoteRewardTemplateUpdatePolicy
         ReadOnlySpan<byte> currentlyCommitted,
         ReadOnlySpan<byte> desired,
         RemoteInlineHookPhase hookPhase,
-        bool independentlyVerifiedCallbackQuiescence)
+        bool independentlyVerifiedCallbackQuiescence,
+        bool safeEpochRollbackInstalled = false)
     {
         if (currentlyCommitted.Length != RaidRewardEditor.RewardBytes ||
             desired.Length != RaidRewardEditor.RewardBytes)
@@ -44,6 +47,10 @@ public static class RemoteRewardTemplateUpdatePolicy
         if (hookPhase is RemoteInlineHookPhase.RecoveryRequired or
             RemoteInlineHookPhase.Staged)
             return RemoteTemplateUpdateDecision.QueueForVerifiedProcessRestart;
+
+        if (safeEpochRollbackInstalled && hookPhase is
+            (RemoteInlineHookPhase.Armed or RemoteInlineHookPhase.InstalledDisarmed))
+            return RemoteTemplateUpdateDecision.UpdateWithVerifiedEpochFallback;
 
         if (hookPhase == RemoteInlineHookPhase.Armed)
             return RemoteTemplateUpdateDecision.QueueForVerifiedProcessRestart;
