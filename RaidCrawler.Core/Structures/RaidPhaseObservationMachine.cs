@@ -21,7 +21,10 @@ public sealed class RaidPhaseObservationMachine
         byte? OverworldFlag)
     {
         public bool HasCoreSignals => LobbyFlag.HasValue && LoadedFlag.HasValue;
-        public bool IsLobby => LobbyFlag is > 0;
+        // User's Violet 4.0.0 reads 0xFF on the overworld and throughout
+        // the solo battle. It is not a reliable positive lobby signal.
+        // Treat the sentinel as UNKNOWN rather than as a confirmed lobby.
+        public bool IsLobby => LobbyFlag is > 0 and < 0xFF;
         public bool IsBattle => LoadedFlag == 2;
         public bool IsOverworld => OverworldFlag == 0x11;
     }
