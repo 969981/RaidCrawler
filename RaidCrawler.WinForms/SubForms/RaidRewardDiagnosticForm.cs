@@ -6,8 +6,8 @@ using SysBot.Base;
 namespace RaidCrawler.WinForms.SubForms;
 
 /// <summary>
-/// User-initiated, one-session console diagnostic. This window intentionally
-/// has no method that writes game memory or installs a native hook.
+/// Experimental native-hook diagnostics with a compact everyday toolbar.
+/// Installation, activation and memory writes remain explicit user actions.
 /// </summary>
 public sealed partial class RaidRewardDiagnosticForm : Form
 {
@@ -27,6 +27,15 @@ public sealed partial class RaidRewardDiagnosticForm : Form
         Text = "验证写入并恢复", AutoSize = true,
     };
     private readonly CancellationTokenSource stop = new();
+    private readonly FlowLayoutPanel advancedActions = new()
+    {
+        Dock = DockStyle.Fill, AutoScroll = true, WrapContents = true,
+        FlowDirection = FlowDirection.LeftToRight,
+        Padding = new Padding(2),
+        Visible = false,
+    };
+    private TableLayoutPanel? diagnosticLayout;
+    private Button? advancedToggle;
     private bool closing;
 
     public RaidRewardDiagnosticForm(ISwitchConnectionAsync? connection,
@@ -35,38 +44,69 @@ public sealed partial class RaidRewardDiagnosticForm : Form
         this.connection = connection;
         Text = "太晶坑奖励写入／Hook 实机诊断";
         StartPosition = FormStartPosition.CenterParent;
-        MinimumSize = new Size(720, 440);
-        Size = new Size(920, 570);
+        MinimumSize = new Size(740, 440);
+        Size = new Size(960, 550);
 
-        var panel = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(10),
-            ColumnCount = 1, RowCount = 3 };
-        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 75));
+        var panel = new TableLayoutPanel { Dock = DockStyle.Fill,
+            Padding = new Padding(10), ColumnCount = 1, RowCount = 4 };
+        diagnosticLayout = panel;
+        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
         panel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 180));
+        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
+        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 0));
         Controls.Add(panel);
+
         var header = new Label
         {
             Dock = DockStyle.Fill,
-            Text = "纯 Windows 通信：使用现有 sys-botbase，无须 Skyline / NRO。\r\n" +
-                "实验性《紫》4.0.0 Hook 控制：请仅在离线、已备份存档环境手动安装。写入成功并不等于奖励已生效。",
-            ForeColor = Color.DarkRed,
-            AutoEllipsis = true,
+            Text = "RaidCrawler / 《紫》4.0.0  ·  现有 sys-botbase" +
+                Environment.NewLine +
+                "自动检测开房、团战、回到地图，并保存 JSONL。" +
+                " Hook 命中与实际领奖仍需另外验证。",
+            ForeColor = Color.DarkRed, AutoEllipsis = true,
+            TextAlign = ContentAlignment.MiddleLeft,
         };
         panel.Controls.Add(header, 0, 0);
         panel.Controls.Add(logText, 0, 1);
 
-        var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = true, AutoScroll = true };
-        buttons.Controls.Add(inspect);
-        buttons.Controls.Add(testWrite);
-        ConfigureRemoteHookControls(buttons, slots);
-        var markLobby = new Button { Text = "标记：已开房", AutoSize = true };
-        var markBattle = new Button { Text = "标记：已开战", AutoSize = true };
-        var markResult = new Button { Text = "标记：已结算", AutoSize = true };
-        var openFolder = new Button { Text = "打开诊断目录", AutoSize = true };
-        buttons.Controls.AddRange([markLobby, markBattle, markResult, openFolder]);
-        ConfigureRewardEvidenceControls(buttons);
-        ConfigureAutomaticRaidPhaseMonitor(buttons);
-        panel.Controls.Add(buttons, 0, 2);
+        var toolbar = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill, WrapContents = true, AutoScroll = true,
+            FlowDirection = FlowDirection.LeftToRight,
+            Padding = new Padding(2)
+        };
+        panel.Controls.Add(toolbar, 0, 2);
+        panel.Controls.Add(advancedActions, 0, 3);
+
+        ConfigureRemoteHookControls(toolbar, advancedActions, slots);
+        // Routine diagnostic actions no longer occupy the everyday toolbar.
+        advancedActions.Controls.Add(inspect);
+        advancedActions.Controls.Add(testWrite);
+
+        var openFolder = new Button { Text = "打开日志目录", AutoSize = true };
+        advancedActions.Controls.Add(openFolder);
+        ConfigureRewardEvidenceControls(advancedActions);
+        ConfigureAutomaticRaidPhaseMonitor(advancedActions);
+
+        advancedToggle = new Button { Text = "高级工具 ▾", AutoSize = true };
+        toolbar.Controls.Add(advancedToggle);
+        advancedToggle.Click += (_, _) => ToggleAdvancedActions();
+
+        openFolder.Click += (_, _) =>
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = System.IO.Path.GetDirectoryName(trace.Path)!,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                Append("error", "打开日志目录失败：" + ex.GetType().Name);
+            }
+        };
 
         var raw = RaidRewardEditor.EncodeSlots(slots);
         var sha = Convert.ToHexString(SHA256.HashData(raw));
@@ -93,9 +133,6 @@ public sealed partial class RaidRewardDiagnosticForm : Form
 
         inspect.Click += async (_,_) => await RunInspectionAsync();
         testWrite.Click += async (_,_) => await RunWriteProbeAsync();
-        markLobby.Click += (_,_) => RecordRaidMilestone("manual-lobby", "用户标记：已开房");
-        markBattle.Click += (_,_) => RecordRaidMilestone("manual-battle", "用户标记：已进入战斗");
-        markResult.Click += (_,_) => RecordRaidMilestone("manual-result", "用户标记：已结算");
         openFolder.Click += (_,_) =>
         {
             try
@@ -117,6 +154,17 @@ public sealed partial class RaidRewardDiagnosticForm : Form
             stop.Cancel();
             trace.Dispose();
         };
+    }
+
+    private void ToggleAdvancedActions()
+    {
+        if (diagnosticLayout is null || advancedToggle is null) return;
+        bool show = !advancedActions.Visible;
+        diagnosticLayout.SuspendLayout();
+        diagnosticLayout.RowStyles[3].Height = show ? 140 : 0;
+        advancedActions.Visible = show;
+        advancedToggle.Text = show ? "收起高级工具 ▴" : "高级工具 ▾";
+        diagnosticLayout.ResumeLayout(true);
     }
 
     private void Append(string stage, string message, object? detail=null)
