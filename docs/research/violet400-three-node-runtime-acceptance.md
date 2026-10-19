@@ -2,6 +2,19 @@
 
 更新：2026-10-20。只读证据与实验计划；**本任务未安装或启用新的 Native Hook，未验证本机动态 Lua 对象**。
 
+## 版本兼容性依据（2026-10-20 校正）
+
+**优先采用 SV-Script-RE 的 3.0.1 Lua 分析 4.0.0 的奖励业务流程，不再把重新获取 4.0.0 Lua RomFS 当作推进 N1/N2/N3 的硬性前置条件。**
+
+- 《紫》3.0.1 与 4.0.0 使用相同的 Main NSO Build ID 前 8 字节 `709BFD6611529864`；用户 4.0.0 实机也回读该标识和匹配的 AArch64 指令。社区 SV cheat 维护者明确确认两个版本沿用相同 Build ID 和代码偏移：
+  - https://gbatemp.net/threads/pokemon-scarlet-violet-cheat-database.621563/page-510
+  - https://gbatemp.net/threads/pokemon-scarlet-violet-cheat-database.621563/
+- 任天堂 4.0.0 官方发布内容主要是 Switch 2 显示分辨率和帧率优化，而非太晶坑业务重构：
+  - https://en-americas-support.nintendo.com/app/answers/detail/a_id/60277/p/988/c/950
+- `Martmists-GH/SV-Script-RE` 公开仓库最新版本是 `1f843bd`（2024-10-29），README 标注 3.0.1；三个研究文件均来自该版本。**仓库没有独立的 4.0.0 文件版本或两代文件 SHA 对比，故无法从此仓库单独证明 RomFS Lua 字节完全相同。**
+- 证据强度区别：**Native Build ID/地址兼容：已受社区与本机验证；Lua 业务调用链沿用：高置信研究假设，可直接作为工作基线；三个 Lua 文件的逐字节一致：尚无双版本样本验证；4.0.0 运行时命中及对象同一性：仍须测试。**
+- 因此本任务 P0 应直接推进**事件上下文 [92] 如何进入后续 `setupData[92]`**，以及生成奖励行与 `Bag.AddItem` 实参是否在同场次一致；不应再以“先获得全部 4.0.0 Lua”为由暂停这条调用链研究。
+
 ## 0. 验证目标：严格区分静态链与实机结果
 
 1. **N1 奖励生成**：FieldRaidJewelry.LotteryRewardItem 被单人模式实际调用，输出 `BattleRewardData[3]`。
@@ -48,7 +61,7 @@
 | N3 bag | 道具 ID、入包前数量、`SlotMaxNum`、调用 `AddItem` 的增量、入包后数量 | 是否真正修改运行时库存 |
 | Save (independent) | 保存请求、实际 Commit 返回码、退出后重进存档背包差分 | 是否持久保存，和 N3 不混为一谈 |
 
-不能使用 Windows 每 5 秒采样 **静态 Hook 模板**代替上述 Lua 实例的读取；普通 sys-botbase 没有瞬间的 Lua VM 栈帧和 `PC/x23` 能力。缺乏 4.0.0 自己的 Lua blob 时，以上动态字段均不得标成已证实。
+不能使用 Windows 每 5 秒采样 **静态 Hook 模板**代替上述 Lua 实例的读取；普通 sys-botbase 没有瞬间的 Lua VM 栈帧和 `PC/x23` 能力。**动态字段必须靠实际运行时观察才能标成已证实**，但 4.0.0 Lua blob 并非开展旧源码逻辑研究与对象传递审计的必要条件。
 
 ## 4. 操作说明及当前不能越过的边界
 
@@ -62,6 +75,6 @@ cd ..
 python3 RaidCrawler/tools/research/verify_sv_reward_three_nodes.py SV-Script-RE
 ```
 
-二、要把结论升级到《紫》4.0.0 **真实游戏**，需要该版本的原始 RomFS 脚本模块或可信运行时跟踪工具，用于确认方法/分支版本一致。在此之前不要实现可写奖励的单人 Native Hook。
+二、**直接按现有 3.0.1/4.0.0 兼容基线**研究三节点对象传递，并在离线受控的 4.0.0 实机上采集运行时证据。若以后取得两版对应 Lua/RomFS，可追加逐字节哈希核验；但这属于版本校验强化项，不阻塞现阶段的调用链分析。尚未验证动态生命周期前，不要直接部署新的可写单人奖励 Hook。
 
 三、在正常游戏环境验证结算，可以仅用无修改的一场单人坑，记录少量道具结算 UI 和实际背包变化；但截图/背包差分只能证明 N3 的游戏效果，**不能反向证明 N1/N2 所用的精确对象或指针**。 
