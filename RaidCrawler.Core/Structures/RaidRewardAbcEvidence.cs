@@ -44,9 +44,9 @@ public static class RaidRewardAbcEvidence
     public static string RowsDigest(IReadOnlyList<RewardRow> rows)
     {
         using var ms = new MemoryStream();
+        Span<byte> row = stackalloc byte[20];
         for (int i = 0; i < rows.Count; i++)
         {
-            Span<byte> row = stackalloc byte[20];
             BinaryPrimitives.WriteInt32LittleEndian(row[0..4], i);
             BinaryPrimitives.WriteInt32LittleEndian(row[4..8], rows[i].ItemId);
             BinaryPrimitives.WriteInt32LittleEndian(row[8..12], rows[i].Quantity);
@@ -181,7 +181,7 @@ public static class RaidRewardAbcEvidence
             string ta = TemplateState(a, template);
             string tb = TemplateState(b, template);
             string tc = TemplateState(c, template);
-            bool hasTemplate = template.Count > 0;
+            bool hasTemplate = template.Length > 0;
             bool inA = ta == "CUSTOM_ROWS_PRESENT_IN_IMPORTED_DATA";
             bool inB = tb == "CUSTOM_ROWS_PRESENT_IN_IMPORTED_DATA";
             bool inC = tc == "CUSTOM_ROWS_PRESENT_IN_IMPORTED_DATA";
