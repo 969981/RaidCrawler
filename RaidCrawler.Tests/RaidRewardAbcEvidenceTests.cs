@@ -42,7 +42,7 @@ public sealed class RaidRewardAbcEvidenceTests
         });
         var result = RaidRewardAbcEvidence.Analyze(text, Template);
         var run = Assert.Single(result.Runs);
-        Assert.Equal("CUSTOM_ROWS_NOT_OBSERVED_IN_C", run.Result);
+        Assert.Equal("CUSTOM_ROWS_ABSENT_AT_GENERATION", run.Result);
         Assert.Equal("IMPORTED_SUBSEQUENCE", run.AToB);
         Assert.Equal("IMPORTED_ROWS_MATCH", run.BToC);
         Assert.Equal("CUSTOM_ROWS_ABSENT_OR_INCOMPLETE", run.TemplateInA);
@@ -62,6 +62,7 @@ public sealed class RaidRewardAbcEvidenceTests
         Assert.Equal("CUSTOM_ROWS_PRESENT_IN_IMPORTED_DATA", f.TemplateInA);
         Assert.Equal("CUSTOM_ROWS_ABSENT_OR_INCOMPLETE", f.TemplateInB);
         Assert.Equal("CUSTOM_ROWS_ABSENT_OR_INCOMPLETE", f.TemplateInC);
+        Assert.Equal("CUSTOM_ROWS_LOST_DURING_FILTER", f.Result);
 
         var bc = RaidRewardAbcEvidence.Analyze(string.Join("\n", new[] {
             Snapshot("ABC_A_GENERATED", [Original, Charm]),
