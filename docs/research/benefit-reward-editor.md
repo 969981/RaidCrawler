@@ -4,7 +4,7 @@
 
 ## What was implemented
 
-When a raid is selected, use the existing **Rewards** button. The editor starts from the RaidCrawler-calculated default rewards and provides editable Item ID, Quantity, Rare flag and Subject columns. Actions include Add/Remove (up to 45), Reset defaults, View calculated, Load/Save JSON, and Import/Export 720-byte reward rows.
+When a raid is selected, use the existing **Rewards** button. The editor starts from the RaidCrawler-calculated default rewards and provides editable Item ID, Quantity, Rare flag and Subject columns. Actions include Add/Remove (up to 45), Reset defaults, View calculated, **Apply preview (session-only)**, Load/Save JSON, Import/Export 720-byte reward rows, and **Copy PokéLDN** host flags.
 
 - Subject 0: everyone
 - Subject 1: host
@@ -13,7 +13,7 @@ When a raid is selected, use the existing **Rewards** button. The editor starts 
 - Subject 4: matching Raid Power (the Lua filter keeps up to level N of these rows)
 - Subject 5: receiving player possesses the **Glimmering Charm** (item ID 2481, not the Shiny Charm)
 
-The edit controls permit 1–999 quantity, IDs 1–65535 and rare flag 0/1, and reject row 46 instead of silently truncating. The 999 value is only an editing constraint, **not proof of SlotMaxNum in the game's itemdata_array.bin**.
+The edit controls permit 1–999 quantity, IDs 1–65535 and rare flag 0/1, and reject row 46 instead of silently truncating. The session preview uses the raid map, area, den, seed and Raid Power boost as a key; it is only recalled in the editor and does not alter the Seed prediction data, filters, or live game. The 999 value is only an editing constraint, **not proof of SlotMaxNum in the game's itemdata_array.bin**.
 
 ### 45 rows, precisely
 
@@ -31,6 +31,10 @@ The row area occupies RaidPoint +0xE4..0x3B3. The last four bytes before the sum
 ### Default rewards from RaidCrawler
 
 RaidCrawler's own predicted result is a list of (item ID, amount, subject), based on seed and reward tables. It uses pseudo IDs 10000 (species material) and 20000 (Tera shard) for display. The editor converts these with Rewards.GetMaterial(species) and Rewards.GetTeraShard(teraType) before export. Unknown pseudo IDs are rejected by validation. Existing prediction data does not preserve every Rare flag, so it defaults to 0 and can be adjusted.
+
+### Optional PokéLDN host-argument export
+
+The **Copy PokéLDN** action builds actual command flags using the supported host grammar (examples: `--raid-reward 1:999:5 --raid-reward 796:7`). Because PokéLDN presently supports custom `subject=0` and `subject=5` only, this action refuses other subject values or `rare=1` rather than silently altering meaning. Use the full raw binary export for offline research of subject 1–4. Copying host arguments does not itself create a lobby or send packets.
 
 ### Important: this does not change Switch raid rewards
 
@@ -52,4 +56,4 @@ dotnet test RaidCrawler.Tests/RaidCrawler.Tests.csproj
 dotnet build RaidCrawler.slnx -c Release
 ~~~
 
-**Build/test execution status:** not run in this environment because .NET SDK is unavailable. Repository changes were checked through the GitHub connector; WinForms/real Switch end-to-end testing remains outstanding.
+**Build/test execution status:** Windows GitHub Actions runs on `benefit`. An early full-test run compiled the core/test projects but reported 8 failures in existing RaidReadTests/RaidStatTests/FilterTests unrelated to the editor (baseline raid-data assertions; some shared-file contention was also observed). Tests were made serial to avoid the file contention, but 8 baseline assertions remained. The workflow now builds WinForms and gates on the new reward-editor tests, reports existing baseline tests as nonblocking, and then publishes artifacts. Always consult the latest CI run for final build and unit-test results; Switch end-to-end testing is not performed here.
