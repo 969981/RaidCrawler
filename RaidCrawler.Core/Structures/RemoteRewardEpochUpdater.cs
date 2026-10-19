@@ -157,7 +157,8 @@ public sealed class RemoteRewardEpochUpdater(
     }
 
     /// <summary>Toggle next-callback behavior without restarting the game.</summary>
-    public async Task<uint> SetArmedAsync(bool enabled, CancellationToken ct = default)
+    public async Task<uint> SetArmedAsync(bool enabled, CancellationToken ct = default,
+        ReadOnlyMemory<byte> expectedTemplate = default)
     {
         await gate.WaitAsync(ct);
         try
@@ -174,6 +175,12 @@ public sealed class RemoteRewardEpochUpdater(
                 byte[] payload = await ReadExact(TemplateRva,
                     RaidRewardEditor.RewardBytes, ct);
                 RaidRewardEditor.DecodeSlots(payload);
+                if (expectedTemplate.Length > 0 &&
+                    (expectedTemplate.Length != RaidRewardEditor.RewardBytes ||
+                     !payload.AsSpan().SequenceEqual(expectedTemplate.Span)))
+                    throw new InvalidOperationException(
+                        "Switch reward payload differs from the selected Windows 720B profile. " +
+                        "Run a verified hot update before enabling.");
             }
             uint next = current + 1;
             await WriteAndVerifyEpoch(next, ct);
