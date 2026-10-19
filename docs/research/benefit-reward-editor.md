@@ -75,4 +75,7 @@ dotnet build RaidCrawler.slnx -c Release
 
 ## Preview release
 
+**First host preview v0.1.0** (2026-10-19): The source includes selected-den WSL hosting, reward subject 0–5 editing and subject-5 quick actions. Publishing this preview is gated by a clean WinForms build and new-feature tests; it is an experimental LOCAL LDN host workflow requiring PokéLDN installed separately. It is not a Nintendo online reward modifier.
+
+
 A special `[release-benefit]` commit on `benefit` triggers the Windows CI to upload an independent **pre-release** `benefit-host-v0.1.0` with a `RaidCrawler-benefit-host-win-x64.zip` package. The normal workflow still uploads the GitHub Actions `RaidCrawler` artifact. It does not modify `main`, upstream official releases, production consoles, or any attached game file. The Windows CI must pass compiler and new host tests before the release step.
