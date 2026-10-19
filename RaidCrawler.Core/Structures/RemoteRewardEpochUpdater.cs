@@ -151,6 +151,13 @@ public sealed class RemoteRewardEpochUpdater(
                 RaidRewardEditor.RewardBytes, ct);
             if (!observed.AsSpan().SequenceEqual(replacement))
                 throw new IOException("Template readback mismatch; leave odd (disarmed).");
+            // Detect another writer or a changed process before publishing.
+            // A bare single Windows-process semaphore cannot exclude a
+            // different application issuing pokeMain concurrently.
+            uint stillStaging = await ReadEpoch(ct);
+            if (stillStaging != staging)
+                throw new IOException("Epoch was changed by another actor; refusing commit.");
+            await verifyRuntimeIdentity(ct);
 
             // With an originally disarmed Hook, keep it disarmed.
             uint finalEpoch = armed ? staging + 1 : staging;
