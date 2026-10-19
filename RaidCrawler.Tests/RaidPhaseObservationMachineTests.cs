@@ -53,6 +53,25 @@ public sealed class RaidPhaseObservationMachineTests
     }
 
     [Fact]
+    public void SoloBattleNeverEndsJustBecauseLobbyFlagStaysZero()
+    {
+        var m = new RaidPhaseObservationMachine();
+        m.Observe(Flags(0, 2, 0));
+        var started = m.Observe(Flags(0, 2, 0));
+        Assert.Equal(RaidPhaseObservationMachine.Phase.Battle, started!.To);
+        Assert.False(m.HasObservedLobby);
+
+        for (int i = 0; i < 8; i++)
+            Assert.Null(m.Observe(Flags(0, 2, 0)));
+        Assert.Equal(RaidPhaseObservationMachine.Phase.Battle, m.Current);
+
+        m.Observe(Flags(0, 0, 0x11));
+        var returned = m.Observe(Flags(0, 0, 0x11));
+        Assert.Equal(RaidPhaseObservationMachine.Phase.ReturnedToOverworld, returned!.To);
+        Assert.False(returned.RewardSettledVerified);
+    }
+
+    [Fact]
     public void LobbyCancellationIsNotMarkedAsRewardSettlement()
     {
         var m = new RaidPhaseObservationMachine();
