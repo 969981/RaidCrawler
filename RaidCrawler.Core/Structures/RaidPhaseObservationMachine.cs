@@ -64,7 +64,13 @@ public sealed class RaidPhaseObservationMachine
             Phase.Lobby when signals.IsBattle => "battle-start",
             Phase.Lobby when !signals.IsLobby && signals.IsOverworld =>
                 "lobby-cancelled",
-            Phase.Battle when !signals.IsLobby => "battle-connection-ended",
+            // The lobby-disconnect heuristic is valid only if we actually
+            // observed a connected lobby in THIS raid. A solo raid has L=0
+            // throughout; otherwise we'd falsely end it immediately.
+            Phase.Battle when HasObservedLobby && !signals.IsLobby =>
+                "battle-connection-ended",
+            Phase.Battle when !HasObservedLobby && !signals.IsBattle &&
+                signals.IsOverworld => "returned-overworld-direct",
             Phase.BattleConnectionEnded when signals.IsOverworld =>
                 "returned-overworld",
             Phase.ReturnedToOverworld when signals.IsLobby => "new-lobby",
@@ -97,12 +103,15 @@ public sealed class RaidPhaseObservationMachine
             "lobby-open" or "new-lobby" => Phase.Lobby,
             "battle-start" or "battle-late-attach" => Phase.Battle,
             "battle-connection-ended" => Phase.BattleConnectionEnded,
-            "returned-overworld" => Phase.ReturnedToOverworld,
+            "returned-overworld" or "returned-overworld-direct" =>
+                Phase.ReturnedToOverworld,
             "lobby-cancelled" => Phase.LobbyClosedWithoutBattle,
             _ => before,
         };
         if (Current == Phase.Lobby)
             HasObservedLobby = true;
+        else if (next == "battle-late-attach")
+            HasObservedLobby = false;
         return new Transition(before, Current, next,
             next is "lobby-open" or "new-lobby" or "battle-late-attach");
     }
