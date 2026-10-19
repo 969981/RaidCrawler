@@ -12,9 +12,10 @@ from pathlib import Path
 HOOK = 0xE32984
 CAVE = 0x343FC90
 END = 0x3440000
-MEMCPY = 0x343C210
 SHA = "d17403eaa9d844db82f647fd2f1518806b10c0518d53602fc0ac1766298fdba0"
 OLD = 0xAA1503E8
+RETURN_AT = 0x8C
+CODE_SHA = "7c54a5ca250a1683f5d41ad6dd8fc928d83c7e94494fdafd1e1da18cda9158b8"
 
 def arm64_b(pc: int, target: int, link: bool = False) -> int:
     delta = target - pc
@@ -62,19 +63,22 @@ def build(elf: Path, asm: Path, out: Path, rewards: Path | None = None) -> dict:
     subprocess.run(["clang","--target=aarch64-none-elf","-c",str(asm),"-o",str(obj)],check=True)
     subprocess.run(["llvm-objcopy","-j",".text","-O","binary",str(obj),str(raw)],check=True)
     stub=bytearray(raw.read_bytes())
-    if len(stub) != END-CAVE or stub[0x48:0x4c] != bytes(4) or stub[0x54:0x58] != bytes(4):
-        raise ValueError("unexpected stub layout or relocation slots")
-    if any(stub[0x90:]):
-        raise ValueError("stub data should be zero-initialized")
-    stub[0x48:0x4c] = struct.pack("<I", arm64_b(CAVE+0x48, MEMCPY, True))
-    stub[0x54:0x58] = struct.pack("<I", arm64_b(CAVE+0x54, HOOK+4))
+    if len(stub) != END-CAVE or stub[RETURN_AT:RETURN_AT+4] != bytes(4):
+        raise ValueError("unexpected v2 trampoline size/return relocation slot")
+    if stub[0x90:0x94] != (1).to_bytes(4,"little") or stub[0x94:0xa0] != b"RHS2RaidPoin":
+        raise ValueError("unexpected v2 protocol header")
+    if any(stub[0xa0:]):
+        raise ValueError("reward table should be zero-initialized")
+    stub[RETURN_AT:RETURN_AT+4] = struct.pack("<I",arm64_b(CAVE+RETURN_AT,HOOK+4))
+    if hashlib.sha256(stub[:0x90]).hexdigest() != CODE_SHA:
+        raise ValueError("unrecognized v2 ARM64 reader instruction fingerprint")
 
     count=0
     if rewards is not None:
         data=rewards.read_bytes()
         count=rows_valid(data)
         stub[0xA0:0xA0+720]=data
-    assert stub[0x90:0x94] == bytes(4)  # always OBSERVE at initial installation
+    assert stub[0x90:0x94] == (1).to_bytes(4,'little')  # odd epoch: disarmed
     (out/"cave-880.bin").write_bytes(stub)
     (out/"hook-branch-4.bin").write_bytes(struct.pack("<I",arm64_b(HOOK,CAVE)))
     (out/"restore-original-4.bin").write_bytes(orig)
@@ -84,10 +88,11 @@ def build(elf: Path, asm: Path, out: Path, rewards: Path | None = None) -> dict:
         "hook_rva":hex(HOOK), "hook_original":orig.hex(),
         "code_cave_candidate_rva":hex(CAVE), "cave_end_rva":hex(END),
         "candidate_bytes":len(stub), "payload_sha256":hashlib.sha256(stub).hexdigest(),
-        "mode_rva":hex(CAVE+0x90),
+        "epoch_rva":hex(CAVE+0x90), "reader_sha256":CODE_SHA,
+        "return_branch_offset":hex(RETURN_AT),
         "game_side_telemetry":"UNAVAILABLE: code RX page may not be written by game's CPU; requires a separate verified writable buffer",
         "reward_data_rva":hex(CAVE+0xA0), "configured_rows":count,
-        "default_mode":"observe",
+        "default_mode":"disarmed",
         "runtime_checks_required":[
             "Violet exact game version and full NSO identity",
             "8 opcode fingerprint anchors",
@@ -96,7 +101,7 @@ def build(elf: Path, asm: Path, out: Path, rewards: Path | None = None) -> dict:
             "thread-safe one-instruction install and read-back",
             "kernel cache coherence for running target",
             "recovery without overwriting an executing trampoline"],
-        "warning":"Never write this candidate to a Switch without runtime mapping validation and recovery.",
+        "warning":"Offline plan only; runtime X permission, callbacks and reward persistence have not been validated.",
     }
     (out/"manifest.json").write_text(json.dumps(manifest,indent=2),encoding="utf-8")
     return manifest
