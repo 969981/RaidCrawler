@@ -43,8 +43,8 @@ public sealed class RaidRewardDiagnosticForm : Form
         var header = new Label
         {
             Dock = DockStyle.Fill,
-            Text = "全局奖励模板（与所选坑位无关）：记录配置、版本和连接状态。\r\n" +
-                "尚未安装原生对战构建 Hook；本窗口不写内存，开战节点需要手动标记。",
+            Text = "全局奖励模板（不限地图/Seed）：Windows 不写 Switch 内存。\r\n" +
+                "Switch 侧 Skyline Hook 需单独安装；可导入其 hook.log 核对真实命中。",
             ForeColor = Color.DarkRed,
             AutoEllipsis = true,
         };
@@ -56,8 +56,10 @@ public sealed class RaidRewardDiagnosticForm : Form
         var markLobby = new Button { Text = "标记：已开房", AutoSize = true };
         var markBattle = new Button { Text = "标记：已开战", AutoSize = true };
         var markResult = new Button { Text = "标记：已结算", AutoSize = true };
-        var openFolder = new Button { Text = "打开日志目录", AutoSize = true };
-        buttons.Controls.AddRange([markLobby, markBattle, markResult, openFolder]);
+        var openFolder = new Button { Text = "打开诊断目录", AutoSize = true };
+        var openNative = new Button { Text = "插件配置包", AutoSize = true };
+        var importNative = new Button { Text = "导入Hook日志", AutoSize = true };
+        buttons.Controls.AddRange([markLobby, markBattle, markResult, openFolder, openNative, importNative]);
         panel.Controls.Add(buttons, 0, 2);
 
         var raw = RaidRewardEditor.EncodeSlots(slots);
@@ -71,13 +73,26 @@ public sealed class RaidRewardDiagnosticForm : Form
         });
         Append("scope", "全局奖励模板：不限地图、Seed、坑位、活动标记；尚未绑定任何实际战斗。",
             new { mode="all-raids", actualBattleSeed=(uint?)null, targetDen=(int?)null });
-        Append("hook", "原生构建 Hook：尚未安装；未捕获实际对战事件，也没有修改奖励。");
+        Append("hook-status", "Windows 端无法确定 Skyline Hook 是否已安装；需要 Switch 插件原始日志确认实际命中。");
         Append("log", "诊断日志：" + trace.Path);
 
         inspect.Click += async (_,_) => await RunInspectionAsync();
         markLobby.Click += (_,_) => Append("manual-lobby", "用户标记：已开房（可能为本地或互联网）。不是实际 Hook 命中。");
         markBattle.Click += (_,_) => Append("manual-battle", "用户手动标记：已进入战斗。并非发送回调证据。");
         markResult.Click += (_,_) => Append("manual-result", "用户手动标记：已结算。实际奖励增量和保存尚需独立核验。");
+        openNative.Click += (_,_) =>
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = RaidRewardNativePackage.Folder,
+                    UseShellExecute = true,
+                });
+            }
+            catch (Exception ex) { Append("error", "打开插件配置包失败：" + ex.Message); }
+        };
+        importNative.Click += (_,_) => ImportNativeHookLog();
         openFolder.Click += (_,_) =>
         {
             try
@@ -99,6 +114,39 @@ public sealed class RaidRewardDiagnosticForm : Form
         string line = $"[{DateTimeOffset.Now:HH:mm:ss.fff}] {message}";
         logText.AppendText(line+Environment.NewLine);
         trace.Write(stage,message,detail);
+    }
+
+    private void ImportNativeHookLog()
+    {
+        using var dialog = new OpenFileDialog
+        {
+            Title = "选择从 Switch SD 卡复制出的 hook.log",
+            Filter = "Hook log (*.log;*.txt)|*.log;*.txt|All files (*.*)|*.*"
+        };
+        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+        try
+        {
+            var info = new FileInfo(dialog.FileName);
+            if (info.Length > 2 * 1024 * 1024)
+                throw new InvalidDataException("日志超过 2 MiB，请先截取相关会话。");
+            string[] entries = File.ReadAllLines(dialog.FileName);
+            int hookHits=entries.Count(x=>x.Contains("HOOK_HIT",StringComparison.Ordinal));
+            int verified=entries.Count(x=>x.Contains("PATCH_VERIFIED",StringComparison.Ordinal));
+            int rejected=entries.Count(x=>x.Contains("PATCH_REJECTED",StringComparison.Ordinal) ||
+                x.Contains("PATCH_VERIFY_FAILED",StringComparison.Ordinal));
+            Append("native-log-import",
+                $"已导入原生日志：{entries.Length} 行，HOOK_HIT={hookHits}，PATCH_VERIFIED={verified}，错误={rejected}；实际入包和存档仍需验证。",
+                new { hookHits, verified, rejected, lines=entries.Length, file=info.Name });
+            foreach (string line in entries.Where(x=>x.Contains("HOOK_HIT") ||
+                        x.Contains("ELF_FINGERPRINT") || x.Contains("CONFIG_VALID") ||
+                        x.Contains("MODE ") || x.Contains("NATIVE_HOOK_INSTALLED") ||
+                        x.Contains("DISABLED")).TakeLast(100))
+                Append("native-log", line.Length>512?line[..512]:line);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            Append("error", "导入原生 Hook 日志失败：" + ex.Message);
+        }
     }
 
     private async Task RunInspectionAsync()
@@ -142,12 +190,12 @@ public sealed class RaidRewardDiagnosticForm : Form
                         $"expected=0x{anchor.AArch64Opcode:X8}; actual={(actual.HasValue ? $"0x{actual.Value:X8}" : "N/A")}",
                         new { offset=anchor.Rva, expected=anchor.AArch64Opcode, observed=actual, matches=same });
                 }
-                Append("fingerprint", $"《紫》4.0.0 静态指令匹配 {matched}/{NativeRaidCodeFingerprint.Violet400.Count}。这不表示 Hook 被调用。",
+                Append("fingerprint", $"《紫》4.0.0 当前指令匹配 {matched}/{NativeRaidCodeFingerprint.Violet400.Count}。已安装 inline Hook 时补丁位置可能不再匹配，需 Switch 原生日志确认。",
                     new { matched, total=NativeRaidCodeFingerprint.Violet400.Count });
             }
             else
                 Append("elf", "此游戏版本尚无已验证的原生对战构建指令 RVA；不检查或使用《紫》4.0.0 地址。");
-            Append("blocked", "HOOK_NOT_INSTALLED: 只读环境检查结束，未截获实际对战构建，未写入任何奖励。");
+            Append("probe-complete", "Windows 只读检查完成；真实 HOOK_HIT/PATCH_VERIFIED 需导入 Switch hook.log 核实。");
         }
         catch(OperationCanceledException)
         {
