@@ -114,7 +114,7 @@ public sealed class RaidRewardDiagnosticForm : Form
         try
         {
             var token=deadline.Token;
-            Append("probe", "开始读取：Title ID / 游戏版本 / botbase 版本。只读，不扫描内存，不进行写入。");
+            Append("probe", "读取游戏身份与静态指令指纹（仅受支持的版本）；不扫描奖励对象，不进行写入。");
             string title=(await connection.GetTitleID(token)).Trim();
             string version=(await connection.GetGameInfo("version", token)).Trim();
             string botbase=(await connection.GetBotbaseVersion(token)).Trim();
@@ -130,10 +130,24 @@ public sealed class RaidRewardDiagnosticForm : Form
             ulong mainBase = await connection.GetMainNsoBaseAsync(token);
             Append("main-base", $"Main NSO base=0x{mainBase:X}; 本次地址受 ASLR 影响，不是永久奖励指针。");
             if (title == Offsets.VioletID && version == "4.0.0")
-                Append("elf", "《紫》4.0.0：有静态 ELF 序列化 RVA 参考，但尚未观测到官方在线房主执行这条回调。");
+            {
+                int matched = 0;
+                foreach (var anchor in NativeRaidCodeFingerprint.Violet400)
+                {
+                    token.ThrowIfCancellationRequested();
+                    var bytes = await connection.ReadBytesMainAsync(anchor.Rva, 4, token);
+                    var (same, actual) = NativeRaidCodeFingerprint.Check(anchor, bytes);
+                    if (same) matched++;
+                    Append("opcode", $"main+0x{anchor.Rva:X}: {(same ? "MATCH" : "MISMATCH")}; " +
+                        $"expected=0x{anchor.AArch64Opcode:X8}; actual={(actual.HasValue ? $"0x{actual.Value:X8}" : "N/A")}",
+                        new { offset=anchor.Rva, expected=anchor.AArch64Opcode, observed=actual, matches=same });
+                }
+                Append("fingerprint", $"《紫》4.0.0 静态指令匹配 {matched}/{NativeRaidCodeFingerprint.Violet400.Count}。这不表示 Hook 被调用。",
+                    new { matched, total=NativeRaidCodeFingerprint.Violet400.Count });
+            }
             else
-                Append("elf", "此游戏版本尚无受信任的在线奖励 Hook RVA；禁止使用《紫》4.0.0 的静态地址。");
-            Append("blocked", "HOOK_NOT_INSTALLED: 只读环境检查结束，未截获对战构建，也未写入奖励。");
+                Append("elf", "此游戏版本尚无已验证的原生对战构建指令 RVA；不检查或使用《紫》4.0.0 地址。");
+            Append("blocked", "HOOK_NOT_INSTALLED: 只读环境检查结束，未截获实际对战构建，未写入任何奖励。");
         }
         catch(OperationCanceledException)
         {
