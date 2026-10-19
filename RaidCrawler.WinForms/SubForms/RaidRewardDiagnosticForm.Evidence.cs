@@ -75,34 +75,6 @@ public sealed partial class RaidRewardDiagnosticForm
         _ => null,
     };
 
-    private void RecordRaidMilestone(string stage, string message)
-    {
-        if (stage == "manual-lobby" || raidRunId is null)
-        {
-            integrityTimer.Stop();
-            raidRunId = Guid.NewGuid().ToString("N");
-            readOnlyBattleSamples = 0;
-        }
-        Append(stage, message + $"；run={raidRunId[..8]}；{Scenario}。",
-            new { runId=raidRunId, scenario=Scenario, playerCharm=ConfirmedCharm,
-                source="USER_MARKED", nativeHookHitObserved=false,
-                knownHookScope="LDN_OUTBOUND_0X2F", notSoloProof=true });
-
-        if (stage == "manual-battle")
-        {
-            integrityTimer.Start();
-            Append("battle-monitor-start",
-                "开始每 5 秒只读核验入口/epoch/720B哈希；不能检测 CPU 进入跳板。",
-                new {runId=raidRunId, intervalMs=integrityTimer.Interval,
-                    nativeHookHit="NOT_OBSERVED", gameMemoryWrites=false});
-        }
-        if (stage == "manual-result")
-        {
-            integrityTimer.Stop();
-            AppendEvidenceSummary();
-        }
-    }
-
     private async Task CaptureEvidenceSnapshotAsync(string source)
     {
         if (connection is null || remoteBusy || closing)
