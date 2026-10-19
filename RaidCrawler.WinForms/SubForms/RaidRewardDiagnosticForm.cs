@@ -135,6 +135,10 @@ public sealed class RaidRewardDiagnosticForm : Form
                 Append("blocked", "当前连接的游戏版本与编辑时的朱／紫快照不一致，不能写入。");
                 return;
             }
+            // The ASLR-dependent NSO base is useful for later native callback
+            // research, but this read does not execute a hook or find a live RaidPoint.
+            ulong mainBase = await connection.GetMainNsoBaseAsync(token);
+            Append("main-base", $"Main NSO base=0x{mainBase:X}; 本次地址受 ASLR 影响，不是永久奖励指针。");
             if (title == Offsets.VioletID && version == "4.0.0")
                 Append("elf", "《紫》4.0.0：有静态 ELF 序列化 RVA 参考，但尚未观测到官方在线房主执行这条回调。");
             else
