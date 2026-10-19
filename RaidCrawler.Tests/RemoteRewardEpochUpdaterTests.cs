@@ -12,6 +12,7 @@ public sealed class RemoteRewardEpochUpdaterTests
         public byte[] HookEntry = new byte[4];
         public List<ulong> Writes = [];
         public bool FailTemplateWrite;
+        public bool ForeignWriterChangesEpoch;
         public int IdentityChecks;
 
         public FakeRemote(bool prepareSignature = true)
@@ -56,6 +57,8 @@ public sealed class RemoteRewardEpochUpdaterTests
                 throw new IOException("Simulated partial/failed write");
             int offset = checked((int)(rva - RemoteRewardEpochUpdater.CaveRva));
             data.CopyTo(Cave, offset);
+            if (ForeignWriterChangesEpoch && rva == RemoteRewardEpochUpdater.TemplateRva)
+                BinaryPrimitives.WriteUInt32LittleEndian(Cave.AsSpan(0x90), Epoch + 2);
             return Task.CompletedTask;
         }
 
@@ -170,6 +173,19 @@ public sealed class RemoteRewardEpochUpdaterTests
         f.Writes.Clear();
         Assert.Equal(5u, await c.SetArmedAsync(false));
         Assert.Equal(new[] { RemoteRewardEpochUpdater.EpochRva }, f.Writes);
+    }
+
+    [Fact]
+    public async Task ForeignWriterEpochChangePreventsPublishing()
+    {
+        var f = new FakeRemote();
+        f.ForeignWriterChangesEpoch = true;
+        await Assert.ThrowsAsync<IOException>(() =>
+            f.Controller().ReplaceAsync(Reward(15, 999)));
+        Assert.True((f.Epoch & 1) == 1); // no falsely armed publication
+        Assert.Equal(new[] {
+            RemoteRewardEpochUpdater.EpochRva,
+            RemoteRewardEpochUpdater.TemplateRva }, f.Writes);
     }
 
     [Fact]
