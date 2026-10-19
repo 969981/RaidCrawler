@@ -22,6 +22,16 @@ public sealed class RemoteRewardEpochUpdater(
     public const ulong TemplateRva = CaveRva + 0xA0;
     // ASCII "RHS2" little endian. Old stub.S contains zero, so it is rejected.
     public const uint ProtocolMagic = 0x32534852;
+    public static readonly (ulong Offset, uint Opcode)[] ReaderAnchors =
+    [
+        (0x18, 0x88DFFE0A), // ldar w10,[x16]
+        (0x4C, 0x88DFFE0B), // ldar w11,[x16]
+        (0x50, 0x6B0B015F), // cmp w10,w11
+        (0x58, 0x9104F28B), // add x11,x20,#0x13c
+        (0x74, 0xD51B420F), // msr nzcv,x15
+        (0x88, 0xAA1503E8), // original mov x8,x21
+        (0x8C, 0x1767CB1B), // branch back to main+0xE32988
+    ];
     public const uint MinEpoch = 1; // odd = disarmed/updating, even >= 2 = armed
     public const uint MaxEpoch = uint.MaxValue - 2;
 
@@ -77,6 +87,15 @@ public sealed class RemoteRewardEpochUpdater(
             !header.AsSpan(8, 8).SequenceEqual(Marker))
             throw new InvalidOperationException("v2 seqlock signature is absent. " +
                 "Refusing to treat the legacy mode word as an epoch.");
+        byte[] readerCode = await ReadExact(CaveRva, 0x90, ct);
+        foreach (var (offset, expected) in ReaderAnchors)
+        {
+            uint actual = BinaryPrimitives.ReadUInt32LittleEndian(
+                readerCode.AsSpan(checked((int)offset), 4));
+            if (actual != expected)
+                throw new InvalidOperationException(
+                    $"v2 reader mismatch at cave+0x{offset:X}; refusing hot update.");
+        }
         uint version = BinaryPrimitives.ReadUInt32LittleEndian(header);
         if (version < MinEpoch || version > MaxEpoch)
             throw new InvalidOperationException("Unexpected epoch / possible rollover.");
