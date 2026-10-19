@@ -51,6 +51,7 @@ public sealed partial class RaidRewardDiagnosticForm
             await CaptureEvidenceSnapshotAsync("manual-snapshot"));
         var import = Add("导入 LDN 证据 JSONL", (_, _) => ImportPokeLdnEvidence());
         var bag = Add("记录背包前后数量", (_, _) => RecordBagDelta());
+        Add("关联结算截图", (_, _) => RecordEvidenceScreenshot());
         Add("输出证据结论", (_, _) => AppendEvidenceSummary());
 
         integrityTimer.Tick += async (_, _) =>
@@ -250,6 +251,33 @@ public sealed partial class RaidRewardDiagnosticForm
                 after=(int)after.Value, delta=(int)(after.Value-before.Value),
                 source="USER_REPORTED", gameMemoryRead=false,
                 nativeHookHit="NOT_OBSERVED", saved="NOT_VERIFIED" });
+    }
+
+    private void RecordEvidenceScreenshot()
+    {
+        using var picker = new OpenFileDialog
+        {
+            Title = "关联团战结算截图（仅登记文件名和 SHA，不上传）",
+            Filter = "Image files (*.png;*.jpg;*.jpeg;*.webp)|*.png;*.jpg;*.jpeg;*.webp",
+        };
+        if (picker.ShowDialog(this) != DialogResult.OK) return;
+        try
+        {
+            var info = new FileInfo(picker.FileName);
+            if (info.Length is < 1 or > 20_000_000)
+                throw new InvalidDataException("图片大小需在 1B 到 20MB 之间。");
+            string digest = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(info.FullName)));
+            Append("manual-reward-screenshot",
+                $"用户关联结算截图 {info.Name}，SHA256={digest}；图片内容未进行自动奖励识别。",
+                new { runId=raidRunId, scenario=Scenario,
+                    fileName=info.Name, bytes=info.Length,
+                    imageSha256=digest, source="USER_SUPPLIED_SCREENSHOT",
+                    automaticRewardRecognition=false, gameHookHit="NOT_OBSERVED" });
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            Append("screenshot-evidence-error", "图片关联失败：" + ex.Message);
+        }
     }
 
     private void AppendEvidenceSummary()
