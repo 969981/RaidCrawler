@@ -1,0 +1,73 @@
+name: Publish native Hook test bundle
+on:
+  push:
+    branches: [benefit]
+    paths:
+      - ".github/workflows/benefit-native-release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release-native]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate upstream build evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh run view 39248697511 -R "$GITHUB_REPOSITORY" --json conclusion -q '.conclusion')" = "success"
+          test "$(gh run view 39248946534 -R "$GITHUB_REPOSITORY" --json conclusion -q '.conclusion')" = "success"
+      - name: Download both verified CI artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 39248697511 -R "$GITHUB_REPOSITORY" -n RaidCrawler-SV-Violet400-Skyline-NRO -D artifacts/native
+          gh run download 39248946534 -R "$GITHUB_REPOSITORY" -n RaidCrawler -D artifacts/windows
+          test -n "$(find artifacts/native -name '*.nro' -print -quit)"
+          test -n "$(find artifacts/windows -name '*.exe' -print -quit)"
+      - name: Create user-installable distributions
+        run: |
+          set -euo pipefail
+          mkdir -p dist/atmosphere/contents/01008F6008C5E000/romfs/skyline/plugins
+          mkdir -p dist/switch/raidcrawler
+          nro="$(find artifacts/native -type f -name '*.nro' | head -n 1)"
+          cp "$nro" dist/atmosphere/contents/01008F6008C5E000/romfs/skyline/plugins/raidcrawler_sv_reward_hook.nro
+          cp native/sv_raid_reward_hook/hook-mode.txt dist/switch/raidcrawler/hook-mode.txt
+          cp native/sv_raid_reward_hook/README.md dist/README.md
+          printf 'Run Windows reward editor, click Write Rewards, then manually copy generated rewards.bin to SD /switch/raidcrawler/.\nDefault hook-mode.txt=observe. To attempt a game-side memory patch in authorized research, set it to apply and restart the game.\n' > dist/switch/raidcrawler/INSTRUCTIONS.txt
+          cd dist && zip -qr ../RaidCrawler-Violet400-Skyline-Hook-v0.1.6.zip atmosphere switch README.md
+          cd ..
+          (cd artifacts/windows && zip -qr ../../RaidCrawler-benefit-v0.1.6-win-x64.zip .)
+          unzip -l RaidCrawler-Violet400-Skyline-Hook-v0.1.6.zip | tail -n 12
+      - name: Publish experimental prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="benefit-native-hook-v0.1.6"
+          cat > release-notes.txt <<'END'
+          ## Native reward Hook: experimental pre-release
+
+          - Includes Windows RaidCrawler reward editor and the separately compiled Switch-side Skyline `.nro` for **Pokémon Violet 4.0.0 only** (TitleID 01008F6008C5E000).
+          - Native hook registration is at `main+0xE32984`; callback receives `x23`, verifies `RaidPoint_`, and in explicit `apply` mode replaces and verifies only the 720-byte 45-row reward area.
+          - The plugin is **observe-only by default**. A user must explicitly set `/switch/raidcrawler/hook-mode.txt` to `apply` and restart the game before the Hook attempts memory modification.
+          - The Windows editor prepares `%LOCALAPPDATA%\RaidCrawler\native-hook\rewards.bin`; users must manually copy that file to `/switch/raidcrawler/rewards.bin` on their Switch SD.
+          - Native logging: `/switch/raidcrawler/hook.log`; Windows diagnostic view can import and classify Hook events.
+
+          **Evidence:** Skyline NRO build CI [39248697511](https://github.com/969981/RaidCrawler/actions/runs/39248697511); Windows build CI [39248946534](https://github.com/969981/RaidCrawler/actions/runs/39248946534). Both succeeded.
+
+          **Not yet verified:** No actual Switch test logs showing `HOOK_HIT` or `PATCH_VERIFIED`, no measured bag deltas or persistence, and no conclusion that Nintendo official online raid sessions transmit or honor this custom reward table. Build success is NOT end-to-end game validation. Proceed on backed-up research equipment, test observe mode before opting in, and never transplant the offset to other game builds.
+          END
+          if gh release view "$tag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" RaidCrawler-Violet400-Skyline-Hook-v0.1.6.zip RaidCrawler-benefit-v0.1.6-win-x64.zip -R "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$tag" RaidCrawler-Violet400-Skyline-Hook-v0.1.6.zip RaidCrawler-benefit-v0.1.6-win-x64.zip -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "RaidCrawler v0.1.6 — Violet 4.0.0 原生奖励 Hook 实验版" --notes-file release-notes.txt --prerelease
+          fi
