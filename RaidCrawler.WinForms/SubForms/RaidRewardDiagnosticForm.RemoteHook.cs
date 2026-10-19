@@ -123,7 +123,10 @@ public sealed partial class RaidRewardDiagnosticForm
             Append("hook-operation", "开始：" + action);
             string result = await operation(remoteController, deadline.Token);
             Append("hook-memory-confirmed", action + "：" + result,
-                new { hookHit = false, rewardReceived = false, saveVerified = false,
+                new { nativeHookHit = "NOT_OBSERVED",
+                    receiverReward = "NOT_OBSERVED",
+                    bagChange = "NOT_OBSERVED",
+                    savePersistence = "NOT_OBSERVED",
                     controlPlaneOnly = true });
         }
         catch (OperationCanceledException)
