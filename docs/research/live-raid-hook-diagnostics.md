@@ -1,3 +1,7 @@
+## Windows 远程安装（方案 A）最新核验
+
+当前标准 botbase 的 `pokeMain` 仍只对应 `svcWriteDebugProcessMemory`。前置诊断新增 `getBuildID` **前 8 字节前缀**和 `remote-hook-a` 能力缺口报告；这不是 Hook 安装证据。详细研究：[windows-remote-hook-feasibility.md](windows-remote-hook-feasibility.md)。
+
 # 全局奖励模板与任意场次的战斗构建 Hook（2026-10-19）
 
 ## 当前实现

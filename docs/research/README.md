@@ -1,5 +1,7 @@
 # RaidCrawler benefit · 技术研究索引
 
+- [方案 A：Windows 远程安装 Hook 的能力边界与增强 botbase 设计](windows-remote-hook-feasibility.md)——源码核对 sys-botbase 调试读写、Build ID 前缀、缺少的寄存器/缓存/回滚能力、A0/A1/A2 对比和协议 P0–P5。
+
 - [全局奖励模板与任意场次 Hook 边界](global-any-raid-reward-hook.md)——模板不再绑定某个 Seed／坑位，增加实机静态指纹检测与 Hook 待办。
 
 - [实机奖励诊断与 Hook 日志格式](live-raid-hook-diagnostics.md)——在编辑器点“写入奖励”启动只读实机诊断，保存 JSONL、Main NSO 基址、版本及手动开房时间线；实际原生写入尚未安装。
