@@ -10,6 +10,7 @@ public class ClientConfig : IDateAdvanceConfig, IWebhookConfig
     public int UsbPort { get; set; }
     public SwitchProtocol Protocol { get; set; } = SwitchProtocol.WiFi;
     public string Game { get; set; } = "Scarlet";
+    public string Language { get; set; } = "zh-Hans"; // PKHeX.Core GameStrings language; "en" is supported.
     public int Progress { get; set; }
     public int EventProgress { get; set; }
     public bool EnableFilters { get; set; } = true;

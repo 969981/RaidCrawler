@@ -55,10 +55,13 @@ public record RaidContainer
         "su2_raid_enemy_06_array.bin",
     ];
 
-    public RaidContainer(string game)
+    public RaidContainer(string game, string language = "zh-Hans")
     {
         Game = game;
-        Strings = GameInfo.GetStrings("en");
+        // PKHeX.Core is the single source of truth for localized species, items, moves, abilities and natures.
+        // Invalid/missing language resources fall back to English without altering item IDs or save data.
+        try { Strings = GameInfo.GetStrings(language is "zh-Hans" or "en" ? language : "en"); }
+        catch (Exception) { Strings = GameInfo.GetStrings("en"); }
         GemTeraRaidsBase = TeraEncounter.GetAllEncounters(RaidDataBase, TeraRaidMapParent.Paldea);
         GemTeraRaidsKitakami = TeraEncounter.GetAllEncounters(RaidDataKitakami, TeraRaidMapParent.Kitakami);
         GemTeraRaidsBlueberry = TeraEncounter.GetAllEncounters(RaidDataBlueberry, TeraRaidMapParent.Blueberry);
