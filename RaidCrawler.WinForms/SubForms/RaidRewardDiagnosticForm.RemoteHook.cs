@@ -11,8 +11,16 @@ public sealed partial class RaidRewardDiagnosticForm
     private byte[]? remoteRewardTemplate;
     private ulong? remoteMainBase;
     private bool remoteBusy;
+    private readonly Label hookStatusLabel = new()
+    {
+        AutoSize = false, Width = 154, Height = 30,
+        Text = "Hook：检测中", TextAlign = ContentAlignment.MiddleLeft,
+        AutoEllipsis = true
+    };
+    private Button? armToggleButton;
 
-    private void ConfigureRemoteHookControls(FlowLayoutPanel buttons,
+    private void ConfigureRemoteHookControls(
+        FlowLayoutPanel primary, FlowLayoutPanel advanced,
         IReadOnlyList<RaidRewardEntry?> slots)
     {
         remoteRewardTemplate = RaidRewardEditor.EncodeSlots(slots);
@@ -22,37 +30,76 @@ public sealed partial class RaidRewardDiagnosticForm
                 (bytes, rva, ct) => connection.WriteBytesMainAsync(bytes, rva, ct),
                 VerifyViolet400IdentityAsync);
 
-        Button Add(string name)
+        primary.Controls.Add(hookStatusLabel);
+
+        Button Add(FlowLayoutPanel target, string name)
         {
-            var button = new Button { Text = name, AutoSize = true, Margin = new Padding(2) };
-            buttons.Controls.Add(button);
+            var button = new Button
+            {
+                Text = name, AutoSize = true, Margin = new Padding(3),
+            };
+            target.Controls.Add(button);
             remoteHookButtons.Add(button);
             return button;
         }
-        var status = Add("Hook 状态");
-        var install = Add("安装（默认停用）");
-        var enable = Add("启用");
-        var update = Add("无重启更新");
-        var disable = Add("停用");
-        var remove = Add("卸载入口");
+        var install = Add(primary, "安装 Hook");
+        armToggleButton = Add(primary, "启用 Hook");
+        var update = Add(primary, "应用新奖励");
+        var status = Add(advanced, "刷新 Hook 状态");
+        var remove = Add(advanced, "卸载入口");
 
         status.Click += async (_, _) => await RunRemoteActionAsync("查询状态",
             async (manager, ct) => Describe(await manager.StatusAsync(ct)), false);
         install.Click += async (_, _) => await RunRemoteActionAsync("安装",
             async (manager, ct) => Describe(await manager.InstallAsync(remoteRewardTemplate!, ct)), true);
-        enable.Click += async (_, _) => await RunRemoteActionAsync("启用",
-            async (manager, ct) => Describe(await manager.SetEnabledAsync(true, ct)), true);
-        update.Click += async (_, _) => await RunRemoteActionAsync("热更新",
+        armToggleButton.Click += async (_, _) =>
+            await RunRemoteActionAsync("切换 Hook 启停", async (manager, ct) =>
+            {
+                var previous = await manager.StatusAsync(ct);
+                bool enable = previous.Installation switch
+                {
+                    RemoteViolet400HookInstaller.InstallState.InstalledDisarmed => true,
+                    RemoteViolet400HookInstaller.InstallState.InstalledArmed => false,
+                    _ => throw new InvalidOperationException("请先检查或安装 Hook；当前状态不能切换。")
+                };
+                return Describe(await manager.SetEnabledAsync(enable, ct));
+            }, true);
+        update.Click += async (_, _) => await RunRemoteActionAsync("无重启应用奖励",
             async (manager, ct) =>
             {
                 var updated = await manager.UpdateAsync(remoteRewardTemplate!, ct);
                 return $"epoch {updated.OldEpoch} → {updated.NewEpoch}; " +
                     $"原状态启用={updated.Armed}; {updated.Detail}";
             }, true);
-        disable.Click += async (_, _) => await RunRemoteActionAsync("停用",
-            async (manager, ct) => Describe(await manager.SetEnabledAsync(false, ct)), true);
         remove.Click += async (_, _) => await RunRemoteActionAsync("卸载",
             async (manager, ct) => Describe(await manager.UninstallAsync(ct)), true);
+    }
+
+    private void UpdateVisualHookState(RemoteViolet400HookInstaller.State state)
+    {
+        hookStatusLabel.Text = state.Installation switch
+        {
+            RemoteViolet400HookInstaller.InstallState.Empty => "Hook：未安装",
+            RemoteViolet400HookInstaller.InstallState.InstalledArmed =>
+                $"Hook：已启用 ({state.Epoch})",
+            RemoteViolet400HookInstaller.InstallState.InstalledDisarmed =>
+                $"Hook：已停用 ({state.Epoch})",
+            RemoteViolet400HookInstaller.InstallState.DetachedCodePresent =>
+                "Hook：已卸载入口",
+            _ => "Hook：状态异常"
+        };
+        if (armToggleButton is not null)
+        {
+            armToggleButton.Text = state.Installation ==
+                RemoteViolet400HookInstaller.InstallState.InstalledArmed
+                ? "停用 Hook" : "启用 Hook";
+        }
+    }
+
+    private async Task RefreshHookStatusOnOpenAsync()
+    {
+        await RunRemoteActionAsync("自动刷新状态",
+            async (manager, ct) => Describe(await manager.StatusAsync(ct)), false);
     }
 
     private static string Describe(RemoteViolet400HookInstaller.State state) =>
@@ -122,6 +169,8 @@ public sealed partial class RaidRewardDiagnosticForm
         {
             Append("hook-operation", "开始：" + action);
             string result = await operation(remoteController, deadline.Token);
+            var state = await remoteController.StatusAsync(deadline.Token);
+            UpdateVisualHookState(state);
             Append("hook-memory-confirmed", action + "：" + result,
                 new { nativeHookHit = "NOT_OBSERVED",
                     receiverReward = "NOT_OBSERVED",
@@ -131,10 +180,12 @@ public sealed partial class RaidRewardDiagnosticForm
         }
         catch (OperationCanceledException)
         {
+            hookStatusLabel.Text = "Hook：状态未知";
             Append("hook-error", action + " 超时或取消；请先查询入口/跳板状态，不要盲目重复写入。");
         }
         catch (Exception ex)
         {
+            hookStatusLabel.Text = "Hook：请检查日志";
             Append("hook-error", action + " 失败：" + ex.GetType().Name + "：" +
                 ex.Message + "；未知状态下禁止继续修改。");
         }
