@@ -1,6 +1,6 @@
 # Benefit — SV raid reward editor
 
-**Scope / state (2026-10-19):** This branch includes a functioning *local* reward-row editor, not a game memory patch. See the original project README for ordinary raid scanning.
+**Scope / state (2026-10-19):** This branch includes a functioning *local* reward-row editor plus an optional **explicitly launched** one-raid PokéLDN WSL host, not a game memory patch. See the original project README for ordinary raid scanning.
 
 ## What was implemented
 
@@ -36,9 +36,19 @@ RaidCrawler's own predicted result is a list of (item ID, amount, subject), base
 
 The **Copy PokéLDN** action builds actual command flags using the supported host grammar (examples: `--raid-reward 1:999:5 --raid-reward 796:7`). Because PokéLDN presently supports custom `subject=0` and `subject=5` only, this action refuses other subject values or `rare=1` rather than silently altering meaning. Use the full raw binary export for offline research of subject 1–4. Copying host arguments does not itself create a lobby or send packets.
 
-### Important: this does not change Switch raid rewards
+### Hosted raids via PokéLDN (opt-in)
 
-The existing RaidCrawler Switch connection reads 0x20-byte **den entries** containing raid seed/area/status, not a ready-to-edit 45-row RaidPoint. Editing local predictions or exporting bytes will **not alter** game rewards or internet raid lobbies. This branch intentionally adds no unverified WriteBytesAbsoluteAsync calls, hardcoded live pointer or forced console writes. For a game-hosting integration, the full transient battle bootstrap and current runtime game version must first be validated using a controlled test environment.
+After selecting a supported ordinary/black den and configuring rows, press **Host selected raid**. The new modal starts a separate `wsl.exe` process using the **selected seed / version / map / content**, with chosen **story progress**, a legal **host Pokémon record (.pk9)**, one to three guest consoles, and `--raid-reward ITEM:QUANTITY:SUBJECT` flags. This is a single hosted LDN raid; it does **not** rewrite any of the game's on-map den save entries, automatically host a queue, or join Nintendo's online matchmaking.
+
+The host form requires you to configure an installed WSL distribution, **absolute Linux path to `pokeldn`**, and absolute Linux path to a host `.pk9` record. It shows the seed and location snapshot, asks for confirmation, starts a logged external process, and provides a Stop button. Subject 0 and 5 and rare=0 are currently the only allowed custom host flags. **Event dens are refused** because PokéLDN needs a matching event delivery file, not merely an event seed. The program does not silently coerce unsupported rows.
+
+The recommended default is local wireless hosting, which requires an LDN-capable AP Wi-Fi interface accessible to PokéLDN (WSL2 by itself may lack that); `--ip-host` is for the ldn_mitm/emulator LAN backend **only**, not Nintendo online. Wi-Fi/radio permission, keys, network support and path checks are intentionally left to the actual PokéLDN preflight and its log. Stopping `wsl.exe` might not stop a detached Linux child in every environment; verify with `ps` if uncertain.
+
+The editor passes a **snapshot of the selection**, not a future mutable UI index. PokéLDN generates raid details from seed and selected progress: confirm boss/species/stars printed by the host before admitting any guest, since mismatches are possible. The host session ends according to PokéLDN's `--seconds`; rehosting another raid requires another explicit launch.
+
+### Important: no direct Switch save/memory patch
+
+The existing RaidCrawler Switch connection reads 0x20-byte **den entries** containing raid seed/area/status, not a ready-to-edit 45-row RaidPoint. Editing local predictions or exporting bytes alone will **not alter** game rewards or internet raid lobbies. The **Host selected raid** action separately passes selected rewards to PokéLDN's local LDN hosting process; it does not modify existing game dens, save blocks or Nintendo's online lobbies. This branch intentionally adds no unverified WriteBytesAbsoluteAsync calls, hardcoded live pointer or forced console writes. For a game-hosting integration, the full transient battle bootstrap and current runtime game version must first be validated using a controlled test environment.
 
 Relevant upstream reference: [PokéLDN research SV raid source](https://github.com/969981/pokeldn/blob/research/pokeldn/sv/raid.py).
 
@@ -48,6 +58,9 @@ Relevant upstream reference: [PokéLDN research SV raid source](https://github.c
 - [RewardEditorForm.cs](../../RaidCrawler.WinForms/SubForms/RewardEditorForm.cs) — WinForms grid and import/export UI.
 - [MainWindow.cs](../../RaidCrawler.WinForms/MainWindow.cs) — opens editor with selected seed's calculated reward rows.
 - [RaidRewardEditorTests.cs](../../RaidCrawler.Tests/RaidRewardEditorTests.cs) — row limit, 720-byte roundtrip, malformed rows, pseudo ID resolution.
+- [PokeLdnHostPlan.cs](../../RaidCrawler.Core/Structures/PokeLdnHostPlan.cs) — immutable selected-den snapshot; validates/builds `sv_host.py` argv before any session starts.
+- [PokeLdnHostForm.cs](../../RaidCrawler.WinForms/SubForms/PokeLdnHostForm.cs) — WSL host process, explicit confirmation, stdout/stderr log, stop control; settings stored under `%LOCALAPPDATA%/RaidCrawler/pokeldn-host.json`.
+- [PokeLdnHostPlanTests.cs](../../RaidCrawler.Tests/PokeLdnHostPlanTests.cs) — exact seed/version/map, event refusal, no unsupported subject/rare, 45-row boundary, explicit ip-host.
 
 On Windows with .NET 10 SDK:
 
@@ -57,3 +70,7 @@ dotnet build RaidCrawler.slnx -c Release
 ~~~
 
 **Build/test execution status:** Windows GitHub Actions runs on `benefit`. An early full-test run compiled the core/test projects but reported 8 failures in existing RaidReadTests/RaidStatTests/FilterTests unrelated to the editor (baseline raid-data assertions; some shared-file contention was also observed). Tests were made serial to avoid the file contention, but 8 baseline assertions remained. The workflow now builds WinForms and gates on the new reward-editor tests, reports existing baseline tests as nonblocking, and then publishes artifacts. Always consult the latest CI run for final build and unit-test results; Switch end-to-end testing is not performed here.
+
+## Preview release
+
+A special `[release-benefit]` commit on `benefit` triggers the Windows CI to upload an independent **pre-release** `benefit-host-v0.1.0` with a `RaidCrawler-benefit-host-win-x64.zip` package. The normal workflow still uploads the GitHub Actions `RaidCrawler` artifact. It does not modify `main`, upstream official releases, production consoles, or any attached game file. The Windows CI must pass compiler and new host tests before the release step.
