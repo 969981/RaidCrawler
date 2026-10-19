@@ -75,8 +75,17 @@ public sealed partial class RaidRewardDiagnosticForm : Form
             subjects=slots.Where(s => s is not null).GroupBy(s => s!.Subject)
                 .ToDictionary(g=>g.Key.ToString(),g=>g.Count()),
         });
-        Append("scope", "全局奖励模板：不限地图、Seed、坑位、活动标记；尚未绑定任何实际战斗。",
-            new { mode="all-raids", actualBattleSeed=(uint?)null, targetDen=(int?)null });
+        Append("scope", "奖励配置保存在全局档案，但当前 Hook 点是 LDN 0x2F Battle Bootstrap 序列化；单人离线坑及其他玩法未证明经过该函数。",
+            new { profileScope="global", nativeHookCoverage="LDN-bootstrap-serializer",
+                  verifiedSolo=false, verifiedOfficialInternet=false,
+                  actualBattleSeed=(uint?)null, targetDen=(int?)null });
+        int charmOnly = slots.Count(x => x?.Subject == 5);
+        int subjectAll = slots.Count(x => x?.Subject == 0);
+        if (configured > 0 && charmOnly == configured)
+            Append("eligibility-warning",
+                $"当前 {configured} 条奖励全部为 Subject=5（晶耀护符资格）；如果本机不具备晶耀护符，接收方会过滤这些行。请先使用 Subject=0 的单行小额奖励做 LDN 对照测试。",
+                new { subject5=charmOnly, subject0=subjectAll,
+                      charmOwnershipVerified=false, noReceiptDoesNotProveNoHook=true });
         Append("hook-status", "已提供实验性 v2 Hook 操作；不会自动安装。请从‘查询状态’开始。");
         Append("log", "诊断日志：" + trace.Path);
 
