@@ -24,6 +24,7 @@ public sealed class RaidRewardDiagnosticForm : Form
         Text = "读取实机信息（只读）", AutoSize = true,
     };
     private readonly CancellationTokenSource stop = new();
+    private bool closing;
 
     public RaidRewardDiagnosticForm(ISwitchConnectionAsync? connection,
         PokeLdnRaidSelection? selection, IReadOnlyList<RaidRewardEntry?> slots)
@@ -94,12 +95,12 @@ public sealed class RaidRewardDiagnosticForm : Form
             }
             catch (Exception ex) { Append("error", "打开日志目录失败：" + ex.GetType().Name); }
         };
-        FormClosing += (_,_) => { stop.Cancel(); trace.Dispose(); };
+        FormClosing += (_,_) => { closing = true; stop.Cancel(); trace.Dispose(); };
     }
 
     private void Append(string stage, string message, object? detail=null)
     {
-        if (IsDisposed) return;
+        if (closing || IsDisposed) return;
         string line = $"[{DateTimeOffset.Now:HH:mm:ss.fff}] {message}";
         logText.AppendText(line+Environment.NewLine);
         trace.Write(stage,message,detail);
