@@ -1673,8 +1673,9 @@ public partial class MainWindow : Form
         {
             string key = $"{raid.MapParent}:{raid.Area}:{raid.Den}:{raid.Seed:X8}:boost={RaidBoost.SelectedIndex}";
             RewardPreviews.TryGetValue(key, out var preview);
+            var selection = PokeLdnRaidSelection.FromRaid(raid, encounter, RaidContainer.Game);
             using var form = new RewardEditorForm(RaidContainer.Strings.Item, RaidContainer.Strings.Move,
-                rewards, encounter.Species, raid.GetTeraType(encounter), preview);
+                rewards, encounter.Species, raid.GetTeraType(encounter), preview, selection);
             ShowDialog(form);
             if (form.AppliedPreview is { } applied)
             {
