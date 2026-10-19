@@ -65,6 +65,7 @@ public sealed class RewardEditorForm : Form
         grid.Columns.Add(new DataGridViewCheckBoxColumn { Name = "Rare", HeaderText = "Rare", FillWeight = 10 });
         var subject = new DataGridViewComboBoxColumn { Name = "Subject", HeaderText = "Subject (0-5)", FillWeight = 20 };
         for (int value = 0; value <= 5; value++) subject.Items.Add(value);
+        subject.ToolTipText = "0 Everyone | 1 Host | 2 Guest | 3 First eligible | 4 Raid Power | 5 Glimmering Charm (item 2481)";
         grid.Columns.Add(subject);
         grid.CellEndEdit += (_, e) =>
         {
@@ -87,6 +88,9 @@ public sealed class RewardEditorForm : Form
             if (grid.CurrentRow is not null) grid.Rows.Remove(grid.CurrentRow);
         });
         Button(buttons, "Reset defaults", (_, _) => Populate(defaults));
+        Button(buttons, "Set selected Charm (5)", (_, _) => SetSelectedSubject(5));
+        Button(buttons, "All Charm (5)", (_, _) => SetAllSubject(5));
+        Button(buttons, "All players (0)", (_, _) => SetAllSubject(0));
         Button(buttons, "Apply preview", (_, _) => Export(rows =>
         {
             AppliedPreview = rows.ToArray();
@@ -136,10 +140,24 @@ public sealed class RewardEditorForm : Form
         }
     }
 
+    private void SetSelectedSubject(int value)
+    {
+        grid.EndEdit();
+        if (grid.CurrentRow is { } row)
+            row.Cells["Subject"].Value = value;
+    }
+
+    private void SetAllSubject(int value)
+    {
+        grid.EndEdit();
+        foreach (DataGridViewRow row in grid.Rows)
+            row.Cells["Subject"].Value = value;
+    }
+
     private void UpdateCounter()
     {
         counter.Text = $"RaidPoint: {grid.Rows.Count} / {RaidRewardEditor.MaxRows} rows. " +
-            "Subject: 0=all, 1=host, 2=guest, 3=once, 4=Raid Power, 5=Glimmering Charm.";
+            "Subject: 0=all, 1=host, 2=guest, 3=first-eligible, 4=Raid Power, 5=Glimmering Charm (ID 2481).";
     }
 
     private void AddRow(RaidRewardEntry entry)
