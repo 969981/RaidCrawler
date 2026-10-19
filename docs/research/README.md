@@ -1,5 +1,7 @@
 # RaidCrawler benefit · 技术研究索引
 
+- [无需替换 sys-botbase：ARM64 代码段跳板候选和离线验证](../../native/sv_remote_code_patch/README.md)——已核验《紫》4.0.0 的 880B 虚拟地址间隔、直接 B/BL 跳转及 ARM64 汇编原型；尚未实机安装。
+
 - [方案 A：Windows 远程安装 Hook 的能力边界与增强 botbase 设计](windows-remote-hook-feasibility.md)——源码核对 sys-botbase 调试读写、Build ID 前缀、缺少的寄存器/缓存/回滚能力、A0/A1/A2 对比和协议 P0–P5。
 
 - [全局奖励模板与任意场次 Hook 边界](global-any-raid-reward-hook.md)——模板不再绑定某个 Seed／坑位，增加实机静态指纹检测与 Hook 待办。

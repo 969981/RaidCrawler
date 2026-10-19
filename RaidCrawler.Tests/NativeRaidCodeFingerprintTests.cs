@@ -9,6 +9,11 @@ public sealed class NativeRaidCodeFingerprintTests
     [Fact]
     public void VerifiedViolet400HasDistinctReadOnlyInstructionAnchors()
     {
+        Assert.Equal((ulong)0x3440000,
+            NativeRaidCodeFingerprint.EndOfTextPaddingRva +
+            (ulong)NativeRaidCodeFingerprint.EndOfTextPaddingLength);
+        Assert.Equal(0x370, NativeRaidCodeFingerprint.EndOfTextPaddingLength);
+        Assert.Equal((ulong)0xE32984, NativeRaidCodeFingerprint.SerializerHookRva);
         var anchors = NativeRaidCodeFingerprint.Violet400;
         Assert.Equal(8, anchors.Count);
         Assert.Equal(8, anchors.Select(a=>a.Rva).Distinct().Count());

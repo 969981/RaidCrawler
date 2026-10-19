@@ -1,3 +1,5 @@
+> **2026-10-19 补充：先前对 A0 的判断需要修正。** 已从原始 ELF 发现可用作候选的 `0x343FC90..0x3440000`（880B）页面对齐间隔；[Mesosphere 的 WriteDebugMemory](https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libmesosphere/source/kern_k_page_table_base.cpp) 在完成内存写入后执行 `InvalidateEntireInstructionCache()`。因此**修改游戏代码段的 inline B + 外置原生跳板有可能直接通过现有 `pokeMain` 实现，不强制更换 sys-botbase**，只需真实 Switch 端确认该间隔映射且可执行，以及单指令安装及恢复时序。已提供 [880B 离线 A64 原型](../../native/sv_remote_code_patch/README.md)；尚未进行 live 写入，不能把候选视作已成功 Hook。下方 A1 增强 sysmodule 的阻断说明仅适用于**需要新特权调试协议**的路线，不排除复用标准 botbase 的可写 RX 代码段路线。
+
 # 方案 A：RaidCrawler Windows 远程安装原生奖励 Hook 的可行性研究
 
 研究日期：2026-10-19 | 代码位置：`benefit` | 状态：**只读能力预检已开发；现有 botbase 尚不能安装 Hook**

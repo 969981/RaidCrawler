@@ -9,6 +9,12 @@ namespace RaidCrawler.Core.Structures;
 /// </summary>
 public static class NativeRaidCodeFingerprint
 {
+    // The ELF's RX .text p_memsz ends here, and the following R .rodata starts
+    // at 0x3440000. Padding MAY be mapped RX at runtime; do not assume it is!
+    public const ulong EndOfTextPaddingRva = 0x343FC90;
+    public const int EndOfTextPaddingLength = 0x370;
+    public const ulong NextReadOnlySegmentRva = 0x3440000;
+    public const ulong SerializerHookRva = 0xE32984;
     public readonly record struct Anchor(ulong Rva, uint AArch64Opcode, string Meaning);
 
     public static IReadOnlyList<Anchor> Violet400 => [

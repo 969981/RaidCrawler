@@ -218,6 +218,25 @@ public sealed class RaidRewardDiagnosticForm : Form
                 }
                 Append("fingerprint", $"《紫》4.0.0 当前指令匹配 {matched}/{NativeRaidCodeFingerprint.Violet400.Count}。已安装 inline Hook 时补丁位置可能不再匹配，需 Switch 原生日志确认。",
                     new { matched, total=NativeRaidCodeFingerprint.Violet400.Count });
+                // The 880-byte gap is not a named ELF allocation. Probe
+                // mapping/bytes only. Reading zeroes does NOT prove +X access.
+                try
+                {
+                    byte[] padding=await connection.ReadBytesMainAsync(
+                        NativeRaidCodeFingerprint.EndOfTextPaddingRva,
+                        NativeRaidCodeFingerprint.EndOfTextPaddingLength, token);
+                    bool exact=padding.Length==NativeRaidCodeFingerprint.EndOfTextPaddingLength;
+                    bool zero=exact && padding.All(x=>x==0);
+                    Append("code-gap",
+                        $"0x343FC90..0x3440000：mapped-read={exact}, all-zero={zero}。即使全零，仍不能证明 RX 可执行或安装安全。",
+                        new { rva="0x343FC90", requestedBytes=0x370, returnedBytes=padding.Length,
+                            allZero=zero, executableVerified=false, safeToWrite=false });
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    Append("code-gap", "代码段末尾候选空间无法读取："+
+                        ex.GetType().Name+"；禁止远程注入。");
+                }
             }
             else
                 Append("elf", "此游戏版本尚无已验证的原生对战构建指令 RVA；不检查或使用《紫》4.0.0 地址。");
