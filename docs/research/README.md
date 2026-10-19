@@ -1,5 +1,7 @@
 # RaidCrawler benefit · 技术研究索引
 
+- [全局奖励模板与任意场次 Hook 边界](global-any-raid-reward-hook.md)——模板不再绑定某个 Seed／坑位，增加实机静态指纹检测与 Hook 待办。
+
 - [实机奖励诊断与 Hook 日志格式](live-raid-hook-diagnostics.md)——在编辑器点“写入奖励”启动只读实机诊断，保存 JSONL、Main NSO 基址、版本及手动开房时间线；实际原生写入尚未安装。
 
 - [官方互联网手动主持：奖励写入研究及 20+25 槽位验收](official-online-host-reward-write-plan.md)——明确 Nintendo 互联网与 PokéLDN 本地 LDN 的差异、当前实现、ELF 发送/接收证据、尚缺的运行时 Hook 证据。
