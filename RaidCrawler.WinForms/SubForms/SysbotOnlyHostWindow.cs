@@ -13,13 +13,15 @@ public sealed class SysbotOnlyHostWindow : Form
     private readonly Button _inspect = new();
     private readonly Button _scan = new();
     private readonly TextBox _results = new();
+    private readonly ComboBox _phase = new();
+    private readonly Dictionary<string, SysbotOnlyCandidate> _phaseRecords = new();
     private bool _running;
 
     public SysbotOnlyHostWindow(ISwitchConnectionAsync connection)
     {
         _inspector = new SysbotOnlyRaidPointInspector(connection);
         Text = "方案 A：纯 sys-botbase 房主 RaidPoint 诊断";
-        ClientSize = new Size(690, 465);
+        ClientSize = new Size(690, 515);
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -50,14 +52,25 @@ public sealed class SysbotOnlyHostWindow : Form
         _inspect.Location = new Point(487, 64);
         _inspect.Size = new Size(181, 31);
         _inspect.Click += async (_, _) => await InspectAsync();
+        var phaseLabel = new Label
+        {
+            Text = "记录阶段：", Location = new Point(14, 153), Size = new Size(94, 26)
+        };
+        _phase.DropDownStyle = ComboBoxStyle.DropDownList;
+        _phase.Location = new Point(104, 149);
+        _phase.Size = new Size(420, 27);
+        _phase.Items.AddRange([
+            "S0 开房前", "S1 房主开房后", "S2 参与者加入后",
+            "S3 准备开战前", "S4 开战之后（只读）"]);
+        _phase.SelectedIndex = 0;
         _results.Multiline = true;
         _results.WordWrap = true;
         _results.ScrollBars = ScrollBars.Vertical;
         _results.ReadOnly = true;
-        _results.Location = new Point(14, 145);
-        _results.Size = new Size(654, 300);
+        _results.Location = new Point(14, 191);
+        _results.Size = new Size(654, 299);
         _results.Font = new Font(FontFamily.GenericMonospace, 9);
-        Controls.AddRange([information, label, _address, _ownerMode, _inspect, _scan, _results]);
+        Controls.AddRange([information, label, _address, _ownerMode, _inspect, _scan, phaseLabel, _phase, _results]);
         FormClosed += (_, _) => _close.Cancel();
 
         Log("方案 A 仅读取当前进程的候选 RaidPoint。");
@@ -124,6 +137,16 @@ public sealed class SysbotOnlyHostWindow : Form
             Log($"已识别原奖励行：{result.ObservedOriginalRows}；候选空行：{result.PossibleEmptyRows}");
             Log($"仅离线预览 Subject=5 一行：{(result.OfflineAppendEligible ? "通过" : "不通过")} ({result.Reason})");
             Log($"奖励 SHA-256：{result.RewardSha256}");
+            string phase = _phase.SelectedItem?.ToString() ?? "未知阶段";
+            var prior = _phaseRecords.LastOrDefault(x => x.Key != phase);
+            if (prior.Value is not null)
+            {
+                Log($"与前一记录 [{prior.Key}] 比较：同一地址={prior.Value.AbsoluteRaidPoint == result.AbsoluteRaidPoint}；" +
+                    $"奖励一致={prior.Value.RewardSha256 == result.RewardSha256}；" +
+                    $"行数 {prior.Value.ObservedOriginalRows}→{result.ObservedOriginalRows}");
+            }
+            _phaseRecords[phase] = result;
+            Log($"已记录 {phase}，已采集 {_phaseRecords.Count} 个阶段。只显示对象变化，不能证明发送链。");
             Log($"证据限制：{result.EvidenceLimit}");
             Log("没有执行任何 poke/pointerPoke/freeze 命令。");
         }
