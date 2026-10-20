@@ -46,11 +46,14 @@ public sealed class SysbotOnlyHostWindow : Form
         _ownerMode.Checked = true;
         _ownerMode.Location = new Point(14, 107);
         _ownerMode.Size = new Size(455, 25);
-        _scan.Text = "虚表定位（只读）";
+        _scan.Text = "① 自动查找候选（只读）";
         _scan.Location = new Point(488, 105);
         _scan.Size = new Size(180, 28);
         _scan.Click += async (_, _) => await ScanAsync();
-        _inspect.Text = "只读验证 / 离线预览";
+        _scan.BackColor = Color.FromArgb(42, 111, 198);
+        _scan.ForeColor = Color.White;
+        _scan.FlatStyle = FlatStyle.Flat;
+        _inspect.Text = "② 验证找到的地址";
         _inspect.Location = new Point(487, 64);
         _inspect.Size = new Size(181, 31);
         _inspect.Click += async (_, _) => await InspectAsync();
@@ -142,6 +145,8 @@ public sealed class SysbotOnlyHostWindow : Form
         Controls.AddRange([information, label, _address, _ownerMode, _inspect, _scan, phaseLabel, _phase, monitorButton, writeButton, presetButton, quick500PresetButton, _results]);
         FormClosed += (_, _) => _close.Cancel();
 
+        Log("操作顺序：先连接Switch → 点击①自动查找候选 → 有地址后点击②验证。");
+        Log("地址栏为空时不要点②；不会自动拿 ELF 的 x0/x20 当实际指针。");
         Log("默认只读；额外的受控写入实验需要独立确认，且不能证明实际发送。");
         Log("必须先有可证实的绝对地址；ELF 中的 x20 / x0 不是固定指针。");
         Log("原有 RaidBlockPointerBase 指向存档太晶坑块，不能直接当作当前房主 RaidPoint。");
@@ -178,8 +183,32 @@ public sealed class SysbotOnlyHostWindow : Form
                 _ownerMode.Checked = true;
                 Log("已填写唯一虚表匹配的对象地址；请再点击只读验证。它仍可能是未使用的旧对象。");
             }
+            if (candidates.Count > 1)
+                Log("发现多个候选，请勿随意选择。需要结合当前房间状态和变化日志确认对象归属。");
             if (candidates.Count == 0)
-                Log("本次堆起始1 MiB没有匹配对象：可能位于其他堆段、仅短暂存活，或活跃派生类使用其他虚表。不能据此否定方案 A。");
+            {
+                Log("堆起始1 MiB没有匹配。可能不在该区域，或活跃对象使用其他虚表。");
+                if (MessageBox.Show(this,
+                    "1 MiB 未发现候选。是否扩展到堆起始 8 MiB 继续只读扫描？" +
+                    "这可能花费较长时间，仍无法保证发现真实房主对象。",
+                    "扩大候选搜索范围（只读）",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    Log("用户确认扩大到8 MiB：继续只读扫描，不执行内存写入。");
+                    var expanded = await _inspector.ScanSerializerObjectsAsync(8, _close.Token);
+                    Log($"8 MiB 只读扫描结束：{expanded.Count} 个类型匹配候选。");
+                    foreach (var entry in expanded)
+                        Log($"  对象 0x{entry.OwnerAddress:X} / RaidPoint 0x{entry.RaidPointAddress:X} / {entry.Name}（仅类型候选）");
+                    if (expanded.Count == 1)
+                    {
+                        _address.Text = $"0x{expanded[0].OwnerAddress:X}";
+                        _ownerMode.Checked = true;
+                        Log("唯一候选已自动填写；点击②再次只读校验，但不代表本局发送对象。");
+                    }
+                    if (expanded.Count == 0)
+                        Log("堆前8 MiB仍未命中。不要编造地址或尝试奖励写入；请保留日志供进一步研究。");
+                }
+            }
         }
         catch (OperationCanceledException) when (_close.IsCancellationRequested) { }
         catch (Exception ex) { Log("扫描未完成：" + ex.Message); }
@@ -193,6 +222,11 @@ public sealed class SysbotOnlyHostWindow : Form
     private async Task InspectAsync()
     {
         if (_running) return;
+        if (string.IsNullOrWhiteSpace(_address.Text))
+        {
+            Log("未提供候选地址：请先点击①自动查找候选（只读）。这里只验证地址，不负责凭空生成地址。");
+            return;
+        }
         _running = true;
         _inspect.Enabled = false;
         _scan.Enabled = false;
