@@ -42,7 +42,7 @@ namespace RaidCrawler.WinForms.SubForms
             B_Close.Name = "B_Close";
             B_Close.Size = new Size(75, 25);
             B_Close.TabIndex = 1;
-            B_Close.Text = "Ignore";
+            B_Close.Text = "忽略";
             B_Close.UseVisualStyleBackColor = true;
             // 
             // B_Download
@@ -52,7 +52,7 @@ namespace RaidCrawler.WinForms.SubForms
             B_Download.Name = "B_Download";
             B_Download.Size = new Size(150, 25);
             B_Download.TabIndex = 0;
-            B_Download.Text = "Open download page";
+            B_Download.Text = "打开下载页面";
             B_Download.UseVisualStyleBackColor = true;
             // 
             // label1
@@ -62,7 +62,7 @@ namespace RaidCrawler.WinForms.SubForms
             label1.Name = "label1";
             label1.Size = new Size(123, 15);
             label1.TabIndex = 2;
-            label1.Text = "New update available!";
+            label1.Text = "检测到新版本！";
             // 
             // L_Version
             // 
@@ -71,7 +71,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_Version.Name = "L_Version";
             L_Version.Size = new Size(149, 15);
             L_Version.TabIndex = 3;
-            L_Version.Text = "Current: v1.1.1 | New v9.9.9";
+            L_Version.Text = "当前：v1.1.1 | 最新：v9.9.9";
             // 
             // label3
             // 
@@ -80,7 +80,7 @@ namespace RaidCrawler.WinForms.SubForms
             label3.Name = "label3";
             label3.Size = new Size(228, 15);
             label3.TabIndex = 4;
-            label3.Text = "It is advised to update as soon as possible!";
+            label3.Text = "建议尽快更新到最新版本！";
             // 
             // UpdateNotifPopup
             // 
@@ -94,7 +94,7 @@ namespace RaidCrawler.WinForms.SubForms
             Controls.Add(B_Close);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             Name = "UpdateNotifPopup";
-            Text = "Update available!";
+            Text = "发现新版本";
             Load += UpdateNotifPopup_Load;
             ResumeLayout(false);
             PerformLayout();
