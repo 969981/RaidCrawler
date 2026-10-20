@@ -331,14 +331,26 @@ public sealed class RewardEditorForm : Form
             rows.Select(x => new CharmBonusItem(x.ItemId, x.Quantity)));
     }
 
+    private static CharmBonusProfile SaveIfChanged(CharmBonusProfile pending)
+    {
+        string path = CharmBonusProfileStore.DefaultPath;
+        if (File.Exists(path))
+        {
+            var current = CharmBonusProfileStore.Load(path);
+            if (current.Enabled == pending.Enabled &&
+                current.Items.SequenceEqual(pending.Items))
+                return current;
+        }
+        return CharmBonusProfileStore.Save(path, pending);
+    }
+
     private void SaveOnClose(object? sender, FormClosingEventArgs e)
     {
         picker?.Close();
         try
         {
             var pending = ReadCharmProfile();
-            SavedCharmBonusProfile = CharmBonusProfileStore.Save(
-                CharmBonusProfileStore.DefaultPath, pending);
+            SavedCharmBonusProfile = SaveIfChanged(pending);
             AppliedSlots = null; // never ask MainWindow to save old 45-slot global profile
         }
         catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or InvalidDataException)
@@ -365,8 +377,7 @@ public sealed class RewardEditorForm : Form
         }
         try
         {
-            SavedCharmBonusProfile = CharmBonusProfileStore.Save(
-                CharmBonusProfileStore.DefaultPath, pending);
+            SavedCharmBonusProfile = SaveIfChanged(pending);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or
             ArgumentException or InvalidDataException)
