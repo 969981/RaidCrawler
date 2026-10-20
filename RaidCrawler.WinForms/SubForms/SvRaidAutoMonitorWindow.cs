@@ -18,6 +18,7 @@ public sealed class SvRaidAutoMonitorWindow : Form
     private readonly CheckBox _ownerMode = new();
     private readonly TextBox _events = new();
     private readonly Button _startStop = new();
+    private readonly Button _export = new();
     private CancellationTokenSource? _watch;
     private SysbotOnlyCandidate? _previous;
     private int _phaseCount;
@@ -59,6 +60,25 @@ public sealed class SvRaidAutoMonitorWindow : Form
         _startStop.Location = new Point(15, 140);
         _startStop.Size = new Size(160, 31);
         _startStop.Click += async (_, _) => await ToggleAsync();
+        _export.Text = "保存 PC 诊断日志";
+        _export.Location = new Point(189, 140);
+        _export.Size = new Size(181, 31);
+        _export.Click += (_, _) =>
+        {
+            using var dialog = new SaveFileDialog
+            {
+                Title = "保存自动阶段监测日志到电脑",
+                FileName = $"RaidCrawler_PlanA_{DateTime.Now:yyyyMMdd_HHmmss}.txt",
+                Filter = "文本文件 (*.txt)|*.txt",
+            };
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+            try
+            {
+                File.WriteAllText(dialog.FileName, _events.Text, System.Text.Encoding.UTF8);
+                Append("已将诊断日志保存在电脑：" + dialog.FileName);
+            }
+            catch (Exception e) { Append("本机日志导出失败：" + e.Message); }
+        };
 
         _events.ReadOnly = true;
         _events.Multiline = true;
@@ -67,7 +87,7 @@ public sealed class SvRaidAutoMonitorWindow : Form
         _events.Font = new Font(FontFamily.GenericMonospace, 9);
         _events.Location = new Point(15, 187);
         _events.Size = new Size(735, 349);
-        Controls.AddRange([intro, _allowLegacy, label, _owner, _ownerMode, _startStop, _events]);
+        Controls.AddRange([intro, _allowLegacy, label, _owner, _ownerMode, _startStop, _export, _events]);
         FormClosed += (_, _) => { _watch?.Cancel(); _closed.Cancel(); };
 
         Append("默认只识别野外状态；S1/S2/S3/S4依赖未验证的旧版参考值，必须主动勾选。");
