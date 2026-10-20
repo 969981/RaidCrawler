@@ -16,7 +16,7 @@ from pathlib import Path
 EXPECTED_SHA256 = "d17403eaa9d844db82f647fd2f1518806b10c0518d53602fc0ac1766298fdba0"
 EXPECTED_BUILD_ID = "709bfd66115298640155fcc4979dba151c7cc79a"
 EXPECTED_SIZE = 74_362_480
-HOCK_RVA = 0xE32984
+HOOK_RVA = 0xE32984
 FINGERPRINT = {
     0xE327FC: 0xA9BB7BFD,
     0xE32814: 0xAA0003F4,
@@ -105,7 +105,7 @@ def audit(data: bytes) -> dict:
         problems.append("file size differs from audited Violet ELF")
     return {"title": "Violet", "game_version": "4.0.0",
             "size_bytes": len(data), "sha256": digest, "build_id": build,
-            "hook_rva": f"0x{HOCK_RVA:X}", "reward_rows_rva": "RaidPoint+0xE4",
+            "hook_rva": f"0x{HOOK_RVA:X}", "reward_rows_rva": "RaidPoint+0xE4",
             "bootstrap_rows": "0x79C..0xA6C (45 x 16 bytes)",
             "fingerprint_matches": sum(v["matches"] for v in results),
             "fingerprint_total": len(results), "opcodes": results,
