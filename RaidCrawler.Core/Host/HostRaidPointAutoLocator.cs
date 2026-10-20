@@ -104,6 +104,27 @@ public sealed class HostRaidPointAutoLocator(ISwitchConnectionAsync connection)
         return HostOwnerVtableEvidence.None;
     }
 
+    public static async Task<HostOwnerVtableEvidence> ReadOwnerTypeEvidenceAsync(
+        ISwitchConnectionAsync device, ulong owner, ulong mainBase, CancellationToken token)
+    {
+        byte[] header = await device.ReadBytesAbsoluteAsync(owner, 0x30, token)
+            .ConfigureAwait(false);
+        if (header.Length != 0x30 || mainBase < 0x10000)
+            return HostOwnerVtableEvidence.None;
+        ulong vptr = BinaryPrimitives.ReadUInt64LittleEndian(header.AsSpan(0, 8));
+        ulong method = 0;
+        if (vptr >= mainBase + MainStaticDataStart &&
+            vptr < mainBase + MainStaticDataEnd - 0x68)
+        {
+            byte[] entry = await device.ReadBytesAbsoluteAsync(
+                vptr + (ulong)SysbotOnlyRaidPointInspector.SerializerVirtualSlotOffset,
+                8, token).ConfigureAwait(false);
+            if (entry.Length == 8)
+                method = BinaryPrimitives.ReadUInt64LittleEndian(entry);
+        }
+        return ClassifyOwnerVtable(header, mainBase, method);
+    }
+
     public async Task<HostRaidPointDiscovery> FindAsync(
         int maxMegabytes, IProgress<HostRaidPointScanProgress>? progress,
         CancellationToken token,
