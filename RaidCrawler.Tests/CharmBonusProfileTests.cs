@@ -45,13 +45,14 @@ public sealed class CharmBonusProfileTests
     }
 
     [Fact]
-    public void MissingAnyProfileStartsDisabledWithNoBonus()
+    public void MissingAnyProfileStartsWithDisabledTwentyRowDraft()
     {
         string empty = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         var result = CharmBonusProfileStore.Load(
             Path.Combine(empty, "new.json"), Path.Combine(empty, "old.json"));
         Assert.False(result.Enabled);
-        Assert.Empty(result.Items);
+        Assert.Equal(20, result.Items.Count);
+        Assert.Empty(result.AsRewardRows()); // disabled must add nothing
         result.Validate();
     }
 
