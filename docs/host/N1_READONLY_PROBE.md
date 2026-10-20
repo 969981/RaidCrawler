@@ -5,7 +5,7 @@
 
 ## 新进展：Switch 侧 probe 已交叉编译（但尚未实机验证）
 
-原生代码已放入 [`switch/host-probe/`](../../switch/host-probe/README.md)。基于 [exlaunch@f9f4b0d](https://github.com/shadowninja108/exlaunch/commit/f9f4b0dd07b68f97958cb9c79228bbca22ca80d5)，安装 `main+0xE32984` Inline Hook，只读复制 `x20+0x13C` 和 `x23+0x79C` 各 **720 B**；后台线程在明确 SD 启用标记存在时尝试导出数据。
+原生代码已放入 [`switch/host-probe/`](../../switch/host-probe/README.md)。基于 [exlaunch@f9f4b0d](https://github.com/shadowninja108/exlaunch/commit/f9f4b0dd07b68f97958cb9c79228bbca22ca80d5)，安装 `main+0xE32984` Inline Hook，只读复制完整奖励行区 `x20+0x138` 和 `x23+0x798` 各 **720 B**（原先的 `+0x13C` / `+0x79C` 实为第 0 行 item 字段，不能作为行起点）；后台线程在明确 SD 启用标记存在时尝试导出数据。
 
 - [Native Actions 成功构建](https://github.com/969981/RaidCrawler/actions/runs/39368084041)（仅 ARM64 构建 + artifact，不含 Switch UAT）。
 - 原来提到的“代码不修改游戏代码页”需要严格修正：**Inline Hook 为实现观察需要安装代码插桩，但回调不写奖励、背包或网络报文。**
@@ -33,7 +33,7 @@ python tools/host/compare_capture.py `
 
 - `source_raidpoint.bin` 必须恰好 **1000 B / 0x3E8**。
 - `outgoing_bootstrap_plain.bin` 必须恰好 **2720 B / 0xAA0**，**不能直接输入 LZ4 压缩包**。
-- 比对 `source[0xE4:0x3B4]` 与 `bootstrap[0x79C:0xA6C]`，总长 720 B。相同返回退出码 0，发现差异返回退出码 2，并输出首个不同槽位与字段。
+- 比对 `source[0xE0:0x3B0]` 与 `bootstrap[0x798:0xA68]`，总长 720 B。相同返回退出码 0，发现差异返回退出码 2，并输出首个不同槽位与字段。
 - `--session` 与 `--build-id` 是操作者提供的标签，命令行无法验证它们的真实性。因此即便结果 `equal: true`，证据级别仍是 **USER_SUPPLIED_SNAPSHOTS_UNVERIFIED**，不是实机 Hook / 接收端 PASS。
 - Python 纯标准库测试：`python tools/host/test_compare_capture.py`；测试数据是合成字节，不作为零售实证。
 
@@ -54,8 +54,8 @@ python tools/host/compare_capture.py `
 由既有 ELF 审计记录的 serializer 寄存器相关相对位置仅可作为**验证假设**：
 
 ```text
-source reward row i: x20 + 0x58 + 0xE4 + 0x10*i
-target plain row i: x23 + 0x6B8 + 0xE4 + 0x10*i
+source reward row i: x20 + 0x58 + 0xE0 + 0x10*i
+target plain row i: x23 + 0x6B8 + 0xE0 + 0x10*i
 i = 0..44
 ```
 
