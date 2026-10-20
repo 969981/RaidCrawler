@@ -124,7 +124,7 @@ public partial class MainWindow : Form
         // Located beside Settings / Date Tools, so the WinForms designer is untouched.
         var hostProbeButton = new Button
         {
-            Text = "Host Probe",
+            Text = "房主探针",
             Name = "HostProbeButton",
             Location = new Point(222, 302),
             Size = new Size(103, 23),
@@ -133,8 +133,8 @@ public partial class MainWindow : Form
         {
             if (ConnectionWrapper is not { Connected: true })
             {
-                MessageBox.Show(this, "Connect to your Switch via sys-botbase first.",
-                    "Host Probe", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(this, "请先通过 sys-botbase 连接 Switch。",
+                    "房主探针", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
             using var form = new HostProbeWindow(ConnectionWrapper.Connection);
@@ -165,7 +165,17 @@ public partial class MainWindow : Form
 
     private void UpdateStatus(string status)
     {
-        ToolStripStatusLabel.Text = status;
+        // Translate messages emitted by the unmodified SysBot.Base connection
+        // wrapper. Keep protocol/status codes in English.
+        ToolStripStatusLabel.Text = status switch
+        {
+            "Connecting..." => "正在连接……",
+            "Connected!" => "连接成功！",
+            "Disconnecting controller..." => "正在解除控制器连接……",
+            "Disconnecting..." => "正在断开连接……",
+            "Disconnected!" => "已断开连接！",
+            _ => status,
+        };
     }
 
     private void ButtonEnable(bool enable, params object[] obj)
@@ -240,7 +250,7 @@ public partial class MainWindow : Form
             return;
         }
 
-        Task.Run(async () => await this.DisplayMessageBox(Webhook, "Please enter a valid numerical USB port.", Source.Token).ConfigureAwait(false), Source.Token);
+        Task.Run(async () => await this.DisplayMessageBox(Webhook, "请输入有效的 USB 端口号。", Source.Token).ConfigureAwait(false), Source.Token);
     }
 
     private void ButtonConnect_Click(object sender, EventArgs e)
@@ -290,7 +300,7 @@ public partial class MainWindow : Form
                     return;
                 }
 
-                UpdateStatus("Detecting game version...");
+                UpdateStatus("正在检测游戏版本……");
                 string id = await ConnectionWrapper.Connection
                     .GetTitleID(token)
                     .ConfigureAwait(false);
@@ -326,7 +336,7 @@ public partial class MainWindow : Form
                         ButtonEnable(true, ButtonConnect);
                         await this
                             .DisplayMessageBox(Webhook,
-                                "Unable to detect Pokémon Scarlet or Pokémon Violet running on your Switch!",
+                                "无法检测到 Switch 上运行的《宝可梦 朱》或《宝可梦 紫》！",
                                 token
                             )
                             .ConfigureAwait(false);
@@ -337,13 +347,13 @@ public partial class MainWindow : Form
                 Config.Game = game;
                 RaidContainer.SetGame(Config.Game);
 
-                UpdateStatus("Reading story progress...");
+                UpdateStatus("正在读取剧情进度……");
                 Config.Progress = await ConnectionWrapper
                     .GetStoryProgress(token)
                     .ConfigureAwait(false);
                 Config.EventProgress = Math.Min(Config.Progress, 3);
 
-                UpdateStatus("Reading event raid status...");
+                UpdateStatus("正在读取活动太晶坑状态……");
                 try
                 {
                     await ReadEventRaids(token).ConfigureAwait(false);
@@ -351,12 +361,12 @@ public partial class MainWindow : Form
                 catch (Exception ex)
                 {
                     ButtonEnable(true, ButtonConnect);
-                    await this.DisplayMessageBox(Webhook, $"Error occurred while reading event raids: {ex.Message}", token)
+                    await this.DisplayMessageBox(Webhook, $"读取活动太晶坑时发生错误： {ex.Message}", token)
                         .ConfigureAwait(false);
                     return;
                 }
 
-                UpdateStatus("Reading raids...");
+                UpdateStatus("正在读取太晶坑……");
                 try
                 {
                     await ReadRaids(token).ConfigureAwait(false);
@@ -364,7 +374,7 @@ public partial class MainWindow : Form
                 catch (Exception ex)
                 {
                     ButtonEnable(true, ButtonConnect);
-                    await this.DisplayMessageBox(Webhook, $"Error occurred while reading raids: {ex.Message}", token)
+                    await this.DisplayMessageBox(Webhook, $"读取太晶坑时发生错误： {ex.Message}", token)
                         .ConfigureAwait(false);
                     return;
                 }
@@ -383,7 +393,7 @@ public partial class MainWindow : Form
                     ComboIndex.SelectedIndex = 0;
                 }
 
-                UpdateStatus("Completed!");
+                UpdateStatus("已完成！");
             },
             token
         );
@@ -508,7 +518,7 @@ public partial class MainWindow : Form
             _WindowState = WindowState;
 
             var advanceTextInit =
-                $"Day Skip Successes {GetStatDaySkipSuccess()} / {GetStatDaySkipTries()}";
+                $"日期推进成功 {GetStatDaySkipSuccess()} / {GetStatDaySkipTries()}";
             Invoke(() => Label_DayAdvance.Text = advanceTextInit);
             if (teraRaidView is not null)
                 Invoke(() => teraRaidView.DaySkips.Text = advanceTextInit);
@@ -538,7 +548,7 @@ public partial class MainWindow : Form
                 }
 
                 var previousSeeds = raids.Select(z => z.Seed).ToList();
-                UpdateStatus("Changing date...");
+                UpdateStatus("正在修改日期……");
                 bool streamer = Config.StreamerView && teraRaidView is not null;
                 Action<int>? action = streamer ? teraRaidView!.UpdateProgressBar : null;
                 await ConnectionWrapper
@@ -554,7 +564,7 @@ public partial class MainWindow : Form
                 stop = StopAdvanceDate(previousSeeds);
                 skips++;
                 var advanceText =
-                    $"Day Skip Successes {GetStatDaySkipSuccess()} / {GetStatDaySkipTries()}";
+                    $"日期推进成功 {GetStatDaySkipSuccess()} / {GetStatDaySkipTries()}";
                 Invoke(() => Label_DayAdvance.Text = advanceText);
                 if (teraRaidView is not null)
                     Invoke(() => teraRaidView.DaySkips.Text = advanceText);
@@ -629,16 +639,16 @@ public partial class MainWindow : Form
                     await ConnectionWrapper.SaveGame(Config, token).ConfigureAwait(false);
 
                 if (Config.EnableAlertWindow)
-                    await this.DisplayMessageBox(Webhook, $"{Config.AlertWindowMessage}\n\nTime Spent: {time}", token, "Result found!").ConfigureAwait(false);
-                Invoke(() => Text = $"{formTitle} [Match Found in {time}]");
+                    await this.DisplayMessageBox(Webhook, $"{Config.AlertWindowMessage}\n\n耗时：{time}", token, "已找到目标！").ConfigureAwait(false);
+                Invoke(() => Text = $"{formTitle} [已在 {time}]");
             }
         }
         catch (Exception ex)
         {
-            UpdateStatus("Date advance stopped.");
+            UpdateStatus("已停止日期推进。");
             SearchTimer.Stop();
             if (ex is not TaskCanceledException)
-                await this.DisplayMessageBox(Webhook, ex.Message, token, "Date Advance Error").ConfigureAwait(false);
+                await this.DisplayMessageBox(Webhook, ex.Message, token, "日期推进错误").ConfigureAwait(false);
         }
 
         if (InvokeRequired)
@@ -691,7 +701,7 @@ public partial class MainWindow : Form
         {
             await this
                 .DisplayMessageBox(Webhook,
-                    "Please wait for the current RAM read to finish.",
+                    "请等待当前内存读取操作完成。",
                     token
                 )
                 .ConfigureAwait(false);
@@ -707,7 +717,7 @@ public partial class MainWindow : Form
         {
             await this
                 .DisplayMessageBox(Webhook,
-                    $"Error occurred while reading raids: {ex.Message}",
+                    $"读取太晶坑时发生错误： {ex.Message}",
                     token
                 )
                 .ConfigureAwait(false);
@@ -720,7 +730,7 @@ public partial class MainWindow : Form
     {
         if (IsReading)
         {
-            Task.Run(async () => await this.DisplayMessageBox(Webhook, "Please wait for the current RAM read to finish.", Source.Token).ConfigureAwait(false), Source.Token);
+            Task.Run(async () => await this.DisplayMessageBox(Webhook, "请等待当前内存读取操作完成。", Source.Token).ConfigureAwait(false), Source.Token);
             return;
         }
 
@@ -776,7 +786,7 @@ public partial class MainWindow : Form
 
         if (IsReading)
         {
-            Task.Run(async () => await this.DisplayMessageBox(Webhook, "Please wait for the current RAM read to finish.", Source.Token).ConfigureAwait(false), Source.Token);
+            Task.Run(async () => await this.DisplayMessageBox(Webhook, "请等待当前内存读取操作完成。", Source.Token).ConfigureAwait(false), Source.Token);
             return;
         }
 
@@ -786,7 +796,7 @@ public partial class MainWindow : Form
     private async Task DownloadEventsAsync(CancellationToken token)
     {
         ButtonEnable(false, ButtonViewRAM, ButtonAdvanceDate, ButtonDisconnect, ButtonDownloadEvents, SendScreenshot, ButtonReadRaids);
-        UpdateStatus("Reading event raid status...");
+        UpdateStatus("正在读取活动太晶坑状态……");
 
         try
         {
@@ -796,14 +806,14 @@ public partial class MainWindow : Form
         {
             await this
                 .DisplayMessageBox(Webhook,
-                    $"Error occurred while reading event raids: {ex.Message}",
+                    $"读取活动太晶坑时发生错误： {ex.Message}",
                     token
                 )
                 .ConfigureAwait(false);
         }
 
         ButtonEnable(true, ButtonViewRAM, ButtonAdvanceDate, ButtonDisconnect, ButtonDownloadEvents, SendScreenshot, ButtonReadRaids);
-        UpdateStatus("Completed!");
+        UpdateStatus("已完成！");
     }
 
     private void Seed_Click(object sender, EventArgs e)
@@ -811,10 +821,10 @@ public partial class MainWindow : Form
         if (ModifierKeys == Keys.Shift && RaidContainer.Raids.Count > ComboIndex.SelectedIndex)
         {
             var raid = RaidContainer.Raids[ComboIndex.SelectedIndex];
-            Seed.Text = HideSeed ? $"{raid.Seed:X8}" : "Hidden";
-            EC.Text = HideSeed ? $"{raid.EC:X8}" : "Hidden";
+            Seed.Text = HideSeed ? $"{raid.Seed:X8}" : "已隐藏";
+            EC.Text = HideSeed ? $"{raid.EC:X8}" : "已隐藏";
             PID.Text =
-                (HideSeed ? $"{raid.PID:X8}" : "Hidden")
+                (HideSeed ? $"{raid.PID:X8}" : "已隐藏")
                 + $"{(raid.IsShiny ? " (☆)" : string.Empty)}";
             HideSeed = !HideSeed;
             ActiveControl = null;
@@ -941,11 +951,11 @@ public partial class MainWindow : Form
             Raid raid = raids[index];
             var encounter = RaidContainer.Encounters[index];
 
-            Seed.Text = !HideSeed ? $"{raid.Seed:X8}" : "Hidden";
-            EC.Text = !HideSeed ? $"{raid.EC:X8}" : "Hidden";
+            Seed.Text = !HideSeed ? $"{raid.Seed:X8}" : "已隐藏";
+            EC.Text = !HideSeed ? $"{raid.EC:X8}" : "已隐藏";
             PID.Text = GetPIDString(raid, encounter);
             Area.Text =
-                $"{Areas.GetArea((int)(raid.Area - 1), raid.MapParent)} - Den {raid.Den}";
+                $"{Areas.GetArea((int)(raid.Area - 1), raid.MapParent)} - 坑位 {raid.Den}";
             labelEvent.Visible = raid.IsEvent;
 
             var teraType = raid.GetTeraType(encounter);
@@ -979,7 +989,7 @@ public partial class MainWindow : Form
             Species.Text = $"{RaidContainer.Strings.Species[encounter.Species]}{form}";
             Sprite.Image = img;
             GemIcon.Image = GetDisplayGemImage(teraType, raid);
-            Gender.Text = $"{(Gender)blank.Gender}";
+            Gender.Text = blank.Gender switch { 0 => "雄性", 1 => "雌性", _ => "无性别" };
 
             var nature = blank.Nature;
             Nature.Text = $"{RaidContainer.Strings.Natures[(int)nature]}";
@@ -1015,7 +1025,7 @@ public partial class MainWindow : Form
             return;
         }
 
-        var msg = $"Unable to display raid at index {index}. Ensure there are no cheats running or anything else that might shift RAM (Edizon, overlays, etc.), then reboot your console and try again.";
+        var msg = $"无法显示序号 {index} 的太晶坑。请关闭可能改变内存布局的作弊码或叠加插件（如 Edizon），重启 Switch 后重试。";
         Task.Run(async () => await this.DisplayMessageBox(Webhook, msg, Source.Token).ConfigureAwait(false), Source.Token);
     }
 
@@ -1084,7 +1094,7 @@ public partial class MainWindow : Form
                 async () =>
                     await this
                         .DisplayMessageBox(Webhook,
-                            "Something went terribly wrong: teraRaidView is not initialized.",
+                            "太晶坑详情窗口尚未初始化。",
                             Source.Token
                         )
                         .ConfigureAwait(false),
@@ -1101,7 +1111,7 @@ public partial class MainWindow : Form
             var encounter = RaidContainer.Encounters[index];
 
             teraRaidView.Area.Text =
-                $"{Areas.GetArea((int)(raid.Area - 1), raid.MapParent)} - Den {raid.Den}";
+                $"{Areas.GetArea((int)(raid.Area - 1), raid.MapParent)} - 坑位 {raid.Den}";
 
             var teraType = raid.GetTeraType(encounter);
             teraRaidView.TeraType.Image = (Bitmap)
@@ -1127,7 +1137,7 @@ public partial class MainWindow : Form
 
             teraRaidView.Species.Text =
                 $"{RaidContainer.Strings.Species[encounter.Species]}{form}";
-            teraRaidView.Gender.Text = $"{(Gender)blank.Gender}";
+            teraRaidView.Gender.Text = blank.Gender switch { 0 => "雄性", 1 => "雌性", _ => "无性别" };
 
             var nature = blank.Nature;
             teraRaidView.Nature.Text = $"{RaidContainer.Strings.Natures[(int)nature]}";
@@ -1210,7 +1220,7 @@ public partial class MainWindow : Form
 
             var map = GenerateMap(raid, teraType);
             if (map is null)
-                Task.Run(async () => await this.DisplayMessageBox(Webhook, "Error generating map.", Source.Token).ConfigureAwait(false), Source.Token);
+                Task.Run(async () => await this.DisplayMessageBox(Webhook, "生成地图时发生错误。", Source.Token).ConfigureAwait(false), Source.Token);
             teraRaidView.Map.Image = map;
 
             // Rewards
@@ -1322,7 +1332,7 @@ public partial class MainWindow : Form
             return;
         }
 
-        var msg = $"Unable to display raid at index {index}. Ensure there are no cheats running or anything else that might shift RAM (Edizon, overlays, etc.), then reboot your console and try again.";
+        var msg = $"无法显示序号 {index} 的太晶坑。请关闭可能改变内存布局的作弊码或叠加插件（如 Edizon），重启 Switch 后重试。";
         Task.Run(
             async () =>
                 await this
@@ -1335,7 +1345,7 @@ public partial class MainWindow : Form
     private string GetPIDString(Raid raid, ITeraRaid? enc)
     {
         if (HideSeed)
-            return "Hidden";
+            return "已隐藏";
 
         const string shiny_mark = " (☆)";
         var pid = $"{raid.PID:X8}";
@@ -1463,13 +1473,13 @@ public partial class MainWindow : Form
     {
         if (Config is { PaldeaScan: false, KitakamiScan: false, BlueberryScan: false })
         {
-            await this.DisplayMessageBox(Webhook, "Please select a location to scan in your General Settings.", token, "No locations selected").ConfigureAwait(false);
+            await this.DisplayMessageBox(Webhook, "请先在“常规设置”中选择要扫描的区域。", token, "尚未选择扫描区域").ConfigureAwait(false);
             return;
         }
 
         if (RaidBlockOffsetBase == 0)
         {
-            UpdateStatus("Caching the raid block pointers...");
+            UpdateStatus("正在缓存太晶坑数据指针……");
             RaidBlockOffsetBase = await ConnectionWrapper.Connection
                 .PointerAll(RaidBlockPointerBase.ToArray(), token)
                 .ConfigureAwait(false);
@@ -1492,22 +1502,22 @@ public partial class MainWindow : Form
 
         if (Config.PaldeaScan)
         {
-            UpdateStatus("Reading Paldea raid block...");
+            UpdateStatus("正在读取帕底亚太晶坑数据……");
             var data = await ConnectionWrapper.Connection
                 .ReadBytesAbsoluteAsync(RaidBlockOffsetBase + RaidBlock.HEADER_SIZE, (int)RaidBlock.SIZE_BASE, token)
                 .ConfigureAwait(false);
 
             (delivery, enc) = RaidContainer.ReadAllRaids(data, Config.Progress, Config.EventProgress, GetRaidBoost(), TeraRaidMapParent.Paldea);
             if (enc > 0)
-                msg += $"Failed to find encounters for {enc} raid(s).\n";
+                msg += $"未找到对应的太晶坑遭遇，共 {enc} 个。\n";
 
             if (delivery > 0)
-                msg += $"Invalid delivery group ID for {delivery} raid(s). Try deleting the \"cache\" folder.\n";
+                msg += $"活动分发组 ID 无效，共 {delivery} 个。可尝试删除“cache”文件夹。\n";
 
             if (msg != string.Empty)
             {
-                msg += $"\nMore info can be found in the \"raid_dbg_{TeraRaidMapParent.Paldea}.txt\" file.";
-                await this.DisplayMessageBox(Webhook, msg, token, "Raid Read Error").ConfigureAwait(false);
+                msg += $"\n详细信息请查看文件“raid_dbg_{TeraRaidMapParent.Paldea}.txt”。";
+                await this.DisplayMessageBox(Webhook, msg, token, "读取太晶坑失败").ConfigureAwait(false);
             }
         }
 
@@ -1521,7 +1531,7 @@ public partial class MainWindow : Form
         // Kitakami
         if (Config.KitakamiScan)
         {
-            UpdateStatus("Reading Kitakami raid block...");
+            UpdateStatus("正在读取北上乡太晶坑数据……");
             var data = await ConnectionWrapper.Connection
                 .ReadBytesAbsoluteAsync(RaidBlockOffsetKitakami, (int)RaidBlock.SIZE_KITAKAMI, token)
                 .ConfigureAwait(false);
@@ -1529,15 +1539,15 @@ public partial class MainWindow : Form
             msg = string.Empty;
             (delivery, enc) = RaidContainer.ReadAllRaids(data, Config.Progress, Config.EventProgress, GetRaidBoost(), TeraRaidMapParent.Kitakami);
             if (enc > 0)
-                msg += $"Failed to find encounters for {enc} raid(s).\n";
+                msg += $"未找到对应的太晶坑遭遇，共 {enc} 个。\n";
 
             if (delivery > 0)
-                msg += $"Invalid delivery group ID for {delivery} raid(s). Try deleting the \"cache\" folder.\n";
+                msg += $"活动分发组 ID 无效，共 {delivery} 个。可尝试删除“cache”文件夹。\n";
 
             if (msg != string.Empty)
             {
-                msg += $"\nMore info can be found in the \"raid_dbg_{TeraRaidMapParent.Kitakami}.txt\" file.";
-                await this.DisplayMessageBox(Webhook, msg, token, "Raid Read Error")
+                msg += $"\n详细信息请查看文件“raid_dbg_{TeraRaidMapParent.Kitakami}.txt”。";
+                await this.DisplayMessageBox(Webhook, msg, token, "读取太晶坑失败")
                     .ConfigureAwait(false);
             }
         }
@@ -1552,7 +1562,7 @@ public partial class MainWindow : Form
         // Blueberry
         if (Config.BlueberryScan)
         {
-            UpdateStatus("Reading Blueberry raid block...");
+            UpdateStatus("正在读取蓝莓学园太晶坑数据……");
             var data = await ConnectionWrapper.Connection
                 .ReadBytesAbsoluteAsync(RaidBlockOffsetBlueberry, (int)RaidBlock.SIZE_BLUEBERRY, token)
                 .ConfigureAwait(false);
@@ -1560,15 +1570,15 @@ public partial class MainWindow : Form
             msg = string.Empty;
             (delivery, enc) = RaidContainer.ReadAllRaids(data, Config.Progress, Config.EventProgress, GetRaidBoost(), TeraRaidMapParent.Blueberry);
             if (enc > 0)
-                msg += $"Failed to find encounters for {enc} raid(s).\n";
+                msg += $"未找到对应的太晶坑遭遇，共 {enc} 个。\n";
 
             if (delivery > 0)
-                msg += $"Invalid delivery group ID for {delivery} raid(s). Try deleting the \"cache\" folder.\n";
+                msg += $"活动分发组 ID 无效，共 {delivery} 个。可尝试删除“cache”文件夹。\n";
 
             if (msg != string.Empty)
             {
-                msg += $"\nMore info can be found in the \"raid_dbg_{TeraRaidMapParent.Blueberry}.txt\" file.";
-                await this.DisplayMessageBox(Webhook, msg, token, "Raid Read Error")
+                msg += $"\n详细信息请查看文件“raid_dbg_{TeraRaidMapParent.Blueberry}.txt”。";
+                await this.DisplayMessageBox(Webhook, msg, token, "读取太晶坑失败")
                     .ConfigureAwait(false);
             }
         }
@@ -1581,14 +1591,14 @@ public partial class MainWindow : Form
         RaidContainer.SetEncounters(allEncounters);
         RaidContainer.SetRewards(allRewards);
 
-        UpdateStatus("Completed!");
+        UpdateStatus("已完成！");
 
         var filterMatchCount = Enumerable.Range(0, allRaids.Count)
             .Count(c => RaidFilters.Any(z => z.FilterSatisfied(RaidContainer, allEncounters[c], allRaids[c], GetRaidBoost())));
         if (InvokeRequired)
-            Invoke(() => LabelLoadedRaids.Text = $"Matches: {filterMatchCount}");
+            Invoke(() => LabelLoadedRaids.Text = $"匹配数量：{filterMatchCount}");
         else
-            LabelLoadedRaids.Text = $"Matches: {filterMatchCount}";
+            LabelLoadedRaids.Text = $"匹配数量：{filterMatchCount}";
 
         if (allRaids.Count > 0)
         {
@@ -1611,8 +1621,8 @@ public partial class MainWindow : Form
             ButtonEnable(false, ButtonPrevious, ButtonNext);
             if (allRaids.Count > RaidBlock.MAX_COUNT_BASE + RaidBlock.MAX_COUNT_KITAKAMI || allRaids.Count == 0)
             {
-                msg = "Bad read, ensure there are no cheats running or anything else that might shift RAM (Edizon, overlays, etc.), then reboot your console and try again.";
-                await this.DisplayMessageBox(Webhook, msg, token, "Raid Read Error").ConfigureAwait(false);
+                msg = "内存读取异常。请关闭作弊码或可能改变内存布局的叠加插件，重启 Switch 后重试。";
+                await this.DisplayMessageBox(Webhook, msg, token, "读取太晶坑失败").ConfigureAwait(false);
             }
         }
     }
@@ -1650,7 +1660,7 @@ public partial class MainWindow : Form
         var raids = RaidContainer.Raids;
         if (raids.Count == 0)
         {
-            Task.Run(async () => await this.DisplayMessageBox(Webhook, "Raids not loaded.", Source.Token).ConfigureAwait(false), Source.Token);
+            Task.Run(async () => await this.DisplayMessageBox(Webhook, "尚未载入太晶坑数据。", Source.Token).ConfigureAwait(false), Source.Token);
             return;
         }
 
@@ -1660,7 +1670,7 @@ public partial class MainWindow : Form
         var map = GenerateMap(raid, teraType);
         if (map is null)
         {
-            Task.Run(async () => await this.DisplayMessageBox(Webhook, "Error generating map.", Source.Token).ConfigureAwait(false), Source.Token);
+            Task.Run(async () => await this.DisplayMessageBox(Webhook, "生成地图时发生错误。", Source.Token).ConfigureAwait(false), Source.Token);
             return;
         }
 
@@ -1672,14 +1682,14 @@ public partial class MainWindow : Form
     {
         if (RaidContainer.Raids.Count == 0)
         {
-            Task.Run(async () => await this.DisplayMessageBox(Webhook, "Raids not loaded.", Source.Token).ConfigureAwait(false), Source.Token);
+            Task.Run(async () => await this.DisplayMessageBox(Webhook, "尚未载入太晶坑数据。", Source.Token).ConfigureAwait(false), Source.Token);
             return;
         }
 
         var rewards = RaidContainer.Rewards[ComboIndex.SelectedIndex];
         if (rewards is null)
         {
-            Task.Run(async () => await this.DisplayMessageBox(Webhook, "Error while displaying rewards.", Source.Token).ConfigureAwait(false), Source.Token);
+            Task.Run(async () => await this.DisplayMessageBox(Webhook, "显示奖励时发生错误。", Source.Token).ConfigureAwait(false), Source.Token);
             return;
         }
 
@@ -1707,7 +1717,7 @@ public partial class MainWindow : Form
     {
         if (RaidContainer.Raids.Count == 0)
         {
-            Task.Run(async () => await this.DisplayMessageBox(Webhook, "Raids not loaded.", Source.Token).ConfigureAwait(false), Source.Token);
+            Task.Run(async () => await this.DisplayMessageBox(Webhook, "尚未载入太晶坑数据。", Source.Token).ConfigureAwait(false), Source.Token);
             return;
         }
 
@@ -1716,7 +1726,7 @@ public partial class MainWindow : Form
             return;
 
         ShowExtraMoves ^= true;
-        LabelMoves.Text = ShowExtraMoves ? "Extra:" : "Moves:";
+        LabelMoves.Text = ShowExtraMoves ? "追加招式：" : "招式：";
         LabelMoves.Location = LabelMoves.Location with { X = LabelMoves.Location.X + (ShowExtraMoves ? 9 : -9) };
 
         var length = encounter.ExtraMoves.Length < 4 ? 4 : encounter.ExtraMoves.Length;
@@ -1758,7 +1768,7 @@ public partial class MainWindow : Form
                 }
                 catch (Exception ex)
                 {
-                    await this.DisplayMessageBox(Webhook, $"Could not send the screenshot: {ex.Message}", Source.Token).ConfigureAwait(false);
+                    await this.DisplayMessageBox(Webhook, $"发送截图失败：{ex.Message}", Source.Token).ConfigureAwait(false);
                 }
             },
             Source.Token
@@ -1773,7 +1783,7 @@ public partial class MainWindow : Form
         var timeSpan = stopwatch.Elapsed;
         var time = $"{timeSpan.Days:00}:{timeSpan.Hours:00}:{timeSpan.Minutes:00}:{timeSpan.Seconds:00}";
 
-        Invoke(() => Text = $"{formTitle} [Searching for {time}]");
+        Invoke(() => Text = $"{formTitle} [已搜索 {time}]");
         if (Config.StreamerView && teraRaidView is not null)
             Invoke(() => teraRaidView.textSearchTime.Text = time);
     }
@@ -1782,7 +1792,7 @@ public partial class MainWindow : Form
 
     private async Task TestWebhookAsync(CancellationToken token)
     {
-        var filter = new RaidFilter { Name = "Test Webhook" };
+        var filter = new RaidFilter { Name = "测试 Webhook" };
 
         int i = ComboIndex.SelectedIndex;
 
@@ -1791,7 +1801,7 @@ public partial class MainWindow : Form
         var rewards = RaidContainer.Rewards;
         if (i <= -1 || encounters[i] is null || raids[i] is null)
         {
-            await this.DisplayMessageBox(Webhook, "Please connect to your device and ensure a raid has been found.", token).ConfigureAwait(false);
+            await this.DisplayMessageBox(Webhook, "请先连接 Switch 并找到一个符合条件的太晶坑。", token).ConfigureAwait(false);
             return;
         }
 
@@ -1846,7 +1856,7 @@ public partial class MainWindow : Form
             }
             catch (Exception ex)
             {
-                await this.DisplayMessageBox(Webhook, $"Could not read the date: {ex.Message}", Source.Token).ConfigureAwait(false);
+                await this.DisplayMessageBox(Webhook, $"读取日期失败：{ex.Message}", Source.Token).ConfigureAwait(false);
             }
         });
     }
@@ -1875,8 +1885,8 @@ public partial class MainWindow : Form
 
     private void NotifyNewVersionAvailable(Version version)
     {
-        Text += $" - Update v{version.Major}.{version.Minor}.{version.Build} available!";
-        UpdateStatus($"Update v{version.Major}.{version.Minor}.{version.Build} available!");
+        Text += $" - 发现新版本 v{version.Major}.{version.Minor}.{version.Build} 可更新！";
+        UpdateStatus($"发现新版本 v{version.Major}.{version.Minor}.{version.Build} 可更新！");
 #if !DEBUG
         using UpdateNotifPopup nup = new(CurrentVersion, version);
         if (nup.ShowDialog() == DialogResult.OK)
