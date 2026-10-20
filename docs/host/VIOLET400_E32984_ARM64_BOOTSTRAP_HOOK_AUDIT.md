@@ -206,16 +206,16 @@ exlaunch Entry → 保存寄存器 → 回调 RaidBootstrapReadOnly::Callback(ct
 
 1. `HookRva=0xE32984`，`SourceRows=0x58+0xE4=0x13C`，`WireRows=0x6B8+0xE4=0x79C`。
 2. 启动时核对 17 条指定原始机器码，指纹异常时拒绝安装 Hook；**17 条指纹不等于动态验证了完整 Build ID**。
-3. 只有状态启用才开始读取，捕获双方奖励各 720B 到 `RCHMB02\0` 邮箱；检查 `generation` 防止 PC 读取跨局混合数据。
+3. 只有状态启用才开始读取，捕获双方奖励各 720B 到 **v3 邮箱 `RCHMB03\0`（0x800B）**；检查 `generation` 防止 PC 读取跨局混合数据。v3 在原有 0x600 前缀后追加批量配置区，但**并未包含完整的两份 0x3E8 RaidPoint**。
 4. 追加前做 `memcmp(x20+0x58, x23+0x6B8, 0x3E8)`，并检查源奖励 45 行的合法性和连续空槽。
-5. CI 默认 Native **不会编译奖励写入代码**；只有显式 `HOST_N2_EXPERIMENTAL=1` 编译才具有单行实验写入能力：目前仅支持先机球（道具 ID 15）×1–10、`subject=5`。
-6. 仅对 `x23+0x79C + used*16` 写一条，不改 `x20` 源 RaidPoint、存档坑块或者已压缩的 LZ4 报文。
+5. CI 默认 Native **不会编译奖励写入代码**；只有显式 `HOST_N2_EXPERIMENTAL=1` 编译才具有真正写入能力。旧模式 1/2 限制单行先机球（道具 ID 15）×1–10、`subject=5`。**最新 v3 已新增模式 3/4：最多 28 行 subject=5 批量预览/实验写入协议**，请求有 nonce、FNV1a 校验和及容量检查；这仍是未经实机确认的代码能力，不等于实际可发送或 999 道具必然到账。
+6. 单行及 v3 批量写入均只针对 `x23+0x79C + used*16` 起的未占用奖励槽；不改 `x20` 源 RaidPoint、存档坑块或已压缩的 LZ4 报文。batch 模式在全部条目校验通过后才一次性写入。
 
 **PC：** 仍通过已安装的 `sys-botbase` 读/写**Native 自己的内存邮箱**，通过 Hook Entry 和编译配对的 `mailbox-locator.json` 定位邮箱。**不是纯 sys-botbase 的“无额外模块方案”**：若未加载 `subsdk9`，PC 没有 Native 回调可观察、也找不到这个邮箱。旧 `SysbotOnly` 扫描/候选源 RaidPoint 写入属于另一条未完成动态关联的诊断路线。
 
 **当前弱点 / 待优化：**
 
-- Native 比对**完整 `0x3E8` RaidPoint**，但邮箱仅保存**两份 720B 奖励数组**。PC 的两份奖励一致报告不能**独立证实**整个 RaidPoint 一致；最好未来采用更大版本的 mailbox 带全 RaidPoint SHA-256、记录完整帧或采样前后各自摘要。
+- Native 比对**完整 `0x3E8` RaidPoint**，但当前 **v3 邮箱虽已扩展为 0x800B，仍仅保存两份 720B 奖励数组**；新增的 0x200B 是批量控制区，不是完整 RaidPoint 样本。PC 的奖励数组一致报告不能**独立证实**整个 RaidPoint 一致；可在后续邮箱版本加入全 RaidPoint 摘要或完整样本。
 - 本机 `status=1` 只代表安装动作已完成；`count>0` 只说明 Hook 命中一次；它们不自动证明命中“真实房主发出的那一个 0x2F”。
 - Native 没有持续保存 `x20/x23` 对象生命周期和消息种类的证据；只在同步回调有效，PC 不应将其作为可靠、跨局长期固定指针。
 - 当前代码仅做非零、最低地址和 8 字节对齐的基本指针检查；如果运行时地址与预期类型不符仍存在内存访问崩溃风险。应先执行只读 N1，不能直接启动写入试验。
@@ -233,7 +233,7 @@ exlaunch Entry → 保存寄存器 → 回调 RaidBootstrapReadOnly::Callback(ct
 | E. N2 受控追加 | 写前后审计，原版奖励无损、只新增一行、输出明文正确 | **未验证** |
 | F. 对端 0x2F | 真实参与者接收到改动后的 Bootstrap | **未验证** |
 | G. 掉落/持久化 | 有/无护符、奖励、背包和保存重进分别正确 | **未验证** |
-| H. 20 行×999 | Native 动态协议、背包行为、多人结果全验证 | **尚未开放** |
+| H. 最多 28 行批量奖励 | v3 模式 3/4 已有代码；容量、背包行为、多人结果全验证 | **代码已接入，实机未通过** |
 
 对实验返回值要正确解读：
 
@@ -249,7 +249,7 @@ exlaunch Entry → 保存寄存器 → 回调 RaidBootstrapReadOnly::Callback(ct
 2. 实机真实房主开启一局普通团体战，N1 只读记录 `count`、`generation`、奖励行及是否完整一致；异常即停止。
 3. 同一时刻由参与者一侧观察 Bootstrap 及原版奖励，证明所捕获数据与该局真实 `0x2F` 关联。
 4. 再用显式单行实验构建，不改源 `x20`、仅改发包明文 `x23` 第一空槽；对端逐项验证其收到的数据、护符过滤、战后道具和存档重进。
-5. 只有以上链路完整通过，才考虑将 [多行离线 BootstrapSendCopyPlanner](../../RaidCrawler.Core/Host/BootstrapSendCopyPlanner.cs) 接入可写 Native；目前 20×999 不属于实机已验证范围。
+5. 当前 `host` 的 **v3 已新增最多 28 行批量配置和可选 Native 写入代码**，而且公开 CI 默认不包含写入分支。只有以上完整链路通过，才能认为 [多行规划器](../../RaidCrawler.Core/Host/BootstrapSendCopyPlanner.cs) 对应的动态批量奖励可用；20×999 目前仍**未经 Switch 实机/接收者/持久化验证**。
 
 ## 9. 参考文档
 
