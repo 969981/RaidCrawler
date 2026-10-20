@@ -12,6 +12,7 @@ public partial class FilterSettings : Form
     public FilterSettings(ref List<RaidFilter> filters)
     {
         InitializeComponent();
+        Tooltip.SetToolTip(ECCheck, "只匹配加密常数（EC）模 100 等于 0 的太晶坑。");
         this.filters = filters;
         Species.DataSource = Enum.GetValues<Species>()
             .Where(z => z != PKHeX.Core.Species.MAX_COUNT)
