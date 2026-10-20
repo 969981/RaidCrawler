@@ -2,6 +2,7 @@
 // Only Violet 4.0.0. Hook installation patches executable code; the callback
 // NEVER writes game reward, network, bag, or save data. No filesystem or socket.
 #include "lib.hpp"
+#include <nn/os.hpp>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
