@@ -25,3 +25,5 @@
 **证据边界：** 上述均为文件级、静态或离线证据；运行中 `lua_State`、Lua A/B/C 调用、Hook 命中、原版奖励保留与额外物品入包仍须实机验证。
 
 - [P1-B2 Lua 主状态与 CallInfo 只读结构验证](violet400-p1b2-lua-state-callinfo-live-structure-20261020.md)：结合第一份实机全局指针稳定日志、ELF 的 15 处新指令复核、Lua 主状态字段布局、CallInfo 有界读取及下一阶段闭包/奖励追踪 Gate；尚无真实 A/B/C 数据。
+
+- [P1-B2 实机竞态日志与基础奖励表浏览](violet400-p1b2-reward-table-diagnostics-20261020.md)：详细记录用户 10:53 实机证据，按字段诊断 CallInfo/栈变化、有限只读重试，以及固定/随机 Base 奖励表与 20×999 本机模板的来源区分；不等同已抓取 Lua A/B/C 奖励。
