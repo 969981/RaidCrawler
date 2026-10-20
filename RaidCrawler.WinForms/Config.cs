@@ -22,7 +22,7 @@ public class ClientConfig : IDateAdvanceConfig, IWebhookConfig
     public bool PlaySound { get; set; } = true;
     public bool EnableAlertWindow { get; set; } = true;
     public string AlertWindowMessage { get; set; } =
-        "Match found! Hold Shift and click one of the arrow keys to jump to the matching result.";
+        "已找到符合条件的太晶坑！按住 Shift 并点击左右箭头，可跳转到匹配结果。";
     public bool EnableNotification { get; set; }
     public string DiscordWebhook { get; set; } = string.Empty;
     public string DiscordMessageContent { get; set; } = string.Empty;
