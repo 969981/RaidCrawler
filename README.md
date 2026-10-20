@@ -1,3 +1,5 @@
+> **2026-10-20 更新：UI 间距 + 全体奖励实验**。主界面“设备连接”已合并 Wi-Fi／USB 的互斥行，连接按钮上移；右侧“太晶坑详情”标题栏压缩。纯 sys-botbase 奖励窗口现在支持 **subject=0 全体玩家候选**与**subject=5 晶耀护符候选**；可做先机球×500 单行对照或20种×999预设。**重要格式勘误**：完整奖励行为 `[subject/source,item_id,quantity,reserved]`，行起点 `RaidPoint+0xE0`，道具ID才是 `+0xE4`。详见 [PokéLDN对照与静态/实机界限](docs/host/POKELDN_SUBJECT0_RETAIL_LAYOUT_TEST.md)。目前仅代码和离线测试，尚未证明真实房主同步发包与参与者到账。
+
 > **新增：截图奖励预设（2026-10-20）**：纯 C# + 现有 sys-botbase 的方案 A 已加入用户截图指定的 **20 种道具 ×999，Subject=5**，在 **纯sys-botbase → 截图奖励20种×999（实验）** 操作。只追加空奖励行，要求原版奖励≤25条，否则拒绝；无需 Switch Native 插件。**预设写入仅验证候选内存，真实房主发送对象/参与者实际到账与晶耀护符筛选仍未实机证明**。详细名单和使用方式见 [20×999 截图预设技术文档](docs/host/SCREENSHOT_20X999_PRESET.md)。
 
 > **方案 A 实验写入（2026-10-20）**：Windows `host` 分支已集成纯 C# + 标准 sys-botbase 的**受控单行奖励 RAM 写入**。主界面 **纯sys-botbase → 受控奖励写入（实验）**。只允许已确认的《紫》4.0.0 测试机、明确地址的候选对象、先机球×1–10 `Subject=5`；写前/写后验证，支持符合条件时尝试恢复。**当前没证明候选对象实际参与发包，也没有参与者到账的实机证据**。参见 [Hexbyt3 4.0.0 与 Plan A 实验报告](docs/host/PLAN_A_4_0_0_RAM_WRITE_EXPERIMENT.md)。默认构建仍**不包含 Switch Native 插件**。
