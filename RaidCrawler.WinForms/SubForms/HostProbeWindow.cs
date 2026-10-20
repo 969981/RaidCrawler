@@ -18,14 +18,17 @@ public sealed class HostProbeWindow : Form
     private readonly Button _startButton;
     private readonly Button _stopButton;
     private readonly Button _captureButton;
+    private readonly Button _previewButton;
+    private readonly Button _applyButton;
+    private readonly NumericUpDown _quantity;
     private readonly CancellationTokenSource _closing = new();
     private bool _busy;
 
     public HostProbeWindow(ISwitchConnectionAsync connection)
     {
         _probe = new HostProbeMailboxClient(connection);
-        Text = "RaidCrawler 房主探针（N1／只读）";
-        ClientSize = new Size(660, 440);
+        Text = "RaidCrawler 房主探针（N1／N2 实验）";
+        ClientSize = new Size(660, 505);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterParent;
@@ -44,13 +47,23 @@ public sealed class HostProbeWindow : Form
         _startButton = MakeButton("开始捕获", 14, 96, 142);
         _stopButton = MakeButton("停止捕获", 170, 96, 142);
         _captureButton = MakeButton("读取并比较", 326, 96, 196);
+        _quantity = new NumericUpDown {
+            Location = new Point(82, 140), Size = new Size(70, 27),
+            Minimum = 1, Maximum = 10, Value = 1,
+        };
+        _previewButton = MakeButton("预览 Subject=5", 170, 140, 162);
+        _applyButton = MakeButton("试验追加（需特殊构建）", 342, 140, 252);
+        var qtyLabel = new Label {
+            Text = "先机球×", Location = new Point(14, 143), Size = new Size(70, 26),
+        };
         _log = new TextBox {
-            Location = new Point(14, 148), Size = new Size(625, 269),
+            Location = new Point(14, 186), Size = new Size(625, 294),
             Multiline = true, ScrollBars = ScrollBars.Both, ReadOnly = true,
             WordWrap = false, Font = new Font(FontFamily.GenericMonospace, 9),
         };
         Controls.AddRange([intro, _address, _statusButton, _autoButton,
-            _startButton, _stopButton, _captureButton, _log]);
+            _startButton, _stopButton, _captureButton, qtyLabel, _quantity,
+            _previewButton, _applyButton, _log]);
 
         _autoButton.Click += async (_, _) =>
         {
@@ -92,6 +105,7 @@ public sealed class HostProbeWindow : Form
         {
             var result = await _probe.ReadCaptureAsync(a, t);
             HostCaptureComparison cmp = result.Capture.Compare();
+            HostProbeResult n2 = await _probe.ReadAppendResultAsync(a, t);
             string field = cmp.FirstMismatchField switch
             {
                 nameof(RewardRow.SubjectType) => "奖励领取条件",
@@ -101,12 +115,31 @@ public sealed class HostProbeWindow : Form
                 _ => "无",
             };
             return $"N1 原版奖励捕获次数：{result.Header.CaptureCount} " +
+                   $"N2 返回码：{n2.LastResult} 追加次数：{n2.AppendedCount} 原版行数：{n2.OriginalRows}\r\n" +
                    $"数据一致：{(cmp.Matches ? "是" : "否")} 首个差异行：{cmp.FirstMismatchRow} " +
                    $"差异字段：{field}\r\n" +
                    $"源奖励 SHA256：{cmp.SourceRowsSha256}\r\n" +
                    $"发送前奖励 SHA256：{cmp.BootstrapRowsSha256}\r\n" +
                    "注意：这里只能证明两份捕获数据一致，不能证明参与者已收到奖励。";
         });
+        _previewButton.Click += async (_, _) => await Run(async (a, t) =>
+        {
+            await _probe.ConfigureAppendAsync(a, 15, (uint)_quantity.Value, false, t);
+            return "已配置只读追加预览；需要下一次真实房主 Bootstrap 才产生预览结果。";
+        });
+        _applyButton.Click += async (_, _) =>
+        {
+            var agree = MessageBox.Show(this,
+                "仅供可恢复的本地测试 Switch 使用。N1 两端数据必须先实机验证；此操作会修改原版发送前奖励明文，" +
+                "不保证到账或游戏稳定。确认尝试单行 Subject=5 吗？",
+                "N2 实验警告", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (agree != DialogResult.Yes) return;
+            await Run(async (a, t) =>
+            {
+                await _probe.ConfigureAppendAsync(a, 15, (uint)_quantity.Value, true, t);
+                return "试验追加请求已下发；将在下一次房主 Bootstrap 时处理。请检查返回码，不代表到账。";
+            });
+        };
         FormClosed += (_, _) => _closing.Cancel();
         Append("探针默认禁用。此窗口只能读取快照和启停捕获，不能追加或修改游戏奖励。");
     }
@@ -115,7 +148,7 @@ public sealed class HostProbeWindow : Form
         new() { Text = label, Location = new Point(x, y), Size = new Size(width, 30) };
 
     private static string Describe(HostProbeHeader h) =>
-        $"Hook状态={h.Status} 已启用={(h.Enabled ? "是" : "否")} 捕获次数={h.CaptureCount} " +
+        $"Hook状态={h.Status} 已启用={(h.Enabled ? "是" : "否")} N2写入能力={((h.Capabilities & 1) == 1 ? "是" : "否")} 捕获次数={h.CaptureCount} " +
         $"丢弃次数={h.DroppedCount} 版本序号={h.Generation} 时间刻度={h.Tick}";
 
     private void Append(string text) =>
@@ -127,7 +160,8 @@ public sealed class HostProbeWindow : Form
         _busy = true;
         _address.Enabled = false;
         _autoButton.Enabled = _statusButton.Enabled = _startButton.Enabled =
-            _stopButton.Enabled = _captureButton.Enabled = false;
+            _stopButton.Enabled = _captureButton.Enabled = _previewButton.Enabled =
+            _applyButton.Enabled = false;
         try
         {
             ulong address = HostProbeMailbox.ParseAddress(_address.Text);
@@ -144,7 +178,8 @@ public sealed class HostProbeWindow : Form
             if (!IsDisposed) {
                 _address.Enabled = true;
                 _autoButton.Enabled = _statusButton.Enabled = _startButton.Enabled =
-                    _stopButton.Enabled = _captureButton.Enabled = true;
+                    _stopButton.Enabled = _captureButton.Enabled = _previewButton.Enabled =
+                    _applyButton.Enabled = true;
             }
         }
     }
