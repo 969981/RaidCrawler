@@ -56,6 +56,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: RaidCrawler-host-experimental
-          path: RaidCrawler.WinForms/bin/x64/Release/net10.0-windows/win-x64/publish/
+          path: RaidCrawler.WinForms/bin/Release/net10.0-windows/win-x64/publish/
           if-no-files-found: error
           retention-days: 7
