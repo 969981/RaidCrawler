@@ -7,7 +7,8 @@ using SysBot.Base;
 namespace RaidCrawler.WinForms.SubForms;
 
 /// <summary>
-/// Editable 45-position SV reward preset. Only changes a local configuration.
+/// Local-only charm APPEND profile editor; the underlying legacy grid still displays 45 slots.
+/// Only 20 subject-5 rows may be saved, with all normal game drops preserved.
 /// The official Nintendo online-host injection point has NOT been verified.
 /// </summary>
 public sealed class RewardEditorForm : Form
@@ -21,6 +22,8 @@ public sealed class RewardEditorForm : Form
     private readonly Label counter = new();
     private readonly RaidRewardEntry?[] defaults = RaidRewardPresets.ScreenshotCharm45Slots();
     private readonly ContextMenuStrip actions = new();
+    private readonly CheckBox charmEnabled = new();
+    public CharmBonusProfile? SavedCharmBonusProfile { get; private set; }
     private RewardItemPickerPopup? picker;
     private bool populating;
 
@@ -54,8 +57,8 @@ public sealed class RewardEditorForm : Form
             Dock = DockStyle.Top, Height = 32, AutoEllipsis = true,
             ForeColor = Color.DarkRed, Padding = new Padding(6, 3, 0, 0),
             Text = BenefitLanguage.T(
-                "全局奖励模板：适用于任意坑位／地图，前20行默认×999晶耀护符，25行留空。游戏内 Hook 尚未安装。",
-                "Global reward template for any raid; 20 default charm-only ×999 rows, 25 empty. No runtime hook installed."),
+                "晶耀护符追加模式：原版固定／随机奖励全部保留，仅配置最多20条额外奖励。尚未实现游戏内追加。",
+                "Charm append mode: all original drops are preserved, up to 20 EXTRA rows. Live injection not implemented."),
         };
         counter.Dock = DockStyle.Bottom;
         counter.Height = 24;
@@ -131,12 +134,21 @@ public sealed class RewardEditorForm : Form
             Padding = new Padding(5, 5, 0, 0), AutoScroll = true,
         };
         outer.Controls.Add(controls, 0, 2);
-        AddButton(controls, BenefitLanguage.T("写入奖励", "Write Rewards"), (_, _) => ExplainWriteStatus());
+        charmEnabled.AutoSize = true;
+        charmEnabled.Text = BenefitLanguage.T("启用配置（本机保存，不会写入游戏）", "Enable saved profile (not in-game)");
+        charmEnabled.Margin = new Padding(5, 10, 4, 0);
+        controls.Controls.Add(charmEnabled);
+        AddButton(controls, BenefitLanguage.T("保存追加配置／诊断", "Save Append / Diagnostics"), (_, _) => ExplainWriteStatus());
         AddButton(controls, BenefitLanguage.T("导入 JSON", "Import JSON"), (_, _) => ImportJson());
         AddButton(controls, BenefitLanguage.T("导出 JSON", "Export JSON"), (_, _) => ExportJson());
         AddButton(controls, BenefitLanguage.T("查看", "Preview"), (_, _) => Preview());
 
-        LoadSlots(existingPreview ?? defaults);
+        var current = CharmBonusProfileStore.Load(CharmBonusProfileStore.DefaultPath);
+        charmEnabled.Checked = current.Enabled;
+        var initial = new RaidRewardEntry?[45];
+        for (int i = 0; i < current.Items.Count; i++)
+            initial[i] = new RaidRewardEntry(current.Items[i].ItemId, current.Items[i].Quantity, 0, 5);
+        LoadSlots(initial);
         FormClosing += SaveOnClose;
     }
 
@@ -303,8 +315,20 @@ public sealed class RewardEditorForm : Form
         if (populating) return;
         int count = grid.Rows.Cast<DataGridViewRow>().Count(r => !Empty(r));
         counter.Text = BenefitLanguage.T(
-            $"已配置 {count}/45，剩余 {45-count} 个空槽。单击道具列可搜索；右键有恢复默认、清空槽位和 BIN 导入导出。",
-            $"Configured {count}/45, {45-count} empty. Click Item to search; right-click for reset, clear and BIN.");
+            $"晶耀护符追加配置 {count}/20 条；原版奖励仍由游戏生成。后25个旧格式槽不得写入追加档案。",
+            $"Charm append {count}/20; game generates original drops. Last 25 legacy slots cannot be saved as bonuses.");
+    }
+
+    private CharmBonusProfile ReadCharmProfile(bool allowEmpty = true)
+    {
+        var slots = ReadSlots(allowEmpty);
+        var rows = slots.Where(x => x is not null).Select(x => x!).ToArray();
+        if (rows.Length > CharmBonusProfile.MaxItems)
+            throw new ArgumentException("晶耀护符自定义奖励最多20条；不能覆盖原版奖励或静默截断。");
+        if (rows.Any(x => x.Subject != 5 || x.Rare != 0))
+            throw new ArgumentException("追加配置仅允许 Subject=5 且 Rare=0；固定／随机奖励仍由原版游戏生成。");
+        return CharmBonusProfile.Create(charmEnabled.Checked,
+            rows.Select(x => new CharmBonusItem(x.ItemId, x.Quantity)));
     }
 
     private void SaveOnClose(object? sender, FormClosingEventArgs e)
@@ -312,40 +336,52 @@ public sealed class RewardEditorForm : Form
         picker?.Close();
         try
         {
-            AppliedSlots = ReadSlots();
+            var pending = ReadCharmProfile();
+            SavedCharmBonusProfile = CharmBonusProfileStore.Save(
+                CharmBonusProfileStore.DefaultPath, pending);
+            AppliedSlots = null; // never ask MainWindow to save old 45-slot global profile
         }
-        catch (ArgumentException ex)
+        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or InvalidDataException)
         {
             var result = MessageBox.Show(this,
                 BenefitLanguage.Error(ex.Message) + Environment.NewLine +
-                BenefitLanguage.T("选择“是”继续编辑，“否”放弃本次修改。", "Yes to continue editing; No to discard changes."),
-                BenefitLanguage.T("奖励检查", "Reward validation"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                BenefitLanguage.T("选择“是”继续编辑，“否”放弃本次修改。",
+                    "Yes to continue editing; No to discard changes."),
+                BenefitLanguage.T("追加配置检查", "Append profile validation"),
+                MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (result == DialogResult.Yes) e.Cancel = true;
         }
     }
 
     private void ExplainWriteStatus()
     {
-        IReadOnlyList<RaidRewardEntry?> slots;
-        try { slots = ReadSlots(allowEmpty:false); }
+        CharmBonusProfile pending;
+        try { pending = ReadCharmProfile(allowEmpty:false); }
         catch (ArgumentException ex)
         {
-            MessageBox.Show(this, BenefitLanguage.Error(ex.Message), BenefitLanguage.T("配置检查", "Validation"));
+            MessageBox.Show(this, BenefitLanguage.Error(ex.Message),
+                BenefitLanguage.T("追加配置检查", "Append profile validation"));
             return;
         }
-        // A diagnostic run is safe on a connected console, but it is not a native hook.
         try
         {
-            // Preparing a template never means the console has accepted it.
-            RaidRewardGlobalProfileStore.Save(RaidRewardGlobalProfileStore.DefaultPath, slots);
-            // The Windows remote Hook uses the live connection only; no SD/NRO package.
+            SavedCharmBonusProfile = CharmBonusProfileStore.Save(
+                CharmBonusProfileStore.DefaultPath, pending);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or
+            ArgumentException or InvalidDataException)
         {
-            MessageBox.Show(this, ex.Message, BenefitLanguage.T("保存全局模板失败", "Global template save failed"));
+            MessageBox.Show(this, ex.Message,
+                BenefitLanguage.T("保存追加配置失败", "Append profile save failed"));
             return;
         }
-        using var diagnostic = new RaidRewardDiagnosticForm(consoleConnection, slots);
+        // Diagnostic form accepts the legacy 45-slot row layout only as an
+        // import/preview adapter. No append Hook exists or is installed here.
+        var previewSlots = new RaidRewardEntry?[45];
+        for (int i = 0; i < pending.Items.Count; i++)
+            previewSlots[i] = new RaidRewardEntry(
+                pending.Items[i].ItemId, pending.Items[i].Quantity, 0, 5);
+        using var diagnostic = new RaidRewardDiagnosticForm(consoleConnection, previewSlots);
         diagnostic.ShowDialog(this);
     }
 
