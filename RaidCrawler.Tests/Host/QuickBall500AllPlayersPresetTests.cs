@@ -10,7 +10,7 @@ namespace RaidCrawler.Tests.Host;
 public sealed class QuickBall500AllPlayersPresetTests
 {
     [Fact]
-    public void NamedPresetIsExactlySourceZeroQuickBall15Quantity500ReservedZero()
+    public void NamedPresetIsExactlySubjectZeroQuickBall15Quantity500RareZero()
     {
         Assert.Equal((uint)0, QuickBall500AllPlayersPreset.SubjectType);
         Assert.Equal((uint)15, QuickBall500AllPlayersPreset.ItemId);
@@ -18,10 +18,10 @@ public sealed class QuickBall500AllPlayersPresetTests
         Assert.Equal(new RewardRow(15, 500, 0, 0), QuickBall500AllPlayersPreset.Row);
         byte[] raw = QuickBall500AllPlayersPreset.GetRecordBytes();
         Assert.Equal(new byte[] {
-            0x00, 0x00, 0x00, 0x00, // subject/source: everyone
             0x0F, 0x00, 0x00, 0x00, // Quick Ball ID 15
             0xF4, 0x01, 0x00, 0x00, // quantity 500
-            0x00, 0x00, 0x00, 0x00, // reserved
+            0x00, 0x00, 0x00, 0x00, // rare
+            0x00, 0x00, 0x00, 0x00, // subject: everyone
         }, raw);
         Assert.Equal(QuickBall500AllPlayersPreset.Row, RewardRow.Read(raw));
     }
