@@ -66,7 +66,7 @@
             this.LabelAbsoluteAddress.Name = "LabelAbsoluteAddress";
             this.LabelAbsoluteAddress.Size = new System.Drawing.Size(160, 15);
             this.LabelAbsoluteAddress.TabIndex = 2;
-            this.LabelAbsoluteAddress.Text = "Raid Block Absolute Address:";
+            this.LabelAbsoluteAddress.Text = "太晶坑数据绝对地址：";
             // 
             // RaidBlockViewer
             // 
@@ -78,7 +78,7 @@
             this.Controls.Add(this.RAM);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "RaidBlockViewer";
-            this.Text = "RaidBlockViewer";
+            this.Text = "太晶坑内存查看";
             this.ResumeLayout(false);
             this.PerformLayout();
         }
