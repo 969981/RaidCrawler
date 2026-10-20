@@ -3,7 +3,8 @@ import struct
 import unittest
 
 from compare_capture import (
-    BOOTSTRAP_REWARDS, BOOTSTRAP_SIZE, RAIDPOINT_SIZE, SOURCE_REWARDS, compare,
+    BOOTSTRAP_REWARDS, BOOTSTRAP_SIZE, RAIDPOINT_SIZE, SOURCE_REWARDS,
+    REGION_SIZE, compare, compare_regions,
 )
 
 
@@ -32,6 +33,31 @@ class CompareCaptureTests(unittest.TestCase):
         self.assertEqual(7, report["first_mismatch_row"])
         self.assertEqual("subject_type", report["first_mismatch_field"])
         self.assertEqual(7*16+12, report["first_mismatch_byte"])
+
+    def test_native_reward_regions_equal(self):
+        source = bytearray(REGION_SIZE)
+        target = bytearray(REGION_SIZE)
+        struct.pack_into("<IIII", source, 4 * 16, 15, 1, 0, 5)
+        target[:] = source
+        result = compare_regions(bytes(source), bytes(target))
+        self.assertTrue(result["equal"])
+        self.assertEqual(REGION_SIZE, result["reward_bytes"])
+
+    def test_native_reward_regions_first_mismatch(self):
+        source = bytearray(REGION_SIZE)
+        target = bytearray(REGION_SIZE)
+        struct.pack_into("<IIII", source, 44 * 16, 15, 10, 0, 5)
+        struct.pack_into("<IIII", target, 44 * 16, 15, 11, 0, 5)
+        result = compare_regions(bytes(source), bytes(target))
+        self.assertFalse(result["equal"])
+        self.assertEqual(44, result["first_mismatch_row"])
+        self.assertEqual("quantity", result["first_mismatch_field"])
+
+    def test_native_reward_regions_wrong_size(self):
+        with self.assertRaises(ValueError):
+            compare_regions(bytes(REGION_SIZE - 1), bytes(REGION_SIZE))
+        with self.assertRaises(ValueError):
+            compare_regions(bytes(REGION_SIZE), bytes(REGION_SIZE + 1))
 
     def test_wrong_size_rejected(self):
         source, plain = self.make_pair()
