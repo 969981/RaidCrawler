@@ -21,7 +21,7 @@ public sealed class HostRaidPointAutoLocatorTests
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(0x3B8, 4), 5);
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(0x3BC, 4), 713);
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(0x3C8, 4), 75);
-        new RewardRow(1128, 1, 0, 0).Write(data.AsSpan(0xE0, 16));
+        new RewardRow(1128, 1, 0, 0).Write(data.AsSpan(RaidPointLayout.RewardsInRaidPoint, 16));
         return data;
     }
 
@@ -88,7 +88,7 @@ public sealed class HostRaidPointAutoLocatorTests
     public void SourceOnlyUncertainRowDoesNotInvalidateStructuralDetection()
     {
         var data = RetailLikeRaidPoint();
-        new RewardRow(0, 0, 0, 5).Write(data.AsSpan(0xE0 + 16, 16));
+        new RewardRow(0, 0, 0, 5).Write(data.AsSpan(RaidPointLayout.RewardsInRaidPoint + 16, 16));
         Assert.True(HostRaidPointAutoLocator.LooksLikeRetailRaidPoint(
             data, out _, out _));
         // It still MUST fail the separately guarded append eligibility.
