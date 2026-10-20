@@ -79,10 +79,12 @@ Companion NPDM: follow exlaunch's installation guidance; do not replace stock
 main.npdm without checking intended loader compatibility.
 Control: C# Host Probe window via the existing sys-botbase absolute read/write connection.
 Mailbox: place mailbox-locator.json beside RaidCrawler EXE for automated ASLR discovery; manual debug log address remains fallback.
-Protocol: RC protocol v2, header 0x40, mailbox 0x600, enable at +0x10.
+Protocol: RC protocol v3, header 0x40, mailbox 0x800, enable at +0x10.
+Batch preview (read-only): request mode 3, 1-28 rows from mailbox+0x620.
 Default N2 mode = OFF. Building with HOST_N2_EXPERIMENTAL=1 is required
-for outgoing one-row experimental writes; public CI artifacts are READ-ONLY.
+for outgoing one-row or 1-28 row experimental writes; public CI artifacts are READ-ONLY.
 Default: disabled, no SD files, no second TCP listener.
-No game reward/network/save writes. Gameplay code IS instrumented.
+Default CI: no game reward writes. Hook code IS instrumented.
+Experimental build may modify local outgoing plaintext; real send/receive/save unverified.
 EOF
 echo "Build completed; artifacts: ${OUT}"
