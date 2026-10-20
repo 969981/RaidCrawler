@@ -55,7 +55,7 @@ native output:   x23+0x6B8+0xE4 = x23+0x79C
 - 通过 `GetMainNsoBaseAsync` 取得游戏 main 起点，沿被 Patch 的 InlineHook `B` 或 `LDR/BR` 跳板进入固定编译版本 exlaunch JIT Entry；Entry+0x10 的 `m_Callback` 为真实 C++ Callback 地址。由 **同一原生构建**生成 `mailbox-locator.json` 的 `callback_to_mailbox_delta` 推出内存邮箱地址。
 - Native 构建脚本运行 `aarch64-none-elf-nm -n -C` 解析 `RaidBootstrapReadOnly::Callback` 与 `rcprobe::g_mailbox` 符号，再打包清单。**必须与同次构建出的 subsdk9 配对**，不能在不同版本间复用 manifest。
 - C# Host Probe 的「自动定位」按钮读取该 manifest + 当前 main Hook 指令 + Entry，验证 mailbox `RCHMB02\0`、v2 size、Title ID、hook status。任何异常时不给出猜测地址，不执行写入。
-- 自动发现不代表完整 Build ID 已动态读取；当前只在 Native 启动时核对 12 条明确指令，另外需要测试机独立确认 Build ID。
+- 自动发现不代表完整 Build ID 已动态读取；当前只在 Native 启动时核对 17 条明确指令（新版包含 0xE32984 Hook 原始指令），另外需要测试机独立确认 Build ID。
 
 ## 4. N2 单行 Subject=5 开发（实验）
 
