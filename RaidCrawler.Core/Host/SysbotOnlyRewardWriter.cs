@@ -49,6 +49,11 @@ public sealed class SysbotOnlyRewardWriter(ISwitchConnectionAsync connection)
         if (!plan.Accepted)
             throw new InvalidOperationException($"内存追加计划未通过：{plan.Reason}");
 
+        string audit = HostPlanAWriteAudit.Check(original, plan.CandidateRaidPoint,
+            plan.OriginalCount, ExperimentalItem, quantity);
+        if (audit != HostPlanAWriteAudit.Correct)
+            throw new InvalidOperationException($"单行写入字节审计失败：{audit}");
+
         int slotOffset = RaidPointLayout.RewardsInRaidPoint +
                          plan.OriginalCount * RaidPointLayout.RewardRowLength;
         byte[] replacement = plan.CandidateRaidPoint.AsSpan(slotOffset, 16).ToArray();
@@ -82,8 +87,10 @@ public sealed class SysbotOnlyRewardWriter(ISwitchConnectionAsync connection)
                 [new RewardRow(ExperimentalItem, permit.Quantity, 0, 5)],
                 id => id == ExperimentalItem);
             if (!plan.Accepted || plan.OriginalCount != permit.OriginalRows ||
-                !plan.CandidateRaidPoint.AsSpan().SequenceEqual(permit.PlannedRaidPoint))
-                throw new InvalidOperationException("离线追加计划与准备时的原始对象不一致。");
+                !plan.CandidateRaidPoint.AsSpan().SequenceEqual(permit.PlannedRaidPoint) ||
+                HostPlanAWriteAudit.Check(permit.OriginalRaidPoint, permit.PlannedRaidPoint,
+                    permit.OriginalRows, ExperimentalItem, permit.Quantity) != HostPlanAWriteAudit.Correct)
+                throw new InvalidOperationException("离线追加计划或无损字节审计与准备时的原始对象不一致。");
 
             await CheckStateAsync(token).ConfigureAwait(false);
             await ValidateOwnerAsync(permit.OwnerAddress, token).ConfigureAwait(false);
