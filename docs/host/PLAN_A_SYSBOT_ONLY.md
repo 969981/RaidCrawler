@@ -4,6 +4,57 @@
 >
 > 本路线不安装 `subsdk9`、`main.npdm`、任何 exlaunch 插件，不启用 Hook，也不需要 `mailbox-locator.json`。仅使用原有 `ISwitchConnectionAsync` 的 `GetTitleID`、`GetGameInfo("version")`、`ReadBytesMainAsync`、`ReadBytesAbsoluteAsync` 与 `GetHeapBaseAsync`。
 
+## 本轮新增：基于真实 ELF 重定位表确认序列化类实例指纹
+
+在 **Violet4.0.0.elf 原始字节** 的 `.rela.dyn`（282,761 条重定位）里，找到了唯一指向原生 Serializer `main+0xE327FC` 的 **AArch64 RELATIVE** 项（类型 `0x403`）：
+
+| 重定位写入位置 | 目标代码地址（ELF RVA） | 解释 |
+|---|---|---|
+| `main+0x4459278` | `main+0x1E631F8` | 主虚函数表起点的第一个析构器槽 |
+| **`main+0x44592E0`** | **`main+0xE327FC`** | **虚表 +0x68 是目标序列化函数** |
+| `main+0x4459308` | `main+0xA6855C` | 第二虚表首项 |
+| `main+0x4459358` | `main+0xA68570` | 第三虚表首项 |
+
+原始 ARM64 指令证实 `main+0x1E63204` 创建主虚表引用 `0x4459278`、`+0x1E6320C` 向 `[x0]` 存入、`+0x1E63210/+0x1E63214` 计算 `+0x90/+0xE0`、`+0x1E6321C` 把两张虚表地址存至 `[x0+0x20]`。这些代码位于对象析构/虚表切换路径中，**能够证实虚表布局，但不能据此推断构造/存活时刻**。
+
+因此可在**不使用 Hook** 的情况下，由 C# 获取当前 `mainBase`、确认 `[mainBase+0x44592E0] == mainBase+0xE327FC`，再在事先限定的堆范围里寻找同时符合：
+
+```text
+[owner+0x00] == mainBase + 0x4459278
+[owner+0x20] == mainBase + 0x4459308
+[owner+0x28] == mainBase + 0x4459358
+RaidPoint  == owner+0x58
+RaidPoint.name begins "RaidPoint_"
+rewardRow0 == owner+0x13C
+```
+
+此组合比在全堆里仅搜 ASCII `RaidPoint_` 更能排除伪阳性，但**只能标记 `ELF_VTABLE_TYPE_ONLY_NOT_ACTIVE_RAID`**。实例仍可能是未使用对象、另一个房间的对象，或根本不在前1MiB堆区域。也无法通过这组证据直接得出长期稳定的全局指针或奖励生成完成后的可写窗口。
+
+本轮实际工作：
+- [ELF 重定位与指令核验脚本](../../tools/host/audit_violet_serializer_vtable.py)：仅使用用户本地 ELF、导出 JSON 结构化结论，不包含游戏字节。
+- [纯 sys-botbase C# 类型扫描](../../RaidCrawler.Core/Host/SysbotOnlyRaidPointInspector.cs)：新增 `ScanSerializerObjectsAsync`、三虚表匹配、运行时 vtable slot 检查，默认界面只读扫描 **堆起始1MiB**，函数最大8MiB。找到唯一类型实例可填入 C# 地址框进行继续只读核验，但不能写奖励。
+- [中文观察窗口](../../RaidCrawler.WinForms/SubForms/SysbotOnlyHostWindow.cs)：虚表定位按钮及 S0～S4 的人工阶段标记；比较本轮地址、奖励 SHA、行数是否随房间进度变化。
+- [离线结构测试](../../RaidCrawler.Tests/Host/SysbotOnlyRaidPointInspectorTests.cs)：拒绝仅有 ASCII 名称的伪对象、验证虚表三元组、`0x68` 函数槽偏移。
+
+可复现的本地静态验证：
+
+```bash
+python tools/host/audit_violet_serializer_vtable.py /path/to/Violet4.0.0.elf --out vtable-audit.json
+```
+
+`type_identity=ELF_RELOCATION_VERIFIED` **只说明 ELF 静态结构**，不等于找到了活跃对象或已验证写入。
+
+## 与 PokéLDN 研究的时序交叉验证
+
+在 [PokéLDN`pokeldn/sv/raid.py`](https://github.com/969981/pokeldn/blob/research/pokeldn/sv/raid.py#L171-L235)：
+
+- `raid_point()` 按 `0xE4+i*16` 生成45条四 `u32` 奖励；`bootstrap()` 在生成完队伍后，才把 `RaidPoint` 拼进完整 `0xAA0`。
+- `RaidGroup.__init__()` 先只做参数与结构验证；`RaidGroup.bootstrap()` 第一次真正调用生成函数时设置 `self.plain`，之后缓存复用。
+- 这证明 **PokéLDN 模拟房主** 可在 bootstrap 生成时控制奖励数据，但**并不证明真实 Switch 房主会在开房期间保留同一份长期可写的 C++ RaidPoint**。
+- [Lot​​tery 后置 Hook 研究](https://github.com/969981/pokeldn/blob/research/docs/research/sv/sv400-lua-post-lottery-append-hook.md) 指出原版 Lua 的奖励可能在后续初始化/资格处理时变化，若修改过早，则 Subject=5 行可能再次被移除；且公开 Lua 基线与4.0.0不完全对应。要确认真实宿主窗口仍需运行时序证据。
+
+**本轮结论**：静态证实 **“能可靠区分序列化类实例”**，但未静态证明 **“能持续访问当前即将发包的那个实例”**。后两项不能靠更激进的扫描或猜测地址来宣称解决。保留方案A只读直到当前实例归属、变化和时间窗可证实。
+
 ## 原始 ELF 的直接结论
 
 ELF 来源：用户 Library 的 `Violet4.0.0.elf`，`size=74,362,480`，`SHA256=d17403eaa9d844db82f647fd2f1518806b10c0518d53602fc0ac1766298fdba0`，`Build ID=709bfd66115298640155fcc4979dba151c7cc79a`。本轮在工具环境里直接对该 ELF 执行了 `llvm-objdump --start-address=0xE327FC --stop-address=0xE329B4` 和 ARM64 BL/B xref 统计；具体 N1 指令见 [ELF_REVALIDATION_N1_N2.md](ELF_REVALIDATION_N1_N2.md)。
