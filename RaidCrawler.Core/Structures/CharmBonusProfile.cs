@@ -100,7 +100,15 @@ public static class CharmBonusProfileStore
         // A missing new file may IMPORT old Subject=5 rows, but may not enable
         // a live hook or change/remove any of the old saved slots.
         string oldPath = legacyPath ?? RaidRewardGlobalProfileStore.DefaultPath;
-        if (!File.Exists(oldPath)) return CharmBonusProfile.Create(false, []);
+        if (!File.Exists(oldPath))
+        {
+            // The legacy editor shipped with 20 configured charm rows. Keep
+            // that familiar draft for fresh installs, but NEVER auto-enable.
+            var preset = RaidRewardPresets.ScreenshotCharm45Slots()
+                .Where(x => x is { Subject: 5, Rare: 0 })
+                .Select(x => new CharmBonusItem(x!.ItemId, x.Quantity));
+            return CharmBonusProfile.Create(false, preset);
+        }
         var old = RaidRewardGlobalProfileStore.Load(oldPath);
         var selected = old.Where(x => x is { Subject: 5, Rare: 0 })
             .Select(x => new CharmBonusItem(x!.ItemId, x.Quantity)).ToArray();
