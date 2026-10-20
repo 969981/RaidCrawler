@@ -42,7 +42,8 @@ public sealed partial class RaidRewardDiagnosticForm
             CancellationToken ct = timeout.Token;
             await VerifyViolet400IdentityAsync(ct);
             ulong baseBefore = await connection.GetMainNsoBaseAsync(ct);
-            var result = await Violet400LuaVmFrameProbe.ProbeAsync(
+            var started = System.Diagnostics.Stopwatch.StartNew();
+            var result = await Violet400LuaVmFrameProbe.ProbeWithRetryAsync(
                 (rva, len, token) => connection.ReadBytesMainAsync(rva, len, token),
                 (address, len, token) => connection.ReadBytesAbsoluteAsync(address, len, token),
                 ct);
@@ -50,8 +51,11 @@ public sealed partial class RaidRewardDiagnosticForm
             bool stableBase = baseAfter == baseBefore;
             string status = stableBase ? result.Status : "MAIN_BASE_CHANGED_DURING_SAMPLE";
             Append("lua-frame-readonly",
-                "P1-B2 Lua5.4 主状态/CallInfo 只读结构检查：" + status +
-                "；即使发现 Lua 闭包 TValue 标记，也不能证明执行 LotteryRewardItem。",
+                "P1-B2 Lua5.4 只读状态：" + status +
+                "；尝试=" + result.ReadAttempts +
+                "，变化字段=" + (result.ChangedFields is { Count: > 0 }
+                    ? string.Join("/", result.ChangedFields) : "无记录") +
+                "；耗时=" + started.ElapsedMilliseconds + "ms。仍未验证 Lua 奖励回调。",
                 new
                 {
                     status, mainBaseStable = stableBase, root = result.RootStatus,
@@ -62,6 +66,10 @@ public sealed partial class RaidRewardDiagnosticForm
                     functionSlotType = result.FunctionSlotClassification,
                     luaClosureTagCandidate = result.LuaClosureValueTagObserved,
                     snapshotStable = stableBase && result.SnapshotStable,
+                    result.ReadAttempts,
+                    changedFields = result.ChangedFields ?? Array.Empty<string>(),
+                    elapsedMs = started.ElapsedMilliseconds,
+                    snapshotAtomic = false,
                     luaProtoIdentity = "NOT_VERIFIED",
                     vmCpuHit = "NOT_OBSERVED", abcRewardData = "NOT_CAPTURED",
                     stateOrHeapPointersLogged = false,
