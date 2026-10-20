@@ -47,7 +47,6 @@ public partial class MainWindow
         int column, int row, int span = 1)
     {
         control.Dock = DockStyle.Fill;
-        control.Anchor = AnchorStyles.None;
         control.Margin = new Padding(4, 4, 4, 4);
         if (control is Label label)
         {
@@ -169,6 +168,7 @@ public partial class MainWindow
         Put(operations, btnOpenMap, 0, 2);
         Put(operations, Rewards, 1, 2);
         AddSidebar(Section("太晶坑操作", 156, operations));
+        groupBox1.Visible = false; // old designer-only container; its six buttons were moved
 
         var automation = Rows([0, 0], 4, Px(36));
         Put(automation, StopFilter, 0, 0);
