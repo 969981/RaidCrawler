@@ -149,7 +149,7 @@ public sealed class SysbotOnlyRewardWriter(ISwitchConnectionAsync connection)
         finally { _writeGate.Release(); }
     }
 
-    private async Task CheckStateAsync(CancellationToken token)
+    internal async Task CheckStateAsync(CancellationToken token)
     {
         await _lifecycle.CheckViolet400Async(token).ConfigureAwait(false);
         var first = await _lifecycle.ReadAsync(true, token).ConfigureAwait(false);
@@ -166,7 +166,7 @@ public sealed class SysbotOnlyRewardWriter(ISwitchConnectionAsync connection)
                 "未连续两次识别到房间内有参与者且尚未战斗（Hexbyt3旧版偏移尚未实机校准）；禁止写入。");
     }
 
-    private async Task ValidateOwnerAsync(ulong owner, CancellationToken token)
+    internal async Task ValidateOwnerAsync(ulong owner, CancellationToken token)
     {
         ulong mainBase = await connection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
         byte[] functionPointer = await connection.ReadBytesMainAsync(
