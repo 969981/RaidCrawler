@@ -273,8 +273,16 @@ public sealed class SysbotOnlyRaidPointInspector(ISwitchConnectionAsync connecti
             byte[] header = await connection.ReadBytesAbsoluteAsync(
                 inputAddress, 0x30, token).ConfigureAwait(false);
             if (!MatchesSerializerType(header, mainBase))
-                throw new InvalidDataException(
-                    "候选对象不属于 ELF 已验证的序列化类（3张虚表不匹配）。拒绝作为房主输入对象。");
+            {
+                ulong vptr = BinaryPrimitives.ReadUInt64LittleEndian(header.AsSpan(0, 8));
+                if (vptr < mainBase + 0x4383000 || vptr >= mainBase + 0x46D9000 - 0x68)
+                    throw new InvalidDataException("虚表指针没有落在已知的游戏主模块数据区。");
+                byte[] slot = await connection.ReadBytesAbsoluteAsync(
+                    vptr + (ulong)SerializerVirtualSlotOffset, 8, token).ConfigureAwait(false);
+                if (slot.Length != 8 ||
+                    BinaryPrimitives.ReadUInt64LittleEndian(slot) != mainBase + SerializerRva)
+                    throw new InvalidDataException("活跃对象的虚函数槽不指向经ELF核验的序列化函数。");
+            }
         }
 
         ulong raidPointAddress = CalculateRaidPointAddress(inputAddress, isOwnerObject);
