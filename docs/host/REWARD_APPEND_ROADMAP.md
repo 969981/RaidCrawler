@@ -164,3 +164,9 @@ Switch Native Probe / Hook （单独开发、按 Game Build ID 精确匹配）
 - [RaidCrawler 当前连接层](https://github.com/969981/RaidCrawler/blob/main/RaidCrawler.Core/Connection/ConnectionWrapper.cs)
 
 **版本声明**：这些链接指向当前仓库分支（可能未来改变）；具体代码开发时应在 issue / 实验结果中另行记录当次读取的 SHA、构建与工具版本，以便复现。
+
+## 9. GitHub 任务入口（已创建）
+
+- [#2 N0：奖励行契约、无损追加规划器与 host CI](https://github.com/969981/RaidCrawler/issues/2)
+- [#3 N1：真实 Switch 房主 Lottery → RaidPoint → 0x2F 只读捕获](https://github.com/969981/RaidCrawler/issues/3)（最高优先级的实机验证）
+- [#4 N2–N3：subject=5 单行无损追加及双机存档闭环](https://github.com/969981/RaidCrawler/issues/4)（必须等 N1 Go）
