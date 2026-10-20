@@ -11,7 +11,7 @@ public class RewardAppendPlannerTests
     private static byte[] CreateSource(int count)
     {
         var data = new byte[RaidPointLayout.RaidPointLength];
-        data[RaidPointLayout.RewardTail] = 0xA5; // 0x3B4 is NOT reward 46.
+        data[RaidPointLayout.RewardTail] = 0xA5; // 0x3B0 is NOT reward 46.
         data[RaidPointLayout.SummaryStart] = 0x5A;
         for (int i = 0; i < count; i++)
             Put(data, i, new RewardRow(2, (uint)(i + 1), 0, 0));
@@ -23,11 +23,12 @@ public class RewardAppendPlannerTests
                               slot * RaidPointLayout.RewardRowLength, 16));
 
     [Fact]
-    public void DonorOffsetsStartAtE4_NotE0()
+    public void DonorRecordsStartAtE0_WithItemAtE4()
     {
-        Assert.Equal(0xE4, RaidPointLayout.RewardsInRaidPoint);
-        Assert.Equal(0x79C, RaidPointLayout.RewardsInBootstrap);
-        Assert.Equal(0x3B4, RaidPointLayout.RewardTail);
+        Assert.Equal(0xE0, RaidPointLayout.RewardsInRaidPoint);
+        Assert.Equal(0xE4, RaidPointLayout.ItemIdInRaidPoint);
+        Assert.Equal(0x798, RaidPointLayout.RewardsInBootstrap);
+        Assert.Equal(0x3B0, RaidPointLayout.RewardTail);
         Assert.Equal(45 * 16, RaidPointLayout.RewardsByteLength);
     }
 
@@ -93,7 +94,7 @@ public class RewardAppendPlannerTests
     }
 
     [Fact]
-    public void UnknownOriginalSubjectAndRareFlagBlockAppend()
+    public void UnknownOriginalSubjectAndNonzeroReservedBlockAppend()
     {
         var data = CreateSource(1);
         Put(data, 0, new RewardRow(2, 1, 0, 8));
@@ -108,7 +109,7 @@ public class RewardAppendPlannerTests
     [InlineData(15u, 0u, 0u, 5u, "INVALID_QUANTITY")]
     [InlineData(15u, 1000u, 0u, 5u, "INVALID_QUANTITY")]
     [InlineData(15u, 1u, 0u, 0u, "SUBJECT_NOT_GLIMMERING_CHARM")]
-    [InlineData(15u, 1u, 1u, 5u, "UNSUPPORTED_CUSTOM_RARE_FLAG")]
+    [InlineData(15u, 1u, 1u, 5u, "UNSUPPORTED_CUSTOM_RESERVED")]
     public void InvalidRequestIsAtomic(uint item, uint qty, uint rare, uint subject, string reason)
     {
         var data = CreateSource(3);
@@ -138,15 +139,15 @@ public class RewardAppendPlannerTests
     }
 
     [Fact]
-    public void LittleEndianRowHasItemAtOffsetZeroAndSubjectAtTwelve()
+    public void RetailDonorLittleEndianRecordHasSubjectAtZeroItemAtFourQuantityAtEight()
     {
         Span<byte> raw = stackalloc byte[16];
         var row = new RewardRow(0x12345678, 999, 0, 5);
         row.Write(raw);
-        Assert.Equal(new byte[] { 0x78, 0x56, 0x34, 0x12 }, raw[..4].ToArray());
-        Assert.Equal(new byte[] { 0xE7, 0x03, 0, 0 }, raw.Slice(4, 4).ToArray());
-        Assert.Equal((byte)5, raw[12]);
-        Assert.Equal((byte)0, raw[13]);
+        Assert.Equal(new byte[] { 5, 0, 0, 0 }, raw[..4].ToArray());
+        Assert.Equal(new byte[] { 0x78, 0x56, 0x34, 0x12 }, raw.Slice(4, 4).ToArray());
+        Assert.Equal(new byte[] { 0xE7, 0x03, 0, 0 }, raw.Slice(8, 4).ToArray());
+        Assert.Equal(0u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(raw.Slice(12, 4)));
         Assert.Equal(row, RewardRow.Read(raw));
     }
 }
