@@ -10,6 +10,7 @@ namespace RaidCrawler.WinForms.SubForms;
 public sealed class SysbotOnlyRewardWriteWindow : Form
 {
     private readonly SysbotOnlyRewardWriter _writer;
+    private readonly ISwitchConnectionAsync _connection;
     private readonly HostRaidPointAutoLocator _locator;
     private readonly CancellationTokenSource _close = new();
     private readonly TextBox _address = new();
@@ -31,6 +32,7 @@ public sealed class SysbotOnlyRewardWriteWindow : Form
         string? candidateAddress = null,
         bool useAllPlayersQuickBall500Preset = false)
     {
+        _connection = connection;
         _writer = new SysbotOnlyRewardWriter(connection);
         _locator = new HostRaidPointAutoLocator(connection);
         Text = "方案 A：纯 sys-botbase 受控奖励写入（实验）";
