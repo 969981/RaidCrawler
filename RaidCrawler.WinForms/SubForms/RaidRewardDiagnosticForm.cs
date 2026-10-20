@@ -81,6 +81,7 @@ public sealed partial class RaidRewardDiagnosticForm : Form
         // Routine diagnostic actions no longer occupy the everyday toolbar.
         advancedActions.Controls.Add(inspect);
         ConfigureLuaVmRootProbe(advancedActions);
+        ConfigureBaseRewardTableViewer(advancedActions, slots);
         advancedActions.Controls.Add(testWrite);
 
         var openFolder = new Button { Text = "打开日志目录", AutoSize = true };
