@@ -29,6 +29,11 @@ FINGERPRINT = {
     0xE3296C: 0x52807902,
     0xE32970: 0xF9035EEB,
     0xE32980: 0x94982624,
+    0xE32984: 0xAA1503E8,  # original mov x8, x21 (the hook site!)
+    0xE32988: 0xAA1403E0,  # mov x0, x20
+    0xE32990: 0xAA1703E1,  # mov x1, x23 (plaintext buffer)
+    0xE32994: 0x2A1603E2,  # mov w2, w22 (0xAA0)
+    0xE329A0: 0x52800024,  # mov w4, #1 (compression mode)
     0xE329B0: 0x141D8073,
 }
 
