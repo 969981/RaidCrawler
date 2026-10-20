@@ -10,7 +10,7 @@ public class HostProbeMailboxTests
         uint count = 2, uint generation = 4)
     {
         var buf = new byte[HostProbeMailbox.HeaderLength];
-        "RCHMB01\0"u8.CopyTo(buf);
+        "RCHMB02\0"u8.CopyTo(buf);
         BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(8), HostProbeMailbox.ProtocolVersion);
         BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(12), HostProbeMailbox.MailboxLength);
         BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(0x10), enabled);
@@ -18,6 +18,7 @@ public class HostProbeMailboxTests
         BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(0x18), count);
         BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(0x1C), 1);
         BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(0x20), generation);
+        BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(0x24), 1);
         BinaryPrimitives.WriteUInt64LittleEndian(buf.AsSpan(0x28), 12345UL);
         return buf;
     }
@@ -34,6 +35,7 @@ public class HostProbeMailboxTests
         Assert.Equal(24u, h.Generation);
         Assert.Equal(12345UL, h.Tick);
         Assert.Equal(1u, h.DroppedCount);
+        Assert.Equal(1u, h.Capabilities);
     }
 
     [Fact]
