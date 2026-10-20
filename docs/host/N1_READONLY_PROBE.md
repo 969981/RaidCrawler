@@ -1,3 +1,5 @@
+> **2026-10-20 N1.1 升级：** 本文件保留原始 SD 导出/静态 ELF 研究过程作为历史记录。当前 `host` 最新实现已改为 [C# + sys-botbase 共享内存邮箱](../../switch/host-probe/README.md)：无需 SD 文件，C# 主窗口新增 Host Probe，原生源代码和构建步骤见其 README。首次获取邮箱地址仍依赖当前进程 `[RC-N1] mailbox=0x...` 调试日志；自动发现跟踪 [Issue #5](https://github.com/969981/RaidCrawler/issues/5)。两端编译不代表真实 Switch UAT 通过。
+
 # N1：真实房主只读捕获（研究入口与验收）
 
 > 2026-10-20；状态：**ARM64_EXLAUNCH_BUILT / REAL_SWITCH_CAPTURE_PENDING**。
