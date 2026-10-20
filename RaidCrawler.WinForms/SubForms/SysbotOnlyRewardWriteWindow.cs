@@ -170,9 +170,28 @@ public sealed class SysbotOnlyRewardWriteWindow : Form
         _autoFind.Enabled = _prepare.Enabled = false;
         try
         {
-            Say("只读查找 RaidPoint 内存副本；不会写入奖励。");
-            var report = await _locator.FindAsync(8, null, _close.Token);
-            Say($"堆前8MiB找到{report.Candidates.Count}个结构候选。");
+            Say("第一步只读取本次游戏已验证的候选指针缓存，不进行全堆扫描。");
+            var cached = await _locator.FindAsync(0, null, _close.Token);
+            HostRaidPointDiscovery report = cached;
+            if (cached.Candidates.Count == 0)
+            {
+                if (_connection is not SwitchSocketAsync wifi)
+                {
+                    Say("无缓存：USB连接暂不使用专用TCP；请先用主诊断工具找到地址。");
+                    return;
+                }
+                Say("尚无可用的本次进程指针缓存。正在校准只读高速TCP，与原SysBot结果逐字节对照。");
+                ulong mainBase = await _connection.GetMainNsoBaseAsync(_close.Token);
+                await using var fast = await FastSysbotReadChannel.ConnectAndCalibrateAsync(
+                    _connection, wifi.Name, 6000,
+                    checked(mainBase + SysbotOnlyRaidPointInspector.SerializerRva), _close.Token);
+                Say("高速通道校准通过：" + fast.CalibrationEvidence);
+                report = await _locator.FindAsync(8, null, _close.Token,
+                    fast.ReadBytesAbsoluteAsync);
+            }
+            Say(report.ScannedMegabytes == 0
+                ? "已复核本次游戏的已知候选指针，不需扫描8MiB。"
+                : $"高速搜索完成：堆前8MiB，找到{report.Candidates.Count}个结构候选。");
             foreach (var candidate in report.Candidates)
                 Say($"  0x{candidate.OwnerAddress:X} {candidate.Name} {candidate.OwnerTypeEvidence}");
             var recognized = report.Candidates.Where(c =>
@@ -182,14 +201,18 @@ public sealed class SysbotOnlyRewardWriteWindow : Form
             if (recognized.Length == 1 && report.Candidates.Count == 1)
             {
                 _address.Text = $"0x{recognized[0].OwnerAddress:X}";
-                Say("已填入唯一类型关联候选地址。注意：仍未证明该对象属于当前房间！");
+                Say("已填入唯一类型关联候选，但仍未证明它是本局正在发送的对象。");
             }
             else
-                Say("尚未发现唯一类型关联的房主候选。请先用主诊断窗口扩大扫描范围，" +
-                    "并记录不同房间的对象变化；不要猜地址。");
+                Say("没有唯一且可证明类型关联的候选；请用主诊断窗口进一步核验，" +
+                    "不要凭猜测填写内存地址。");
         }
         catch (OperationCanceledException) when (_close.IsCancellationRequested) { }
-        catch (Exception e) { Say("自动定位失败：" + e.Message); }
+        catch (Exception e)
+        {
+            Say("高速定位失败：" + e.Message);
+            Say("不会自动退回可能耗时十几分钟的老式Wi-Fi扫描。");
+        }
         finally
         {
             _busy = false;
