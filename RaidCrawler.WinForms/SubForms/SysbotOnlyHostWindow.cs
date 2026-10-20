@@ -97,6 +97,23 @@ public sealed class SysbotOnlyHostWindow : Form
             using var writer = new SysbotOnlyRewardWriteWindow(_connection, candidate);
             writer.ShowDialog(this);
         };
+        var presetButton = new Button
+        {
+            Text = "截图奖励20种×999（实验）",
+            Location = new Point(260, 186),
+            Size = new Size(253, 34)
+        };
+        presetButton.Click += (_, _) =>
+        {
+            if (_running)
+            {
+                Log("请等待只读检索结束，再打开20种奖励预设。");
+                return;
+            }
+            var owner = _ownerMode.Checked ? _address.Text : "";
+            using var preset = new SysbotOnlyScreenshotPresetWindow(_connection, owner);
+            preset.ShowDialog(this);
+        };
         _results.Multiline = true;
         _results.WordWrap = true;
         _results.ScrollBars = ScrollBars.Vertical;
@@ -104,7 +121,7 @@ public sealed class SysbotOnlyHostWindow : Form
         _results.Location = new Point(14, 231);
         _results.Size = new Size(654, 314);
         _results.Font = new Font(FontFamily.GenericMonospace, 9);
-        Controls.AddRange([information, label, _address, _ownerMode, _inspect, _scan, phaseLabel, _phase, monitorButton, writeButton, _results]);
+        Controls.AddRange([information, label, _address, _ownerMode, _inspect, _scan, phaseLabel, _phase, monitorButton, writeButton, presetButton, _results]);
         FormClosed += (_, _) => _close.Cancel();
 
         Log("默认只读；额外的受控写入实验需要独立确认，且不能证明实际发送。");
