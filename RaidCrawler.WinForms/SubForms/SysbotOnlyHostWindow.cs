@@ -257,8 +257,10 @@ public sealed class SysbotOnlyHostWindow : Form
                         $"速率约{speed:F0}KiB/s，预计剩余{eta:F0}秒；" +
                         $"候选={p.Candidates}，已读块={p.ReadableBlocks}，失败块={p.FailedBlocks}");
                 });
+                Func<ulong, int, CancellationToken, Task<byte[]>>? bulkRead =
+                    fastReader is null ? null : fastReader.ReadBytesAbsoluteAsync;
                 var result = await _autoLocator.FindAsync(sizeMiB, progress,
-                    scanCts.Token, fastReader?.ReadBytesAbsoluteAsync);
+                    scanCts.Token, bulkRead);
                 Log($"扫描 {sizeMiB}MiB 完成：结构候选 {result.Candidates.Count}，" +
                     $"可读块 {result.ReadableBlocks}，不可读块 {result.FailedBlocks}");
                 foreach (var candidate in result.Candidates)
