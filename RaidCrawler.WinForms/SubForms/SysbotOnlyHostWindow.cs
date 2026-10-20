@@ -114,14 +114,32 @@ public sealed class SysbotOnlyHostWindow : Form
             using var preset = new SysbotOnlyScreenshotPresetWindow(_connection, owner);
             preset.ShowDialog(this);
         };
+        var quick500PresetButton = new Button
+        {
+            Text = "全体玩家 · 先机球×500（单行验证预设）",
+            Location = new Point(14, 229),
+            Size = new Size(654, 34)
+        };
+        quick500PresetButton.Click += (_, _) =>
+        {
+            if (_running)
+            {
+                Log("请等待当前只读扫描完成，再加载先机球×500预设。");
+                return;
+            }
+            string owner = _ownerMode.Checked ? _address.Text : "";
+            using var preset = new SysbotOnlyRewardWriteWindow(
+                _connection, owner, useAllPlayersQuickBall500Preset: true);
+            preset.ShowDialog(this);
+        };
         _results.Multiline = true;
         _results.WordWrap = true;
         _results.ScrollBars = ScrollBars.Vertical;
         _results.ReadOnly = true;
-        _results.Location = new Point(14, 231);
-        _results.Size = new Size(654, 314);
+        _results.Location = new Point(14, 276);
+        _results.Size = new Size(654, 269);
         _results.Font = new Font(FontFamily.GenericMonospace, 9);
-        Controls.AddRange([information, label, _address, _ownerMode, _inspect, _scan, phaseLabel, _phase, monitorButton, writeButton, presetButton, _results]);
+        Controls.AddRange([information, label, _address, _ownerMode, _inspect, _scan, phaseLabel, _phase, monitorButton, writeButton, presetButton, quick500PresetButton, _results]);
         FormClosed += (_, _) => _close.Cancel();
 
         Log("默认只读；额外的受控写入实验需要独立确认，且不能证明实际发送。");
