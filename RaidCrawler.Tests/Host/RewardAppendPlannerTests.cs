@@ -150,4 +150,39 @@ public class RewardAppendPlannerTests
         Assert.Equal(0u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(raw.Slice(12, 4)));
         Assert.Equal(row, RewardRow.Read(raw));
     }
+    [Fact]
+    public void DonorSourceFiveWithZeroItemIsNotMistakenForEmptyCapacity()
+    {
+        var data = CreateSource(20);
+        // The PokéLDN donor documents marker/source records whose item and
+        // quantity may be zero. Such rows MUST NOT be silently overwritten.
+        Put(data, 20, new RewardRow(0, 0, 0, 5));
+        var plan = RewardAppendPlanner.Plan(data, [new RewardRow(15, 500, 0, 0)],
+            Allowed, RewardAppendPlanner.AllPlayersSubject);
+        Assert.False(plan.Accepted);
+        Assert.Equal("AMBIGUOUS_ORIGINAL_ROW", plan.Reason);
+        Assert.Equal(data, plan.CandidateRaidPoint);
+    }
+
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(5u)]
+    public void ExactDonorRowSerializationSupportsSelectedRecipient(uint subject)
+    {
+        var original = CreateSource(3);
+        var plan = RewardAppendPlanner.Plan(original,
+            [new RewardRow(15, 500, 0, subject)], Allowed, subject);
+        if (subject == 5)
+        {
+            Assert.True(plan.Accepted); // planner permits up to 999; live writer has stricter 1..10
+        }
+        else Assert.True(plan.Accepted);
+        byte[] slot = plan.CandidateRaidPoint.AsSpan(
+            RaidPointLayout.RewardsInRaidPoint + 3 * 16, 16).ToArray();
+        Assert.Equal(subject, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(slot.AsSpan(0, 4)));
+        Assert.Equal(15u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(slot.AsSpan(4, 4)));
+        Assert.Equal(500u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(slot.AsSpan(8, 4)));
+        Assert.Equal(0u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(slot.AsSpan(12, 4)));
+    }
+
 }
