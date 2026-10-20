@@ -6,15 +6,15 @@ namespace RaidCrawler.Tests.Host;
 public class RewardAppendPlannerTests
 {
     private static readonly Func<uint, bool> Allowed = id => id is 2 or 1128 or 15;
-    private static readonly RewardRow Extra = new(5, 1128, 2, 0);
+    private static readonly RewardRow Extra = new(1128, 2, 0, 5);
 
     private static byte[] CreateSource(int count)
     {
         var data = new byte[RaidPointLayout.RaidPointLength];
-        data[RaidPointLayout.RewardTail] = 0xA5; // 0x3B0 is NOT reward 46.
+        data[RaidPointLayout.RewardTail] = 0xA5; // 0x3B4 is NOT reward 46.
         data[RaidPointLayout.SummaryStart] = 0x5A;
         for (int i = 0; i < count; i++)
-            Put(data, i, new RewardRow(0, 2, (uint)(i + 1), 0));
+            Put(data, i, new RewardRow(2, (uint)(i + 1), 0, 0));
         return data;
     }
 
@@ -23,11 +23,11 @@ public class RewardAppendPlannerTests
                               slot * RaidPointLayout.RewardRowLength, 16));
 
     [Fact]
-    public void DonorOffsetsStartAtE0_NotE4()
+    public void DonorOffsetsStartAtE4_NotE0()
     {
-        Assert.Equal(0xE0, RaidPointLayout.RewardsInRaidPoint);
-        Assert.Equal(0x798, RaidPointLayout.RewardsInBootstrap);
-        Assert.Equal(0x3B0, RaidPointLayout.RewardTail);
+        Assert.Equal(0xE4, RaidPointLayout.RewardsInRaidPoint);
+        Assert.Equal(0x79C, RaidPointLayout.RewardsInBootstrap);
+        Assert.Equal(0x3B4, RaidPointLayout.RewardTail);
         Assert.Equal(45 * 16, RaidPointLayout.RewardsByteLength);
     }
 
@@ -61,7 +61,7 @@ public class RewardAppendPlannerTests
     [Fact]
     public void TwentyRowsRequireTwentyActuallyEmptySlots()
     {
-        RewardRow[] additions = Enumerable.Repeat(new RewardRow(5, 15, 1, 0), 20).ToArray();
+        RewardRow[] additions = Enumerable.Repeat(new RewardRow(15, 1, 0, 5), 20).ToArray();
         var ok = RewardAppendPlanner.Plan(CreateSource(25), additions, Allowed);
         Assert.True(ok.Accepted);
         Assert.Equal(45, ok.OriginalCount + ok.AddedCount);
@@ -75,17 +75,17 @@ public class RewardAppendPlannerTests
     public void GapsAreNotConsideredReusableWithoutSemanticEvidence()
     {
         var data = CreateSource(2);
-        Put(data, 3, new RewardRow(0, 2, 1, 0));
+        Put(data, 3, new RewardRow(2, 1, 0, 0));
         var no = RewardAppendPlanner.Plan(data, [Extra], Allowed);
         Assert.Equal("NONCONTIGUOUS_ORIGINAL_ROWS", no.Reason);
         Assert.Equal(data, no.CandidateRaidPoint);
     }
 
     [Fact]
-    public void DonorMarkerFiveEmptyItemIsSpecialAndBlocksAppend()
+    public void PartialRecordAtFirstEmptySlotBlocksAppend()
     {
         var data = CreateSource(21);
-        Put(data, 21, new RewardRow(5, 0, 0, 0));
+        Put(data, 21, new RewardRow(0, 0, 0, 5));
         var no = RewardAppendPlanner.Plan(data, [Extra], Allowed);
         Assert.False(no.Accepted);
         Assert.Equal("AMBIGUOUS_ORIGINAL_ROW", no.Reason);
@@ -93,26 +93,26 @@ public class RewardAppendPlannerTests
     }
 
     [Fact]
-    public void UnknownOriginalMarkerAndReservedDataBlockAppend()
+    public void UnknownOriginalSubjectAndRareFlagBlockAppend()
     {
         var data = CreateSource(1);
-        Put(data, 0, new RewardRow(8, 2, 1, 0));
+        Put(data, 0, new RewardRow(2, 1, 0, 8));
         Assert.Equal("AMBIGUOUS_ORIGINAL_ROW", RewardAppendPlanner.Plan(data, [Extra], Allowed).Reason);
-        Put(data, 0, new RewardRow(1, 2, 1, 3));
+        Put(data, 0, new RewardRow(2, 1, 2, 0));
         Assert.Equal("AMBIGUOUS_ORIGINAL_ROW", RewardAppendPlanner.Plan(data, [Extra], Allowed).Reason);
     }
 
     [Theory]
-    [InlineData(5u, 0u, 1u, 0u, "ITEM_NOT_ALLOWLISTED")]
-    [InlineData(5u, 999u, 1u, 0u, "ITEM_NOT_ALLOWLISTED")]
-    [InlineData(5u, 15u, 0u, 0u, "INVALID_QUANTITY")]
-    [InlineData(5u, 15u, 1000u, 0u, "INVALID_QUANTITY")]
-    [InlineData(0u, 15u, 1u, 0u, "MARKER_NOT_GLIMMERING_CHARM")]
-    [InlineData(5u, 15u, 1u, 1u, "UNSUPPORTED_RESERVED_FIELD")]
-    public void InvalidRequestIsAtomic(uint marker, uint item, uint qty, uint reserved, string reason)
+    [InlineData(0u, 1u, 0u, 5u, "ITEM_NOT_ALLOWLISTED")]
+    [InlineData(999u, 1u, 0u, 5u, "ITEM_NOT_ALLOWLISTED")]
+    [InlineData(15u, 0u, 0u, 5u, "INVALID_QUANTITY")]
+    [InlineData(15u, 1000u, 0u, 5u, "INVALID_QUANTITY")]
+    [InlineData(15u, 1u, 0u, 0u, "SUBJECT_NOT_GLIMMERING_CHARM")]
+    [InlineData(15u, 1u, 1u, 5u, "UNSUPPORTED_CUSTOM_RARE_FLAG")]
+    public void InvalidRequestIsAtomic(uint item, uint qty, uint rare, uint subject, string reason)
     {
         var data = CreateSource(3);
-        var no = RewardAppendPlanner.Plan(data, [new RewardRow(marker, item, qty, reserved)], Allowed);
+        var no = RewardAppendPlanner.Plan(data, [new RewardRow(item, qty, rare, subject)], Allowed);
         Assert.False(no.Accepted);
         Assert.Equal(reason, no.Reason);
         Assert.Equal(data, no.CandidateRaidPoint);
@@ -123,7 +123,7 @@ public class RewardAppendPlannerTests
     {
         var data = CreateSource(1);
         var no = RewardAppendPlanner.Plan(data,
-            [new RewardRow(5, 2, 1, 0), new RewardRow(5, 999, 1, 0)], Allowed);
+            [new RewardRow(2, 1, 0, 5), new RewardRow(999, 1, 0, 5)], Allowed);
         Assert.False(no.Accepted);
         Assert.Equal(data, no.CandidateRaidPoint);
     }
@@ -138,15 +138,15 @@ public class RewardAppendPlannerTests
     }
 
     [Fact]
-    public void LittleEndianRowHasMarkerAtOffsetZeroAndItemAtFour()
+    public void LittleEndianRowHasItemAtOffsetZeroAndSubjectAtTwelve()
     {
         Span<byte> raw = stackalloc byte[16];
-        var row = new RewardRow(5, 0x12345678, 999, 0);
+        var row = new RewardRow(0x12345678, 999, 0, 5);
         row.Write(raw);
-        Assert.Equal(new byte[] { 5, 0, 0, 0 }, raw[..4].ToArray());
-        Assert.Equal(new byte[] { 0x78, 0x56, 0x34, 0x12 }, raw.Slice(4, 4).ToArray());
-        Assert.Equal((byte)0xE7, raw[8]);
-        Assert.Equal((byte)0x03, raw[9]);
+        Assert.Equal(new byte[] { 0x78, 0x56, 0x34, 0x12 }, raw[..4].ToArray());
+        Assert.Equal(new byte[] { 0xE7, 0x03, 0, 0 }, raw.Slice(4, 4).ToArray());
+        Assert.Equal((byte)5, raw[12]);
+        Assert.Equal((byte)0, raw[13]);
         Assert.Equal(row, RewardRow.Read(raw));
     }
 }
