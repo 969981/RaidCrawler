@@ -1,4 +1,4 @@
-# PokéLDN 全体奖励（subject=0）对照与 RaidCrawler 纯 sys-botbase 实验
+> **2026-10-20 新版主路径：** [Bootstrap 发送副本重构](BOOTSTRAP_SEND_COPY_REFACTOR.md)。当前 `host` 代码以 `RaidPoint+0xE4` 为第一条完整奖励行，字段为 `[ItemId, Quantity, RareFlag, SubjectType]`；`+0xE0` 不再作为写入依据。历史章节与先前的自相矛盾修订保留供追溯，**不代表目前代码 ABI**。默认只读。\n\n# PokéLDN 全体奖励（subject=0）对照与 RaidCrawler 纯 sys-botbase 实验
 
 > **新增快捷预设（2026-10-20）**：连接 sys-botbase 后，打开主窗体 → **纯 sys-botbase →「全体玩家 · 先机球×500（单行验证预设）」**。程序直接进入单行写入实验窗口，预先锁定 `subject=0`、`item_id=15`、`quantity=500`、`reserved=0`，不会因误碰下拉框而改成 `subject=5`。固定字节为 `00 00 00 00 0F 00 00 00 F4 01 00 00 00 00 00 00`。载入预设**不写入**；必须先提供已验证的房主候选序列化对象绝对地址，勾选两项测试环境与风险确认，按 **「验证并准备预设」**，再在15秒有效期内手动点击 **「写入这一行」** 并确认。只在有空槽且原版奖励区稳定时允许写入，未确认真实网络发送、领取入袋和存档持久化。完整功能也可在原来“受控奖励写入（实验）”窗口按 **「载入先机球×500预设」** 使用，或者手动选择 `subject=0`。
 
