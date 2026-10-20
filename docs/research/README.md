@@ -23,3 +23,5 @@
 - [P1-B ELF 校验脚本](../../tools/research/audit_violet400_lua_vm_root.py)：离线按原始 SHA/指令/BL 目标检验，不写 Switch 内存。
 
 **证据边界：** 上述均为文件级、静态或离线证据；运行中 `lua_State`、Lua A/B/C 调用、Hook 命中、原版奖励保留与额外物品入包仍须实机验证。
+
+- [P1-B2 Lua 主状态与 CallInfo 只读结构验证](violet400-p1b2-lua-state-callinfo-live-structure-20261020.md)：结合第一份实机全局指针稳定日志、ELF 的 15 处新指令复核、Lua 主状态字段布局、CallInfo 有界读取及下一阶段闭包/奖励追踪 Gate；尚无真实 A/B/C 数据。
