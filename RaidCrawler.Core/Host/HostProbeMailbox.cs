@@ -92,6 +92,27 @@ public sealed class HostProbeMailboxClient(ISwitchConnectionAsync connection)
 {
     private readonly ISwitchConnectionAsync _connection = connection;
 
+    public async Task<(ulong Address, HostProbeHeader Status)> DiscoverAsync(
+        HostProbeManifest manifest, CancellationToken token)
+    {
+        await CheckTitleAsync(token).ConfigureAwait(false);
+        ulong mainBase = await _connection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
+        if (mainBase < 0x10000)
+            throw new InvalidOperationException("无法读取当前游戏主模块基址。");
+        ulong hook = checked(mainBase + HostProbeLocator.HookRva);
+        byte[] code = await _connection.ReadBytesAbsoluteAsync(hook, 24, token)
+            .ConfigureAwait(false);
+        ulong entry = HostProbeLocator.ParseEntryTarget(hook, code);
+        byte[] entryBytes = await _connection.ReadBytesAbsoluteAsync(entry, 24, token)
+            .ConfigureAwait(false);
+        ulong callback = HostProbeLocator.ParseCallback(entry, entryBytes);
+        ulong address = HostProbeLocator.ResolveMailbox(callback, manifest.CallbackToMailboxDelta);
+        HostProbeHeader status = await ReadStatusAsync(address, token).ConfigureAwait(false);
+        if (status.Status != 1)
+            throw new InvalidOperationException("已定位邮箱，但 Native Hook 未处于可用状态。");
+        return (address, status);
+    }
+
     public async Task<HostProbeHeader> ReadStatusAsync(ulong address, CancellationToken token)
     {
         await CheckTitleAsync(token).ConfigureAwait(false);
