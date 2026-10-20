@@ -25,7 +25,7 @@ ELF_EXTRACT :=
 PYTHON := python3
 NPDM_JSON := config.json
 C_FLAGS :=
-CXX_FLAGS :=
+EXL_CXXFLAGS :=
 MOUNT_PATH :=
 FTP_IP :=
 FTP_PORT :=
@@ -36,7 +36,7 @@ EOF
 # Opt-in source build only. CI and ordinary build remain gameplay-data read-only.
 if [[ "${HOST_N2_EXPERIMENTAL:-0}" == "1" ]]; then
   echo "N2 experimental outgoing plaintext writes ENABLED in this local build" >&2
-  sed -i 's/^CXX_FLAGS :=$/CXX_FLAGS := -DRC_N2_ENABLE_WRITE=1/' "${WORK}/config.mk"
+  sed -i 's/^EXL_CXXFLAGS :=$/EXL_CXXFLAGS := -DRC_N2_ENABLE_WRITE=1/' "${WORK}/config.mk"
 fi
 python3 - "${WORK}/config.json" "${TITLE_ID}" <<'PY'
 import json
