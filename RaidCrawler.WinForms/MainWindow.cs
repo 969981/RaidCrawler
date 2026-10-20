@@ -120,6 +120,28 @@ public partial class MainWindow : Form
         Webhook = new(Config);
         InitializeComponent();
 
+        // N1 read-only host diagnostics: reuse the active sys-botbase connection.
+        // Located beside Settings / Date Tools, so the WinForms designer is untouched.
+        var hostProbeButton = new Button
+        {
+            Text = "Host Probe",
+            Name = "HostProbeButton",
+            Location = new Point(222, 302),
+            Size = new Size(103, 23),
+        };
+        hostProbeButton.Click += (_, _) =>
+        {
+            if (ConnectionWrapper is not { Connected: true })
+            {
+                MessageBox.Show(this, "Connect to your Switch via sys-botbase first.",
+                    "Host Probe", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            using var form = new HostProbeWindow(ConnectionWrapper.Connection);
+            form.ShowDialog(this);
+        };
+        Controls.Add(hostProbeButton);
+
         btnOpenMap.Enabled = false;
         Rewards.Enabled = false;
         SendScreenshot.Enabled = false;
