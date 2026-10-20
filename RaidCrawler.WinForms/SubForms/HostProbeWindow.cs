@@ -5,8 +5,8 @@ using System.Text;
 namespace RaidCrawler.WinForms.SubForms;
 
 /// <summary>
-/// Single sys-botbase-backed control panel for the experimental N1 mailbox.
-/// No new socket/port; no file I/O on Switch and no game reward writes.
+/// Main host route: serializer hook -> outgoing Bootstrap plaintext, no heap scan.
+/// Default builds are read-only; experimental native builds may append one row.
 /// </summary>
 public sealed class HostProbeWindow : Form
 {
@@ -27,14 +27,14 @@ public sealed class HostProbeWindow : Form
     public HostProbeWindow(ISwitchConnectionAsync connection)
     {
         _probe = new HostProbeMailboxClient(connection);
-        Text = "RaidCrawler 房主探针（N1／N2 实验）";
+        Text = "RaidCrawler 房主 Bootstrap 发送副本（4.0.0）";
         ClientSize = new Size(660, 505);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterParent;
 
         var intro = new Label {
-            Text = "仅支持《紫》4.0.0。可自动定位邮箱；需在程序目录放置与 Native 对应的 mailbox-locator.json。",
+            Text = "无需堆扫描：已知 Hook 读取发送前副本；需要配对 Native 与 mailbox-locator.json。",
             Location = new Point(14, 14), Size = new Size(625, 38),
         };
         _address = new TextBox {
@@ -132,7 +132,7 @@ public sealed class HostProbeWindow : Form
             return $"N1 原版奖励捕获次数：{result.Header.CaptureCount} " +
                    $"N2 返回码：{n2.LastResult}（{resultLabel}）；追加次数：{n2.AppendedCount}；原版行数：{n2.OriginalRows}\r\n" +
                    (inspection is null ? "" : $"无损单行追加校验：{(inspection.Valid ? "通过" : "未通过")}（{inspection.Reason}）\r\n") +
-                   $"数据一致：{(cmp.Matches ? "是" : "否")} 首个差异行：{cmp.FirstMismatchRow} " +
+                   $"源/发送副本逐字节相同：{(cmp.Matches ? "是" : "否")} 首个差异行：{cmp.FirstMismatchRow} " +
                    $"差异字段：{field}\r\n" +
                    $"源奖励 SHA256：{cmp.SourceRowsSha256}\r\n" +
                    $"发送前奖励 SHA256：{cmp.BootstrapRowsSha256}\r\n" +
@@ -157,7 +157,7 @@ public sealed class HostProbeWindow : Form
             });
         };
         FormClosed += (_, _) => _closing.Cancel();
-        Append("探针默认禁用。此窗口只能读取快照和启停捕获，不能追加或修改游戏奖励。");
+        Append("发送副本 Hook 默认只读；堆扫描不再是主路径。仅手动特殊 Native 构建允许受控单行追加。");
     }
 
     private static Button MakeButton(string label, int x, int y, int width) =>
