@@ -1688,16 +1688,14 @@ public partial class MainWindow : Form
         {
             using var form = new RewardEditorForm(
                 RaidContainer.Strings.Item, RaidContainer.Strings.Move, predicted,
-                species, teraType, GlobalRewardProfile,
+                species, teraType, null,
                 ConnectionWrapper is { Connected: true } ? ConnectionWrapper.Connection : null);
             ShowDialog(form);
-            if (form.AppliedSlots is { } applied)
+            if (form.SavedCharmBonusProfile is { } profile)
             {
-                RaidRewardGlobalProfileStore.Save(RaidRewardGlobalProfileStore.DefaultPath, applied);
-                GlobalRewardProfile = applied.ToArray();
                 UpdateStatus(BenefitLanguage.T(
-                    $"已保存全局奖励：{applied.Count(row => row is not null)}/45 槽，任何地图／坑位可复用；未写入 Switch。",
-                    $"Saved global reward profile ({applied.Count(row => row is not null)}/45), independent of raid seed. No Switch write."));
+                    $"已保存晶耀护符追加配置：{profile.Items.Count}/20 条，版本 {profile.Revision}，启用={profile.Enabled}；不写入 Switch，原版奖励保持不变。",
+                    $"Charm append profile saved ({profile.Items.Count}/20, revision {profile.Revision}, enabled={profile.Enabled}); no Switch write."));
             }
         }
         catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
