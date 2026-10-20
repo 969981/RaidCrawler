@@ -155,6 +155,7 @@ public sealed class HostRaidPointAutoLocator(ISwitchConnectionAsync connection)
                 {
                     bytes = await connection.ReadBytesAbsoluteAsync(
                         blockAddress, BlockSize, timeout.Token).ConfigureAwait(false);
+                    token.ThrowIfCancellationRequested();
                 }
                 catch (OperationCanceledException) when (!token.IsCancellationRequested)
                 {
@@ -170,6 +171,7 @@ public sealed class HostRaidPointAutoLocator(ISwitchConnectionAsync connection)
             catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
             catch (Exception e)
             {
+                token.ThrowIfCancellationRequested();
                 failedBlocks++;
                 if (errors.Count < 5) errors.Add($"0x{blockAddress:X}: {e.Message}");
                 if (failedBlocks >= 3)
