@@ -17,13 +17,13 @@ namespace rcprobe {
 
 constexpr uintptr_t kHookRva = 0xE32984; // immediately AFTER memcpy@plt returns
 constexpr size_t kRowRegionLength = 45 * 16;
-constexpr size_t kSourceRowsOffset = 0x58 + 0xE4; // x20 input object + 0x13c
-constexpr size_t kPlainRowsOffset = 0x6B8 + 0xE4; // x23 output buffer + 0x79c
+constexpr size_t kSourceRowsOffset = 0x58 + 0xE0; // row starts at x20 input + 0x138; item at +0x13c
+constexpr size_t kPlainRowsOffset = 0x6B8 + 0xE0; // row starts at x23 output + 0x798; item at +0x79c
 constexpr size_t kBufferSlots = 8;
-static_assert(kSourceRowsOffset == 0x13C);
-static_assert(kPlainRowsOffset == 0x79C);
-static_assert(0x79C + kRowRegionLength == 0xA6C);
-static_assert(0xA6C < 0xAA0);
+static_assert(kSourceRowsOffset == 0x138);
+static_assert(kPlainRowsOffset == 0x798);
+static_assert(0x798 + kRowRegionLength == 0xA68);
+static_assert(0xA68 < 0xAA0);
 
 struct OpcodeGuard {
     uintptr_t rva;
