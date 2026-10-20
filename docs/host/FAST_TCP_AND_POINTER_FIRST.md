@@ -1,4 +1,4 @@
-# 方案 A：优先复查指针，随后高速只读 TCP 搜索（《紫》4.0.0）
+> **2026-10-20 新版主路径：** [Bootstrap 发送副本重构](BOOTSTRAP_SEND_COPY_REFACTOR.md)。当前 `host` 代码以 `RaidPoint+0xE4` 为第一条完整奖励行，字段为 `[ItemId, Quantity, RareFlag, SubjectType]`；`+0xE0` 不再作为写入依据。历史章节与先前的自相矛盾修订保留供追溯，**不代表目前代码 ABI**。默认只读。\n\n# 方案 A：优先复查指针，随后高速只读 TCP 搜索（《紫》4.0.0）
 
 更新：2026-10-20；基于用户真实速度日志（144 / 8192 KiB、约8–9 KiB/s、8MiB预计约15分钟）。
 
