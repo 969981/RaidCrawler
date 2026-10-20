@@ -20,6 +20,12 @@ public partial class FilterSettings : Form
         TeraType.DataSource = Enum.GetValues<MoveType>()
             .Where(z => z != MoveType.Any)
             .ToArray();
+        // Translate display without altering Enum values or filter JSON structure.
+        var zh = GameInfo.GetStrings("zh-Hans");
+        ConfigureChineseCombo(Species, zh.Species);
+        ConfigureChineseCombo(Nature, zh.Natures);
+        ConfigureChineseCombo(TeraType, zh.Types);
+
 
         Stars.SelectedIndex = 0;
         StarsComp.SelectedIndex = 0;
@@ -35,6 +41,21 @@ public partial class FilterSettings : Form
             ActiveFilters.SelectedIndex = 0;
         if (ActiveFilters.SelectedIndex == -1)
             Remove.Enabled = false;
+    }
+
+
+    private static void ConfigureChineseCombo(ComboBox combo, IReadOnlyList<string> names)
+    {
+        combo.DrawMode = DrawMode.OwnerDrawFixed;
+        combo.DrawItem += (_, e) =>
+        {
+            if (e.Index < 0) return;
+            e.DrawBackground();
+            string value = e.Index < names.Count ? names[e.Index] : combo.Items[e.Index]?.ToString() ?? "";
+            TextRenderer.DrawText(e.Graphics, value, e.Font ?? combo.Font,
+                e.Bounds, e.ForeColor, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+            e.DrawFocusRectangle();
+        };
     }
 
     public void ResetActiveFilters()
@@ -136,7 +157,7 @@ public partial class FilterSettings : Form
     {
         if (string.IsNullOrWhiteSpace(FilterName.Text))
         {
-            MessageBox.Show("Name is a required field!");
+            MessageBox.Show("请填写筛选名称。");
             return;
         }
 
@@ -205,7 +226,7 @@ public partial class FilterSettings : Form
         }
         else
         {
-            MessageBox.Show("You have not set any stop conditions. No filter will be added.");
+            MessageBox.Show("未设置任何停止条件，无法添加筛选器。");
         }
     }
 
@@ -316,9 +337,9 @@ public partial class FilterSettings : Form
     private void FilterName_TextChanged(object sender, EventArgs e)
     {
         if (ActiveFilters.SelectedIndex > -1 && FilterName.Text == filters[ActiveFilters.SelectedIndex].Name)
-            Add.Text = "Update Filter";
+            Add.Text = "更新筛选";
         else
-            Add.Text = "Add Filter";
+            Add.Text = "添加筛选";
     }
 
     private void CheckRewards_CheckedChanged(object sender, EventArgs e)
