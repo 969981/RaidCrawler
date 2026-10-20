@@ -27,3 +27,5 @@
 - [P1-B2 Lua 主状态与 CallInfo 只读结构验证](violet400-p1b2-lua-state-callinfo-live-structure-20261020.md)：结合第一份实机全局指针稳定日志、ELF 的 15 处新指令复核、Lua 主状态字段布局、CallInfo 有界读取及下一阶段闭包/奖励追踪 Gate；尚无真实 A/B/C 数据。
 
 - [P1-B2 实机竞态日志与基础奖励表浏览](violet400-p1b2-reward-table-diagnostics-20261020.md)：详细记录用户 10:53 实机证据，按字段诊断 CallInfo/栈变化、有限只读重试，以及固定/随机 Base 奖励表与 20×999 本机模板的来源区分；不等同已抓取 Lua A/B/C 奖励。
+
+- [真实 Switch 房主联机晶耀护符奖励追加实施方案](violet400-retail-host-charm-append-implementation-plan-20261020.md)：将 PokéLDN 正版参与方 x500 实验、0x2F 时序、RaidPoint+0xE4 格式与当前 native 整表覆盖代码对应，优先实机房主 outbound 0x2F 只读验证、保留原版后 Subject=5 追加、两台零售 Switch 验收，强调 45 总行限制与官方互联网模式未验证。
