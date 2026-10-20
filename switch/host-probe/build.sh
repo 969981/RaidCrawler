@@ -33,6 +33,11 @@ FTP_USERNAME :=
 FTP_PASSWORD :=
 RYU_PATH :=
 EOF
+# Opt-in source build only. CI and ordinary build remain gameplay-data read-only.
+if [[ "${HOST_N2_EXPERIMENTAL:-0}" == "1" ]]; then
+  echo "N2 experimental outgoing plaintext writes ENABLED in this local build" >&2
+  sed -i 's/^CXX_FLAGS :=$/CXX_FLAGS := -DRC_N2_ENABLE_WRITE=1/' "${WORK}/config.mk"
+fi
 python3 - "${WORK}/config.json" "${TITLE_ID}" <<'PY'
 import json
 import pathlib
@@ -74,7 +79,9 @@ Companion NPDM: follow exlaunch's installation guidance; do not replace stock
 main.npdm without checking intended loader compatibility.
 Control: C# Host Probe window via the existing sys-botbase absolute read/write connection.
 Mailbox: place mailbox-locator.json beside RaidCrawler EXE for automated ASLR discovery; manual debug log address remains fallback.
-Protocol: RC protocol v1, header 0x40, mailbox 0x600, enable at +0x10.
+Protocol: RC protocol v2, header 0x40, mailbox 0x600, enable at +0x10.
+Default N2 mode = OFF. Building with HOST_N2_EXPERIMENTAL=1 is required
+for outgoing one-row experimental writes; public CI artifacts are READ-ONLY.
 Default: disabled, no SD files, no second TCP listener.
 No game reward/network/save writes. Gameplay code IS instrumented.
 EOF
