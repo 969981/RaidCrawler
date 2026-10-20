@@ -47,10 +47,10 @@ PY
 make -C "${WORK}" -j"${JOBS:-2}" all
 OUT="${ROOT}/out"
 mkdir -p "${OUT}"
-NSO="${WORK}/exlaunch.nso"
-NPDM="${WORK}/exlaunch.npdm"
+NSO="${WORK}/deploy/subsdk9"
+NPDM="${WORK}/deploy/main.npdm"
 [[ -f "${NSO}" && -f "${NPDM}" ]] || {
-  echo "Expected exlaunch.nso + exlaunch.npdm not found." >&2
+  echo "Expected exlaunch deploy/subsdk9 + deploy/main.npdm not found." >&2
   find "${WORK}" -maxdepth 3 \( -name '*.nso' -o -name '*.npdm' \) -print
   exit 1
 }
