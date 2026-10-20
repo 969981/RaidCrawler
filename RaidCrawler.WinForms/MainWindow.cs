@@ -140,7 +140,30 @@ public partial class MainWindow : Form
             using var form = new HostProbeWindow(ConnectionWrapper.Connection);
             form.ShowDialog(this);
         };
+        hostProbeButton.Text = "Native探针（需插件）";
+        hostProbeButton.Width = 136;
         Controls.Add(hostProbeButton);
+
+        // True sys-botbase-only path (no NSO Hook, subsdk9, mailbox or SD file).
+        var sysbotOnlyButton = new Button
+        {
+            Text = "纯sys-botbase",
+            Name = "SysbotOnlyHostButton",
+            Location = new Point(368, 302),
+            Size = new Size(116, 23),
+        };
+        sysbotOnlyButton.Click += (_, _) =>
+        {
+            if (ConnectionWrapper is not { Connected: true })
+            {
+                MessageBox.Show(this, "请先连接 Switch 的 sys-botbase。", "方案 A",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            using var form = new SysbotOnlyHostWindow(ConnectionWrapper.Connection);
+            form.ShowDialog(this);
+        };
+        Controls.Add(sysbotOnlyButton);
 
         btnOpenMap.Enabled = false;
         Rewards.Enabled = false;
