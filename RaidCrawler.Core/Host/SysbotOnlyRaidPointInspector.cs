@@ -68,6 +68,77 @@ public sealed class SysbotOnlyRaidPointInspector(ISwitchConnectionAsync connecti
         return Encoding.ASCII.GetString(name);
     }
 
+    /// <summary>
+    /// Bounded opt-in HEAP-START signature search, maximum 8 MiB.
+    /// May find stale/irrelevant copies; does NOT discover a pointer chain.
+    /// Never runs automatically and never writes game memory.
+    /// </summary>
+    public async Task<IReadOnlyList<HostRaidPointAddressCandidate>> ScanHeapStartAsync(
+        int maxMegabytes, CancellationToken token)
+    {
+        if (maxMegabytes is < 1 or > 8)
+            throw new ArgumentOutOfRangeException(nameof(maxMegabytes), "只允许只读扫描堆起始处的 1–8 MiB。");
+        string tid = (await connection.GetTitleID(token).ConfigureAwait(false)).Trim()
+            .Replace("0x", "", StringComparison.OrdinalIgnoreCase);
+        if (!tid.Equals(HostProbeMailbox.ExpectedTitleId, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("仅支持已审计的《紫》4.0.0。");
+        string version = (await connection.GetGameInfo("version", token).ConfigureAwait(false))
+            .Trim().TrimEnd('\0');
+        if (version != "4.0.0")
+            throw new InvalidOperationException("当前并非《紫》4.0.0。");
+        byte[] code = await connection.ReadBytesMainAsync(SerializerRva,
+            SerializerFingerprintLength, token).ConfigureAwait(false);
+        ValidateSerializerFingerprint(code);
+
+        ulong heapBase = await connection.GetHeapBaseAsync(token).ConfigureAwait(false);
+        if (heapBase < 0x10000 || (heapBase & 0xFFF) != 0)
+            throw new InvalidDataException("堆起始地址不可信，已终止搜索。");
+
+        const int chunk = 0x4000;
+        int length = maxMegabytes * 1024 * 1024;
+        var found = new List<HostRaidPointAddressCandidate>();
+        for (int offset = 0; offset < length; offset += chunk)
+        {
+            token.ThrowIfCancellationRequested();
+            ulong baseAddress = checked(heapBase + (ulong)offset);
+            byte[] memory = await connection.ReadBytesAbsoluteAsync(baseAddress, chunk, token)
+                .ConfigureAwait(false);
+            if (memory.Length != chunk)
+                throw new IOException("堆内存读取长度不正确，扫描已终止。");
+            // No broad heap scan: only the user-requested small first N MiB.
+            int cursor = 0;
+            while (cursor <= memory.Length - 10 && found.Count < 12)
+            {
+                int delta = memory.AsSpan(cursor).IndexOf("RaidPoint_"u8);
+                if (delta < 0) break;
+                int index = cursor + delta;
+                cursor = index + 10;
+                ulong address = baseAddress + (ulong)index;
+                if ((address & 7) != 0) continue;
+
+                byte[] candidate = await connection.ReadBytesAbsoluteAsync(address,
+                    RaidPointLayout.RaidPointLength, token).ConfigureAwait(false);
+                try
+                {
+                    string name = GetRaidPointName(candidate);
+                    var report = RewardAppendPlanner.Plan(candidate,
+                        [new RewardRow(15, 1, 0, 5)], id => id == 15);
+                    if (!report.Accepted) continue;
+                    found.Add(new HostRaidPointAddressCandidate(address, name,
+                        report.OriginalCount, "POSSIBLE_HEAP_COPY_ONLY"));
+                }
+                catch (InvalidDataException)
+                {
+                    // Inline text might resemble a RaidPoint without complete
+                    // valid object data. A signature alone is not enough.
+                }
+            }
+            if (found.Count >= 12) break;
+            await Task.Delay(5, token).ConfigureAwait(false);
+        }
+        return found;
+    }
+
     public async Task<SysbotOnlyCandidate> InspectAsync(
         ulong inputAddress, bool isOwnerObject, CancellationToken token)
     {
@@ -115,3 +186,7 @@ public sealed record SysbotOnlyCandidate(
     ulong AbsoluteRaidPoint, string RaidPointName, bool SnapshotsStable,
     int ObservedOriginalRows, int PossibleEmptyRows, bool OfflineAppendEligible,
     string Reason, string RewardSha256, string EvidenceLimit);
+
+/// <summary>Possible heap copy only; NOT an authenticated current host object.</summary>
+public sealed record HostRaidPointAddressCandidate(
+    ulong Address, string Name, int OriginalRows, string EvidenceLevel);
