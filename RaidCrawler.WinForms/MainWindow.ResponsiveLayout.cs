@@ -321,7 +321,18 @@ public partial class MainWindow
     /// </summary>
     private TableLayoutPanel FieldPair(Control title, Control value)
     {
-        var pair = Rows([Px(118), 0], 1, Px(37));
+        var pair = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 2,
+            RowCount = 1,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty,
+            BackColor = Color.White,
+        };
+        pair.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(118)));
+        pair.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+        pair.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
         title.AutoSize = false;
         title.MinimumSize = Size.Empty;
         if (title is Label label)
