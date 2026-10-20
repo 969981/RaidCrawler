@@ -100,6 +100,10 @@ public sealed partial class RaidRewardDiagnosticForm
                     Append("reward-table-config-preview",
                         "展示当前窗口的自定义奖励配置，不代表读取了实机奖励列表。",
                         new { source = "WINDOW_CONFIG_ONLY", rows = tableViewerSlots.Count(x => x is not null),
+                              configuredRows = tableViewerSlots.Select((row, index) => new { row, index })
+                                  .Where(x => x.row is not null)
+                                  .Select(x => new { slot = x.index, x.row!.ItemId,
+                                      x.row.Quantity, x.row.Rare, x.row.Subject }).ToArray(),
                               currentRaidRewardsCaptured = false });
                 }
                 else
@@ -116,6 +120,10 @@ public sealed partial class RaidRewardDiagnosticForm
                         new { source = "EMBEDDED_BASE_RESOURCE", tableName = key.ToString(),
                               fixedRows = rows.Count(x => x.Source == "fixed"),
                               lotteryRows = rows.Count(x => x.Source == "lottery"),
+                              rewardDefinitions = rows.Select(row => new {
+                                  row.Source, row.Slot, row.ItemId, row.Quantity,
+                                  row.Category, row.Subject, row.Weight, row.Rare
+                              }).ToArray(),
                               currentRaidRewardsCaptured = false });
                 }
             };
