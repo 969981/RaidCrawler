@@ -24,17 +24,17 @@ public static class HostProbeMailbox
     public static HostProbeHeader ParseHeader(ReadOnlySpan<byte> bytes)
     {
         if (bytes.Length != HeaderLength)
-            throw new InvalidDataException($"Mailbox header length must be {HeaderLength}.");
+            throw new InvalidDataException($"内存邮箱头长度必须为 {HeaderLength} 字节。");
         if (!bytes[..8].SequenceEqual(Magic))
-            throw new InvalidDataException("RC mailbox magic not present. Check the active module and address.");
+            throw new InvalidDataException("未找到 RC 内存邮箱标识；请检查原生模块是否加载及本次地址是否正确。");
         uint version = U32(bytes, 8);
         uint size = U32(bytes, 12);
         if (version != ProtocolVersion || size != MailboxLength)
-            throw new InvalidDataException($"Unknown RC mailbox protocol {version}, size 0x{size:X}.");
+            throw new InvalidDataException($"未知的内存邮箱协议版本 {version}，大小 0x{size:X}。");
         uint enabled = U32(bytes, 0x10);
         uint status = U32(bytes, 0x14);
         if (enabled > 1 || status > 2)
-            throw new InvalidDataException("Invalid RC mailbox state.");
+            throw new InvalidDataException("内存邮箱状态数据无效。");
         return new HostProbeHeader(enabled == 1, status, U32(bytes, 0x18),
             U32(bytes, 0x1C), U32(bytes, 0x20), U64(bytes, 0x28));
     }
@@ -42,7 +42,7 @@ public static class HostProbeMailbox
     public static HostProbeCapture ParseCapture(ReadOnlySpan<byte> raw)
     {
         if (raw.Length != RegionLength * 2)
-            throw new InvalidDataException("Expected two 720-byte native reward arrays.");
+            throw new InvalidDataException("应提供两段各 720 字节的原版奖励数据。");
         return new HostProbeCapture(raw[..RegionLength].ToArray(),
             raw[RegionLength..].ToArray());
     }
@@ -61,7 +61,7 @@ public static class HostProbeMailbox
                 System.Globalization.CultureInfo.InvariantCulture, out ulong parsed) ||
             parsed < 0x10000 || (parsed & 7) != 0 ||
             parsed > ulong.MaxValue - MailboxLength)
-            throw new FormatException("Enter a valid 8-byte-aligned runtime mailbox hexadecimal address.");
+            throw new FormatException("请输入有效且按 8 字节对齐的当前进程内存邮箱十六进制地址。");
         return parsed;
     }
 }
@@ -105,13 +105,13 @@ public sealed class HostProbeMailboxClient(ISwitchConnectionAsync connection)
         // Do not write anything except +0x10 after verifying a live module.
         HostProbeHeader before = await ReadStatusAsync(address, token).ConfigureAwait(false);
         if (before.Status != 1)
-            throw new InvalidOperationException("Probe is not installed/recognized. No command sent.");
+            throw new InvalidOperationException("未安装或无法识别原生探针，未发送控制命令。");
         await _connection.WriteBytesAbsoluteAsync(
             BitConverter.GetBytes(enable ? 1u : 0u),
             address + HostProbeMailbox.EnabledOffset, token).ConfigureAwait(false);
         HostProbeHeader after = await ReadStatusAsync(address, token).ConfigureAwait(false);
         if (after.Enabled != enable)
-            throw new IOException("Probe did not acknowledge the enabled flag.");
+            throw new IOException("原生探针未确认捕获启停状态。");
         return after;
     }
 
@@ -124,9 +124,9 @@ public sealed class HostProbeMailboxClient(ISwitchConnectionAsync connection)
         {
             HostProbeHeader before = await ReadStatusAsync(address, token).ConfigureAwait(false);
             if (before.Status != 1)
-                throw new InvalidOperationException("Probe not active.");
+                throw new InvalidOperationException("原生探针未激活。");
             if (before.CaptureCount == 0)
-                throw new InvalidOperationException("No real on-device capture has been recorded.");
+                throw new InvalidOperationException("尚未捕获到任何实机数据。");
             if ((before.Generation & 1) != 0)
                 continue;
             byte[] raw = await _connection.ReadBytesAbsoluteAsync(
@@ -138,7 +138,7 @@ public sealed class HostProbeMailboxClient(ISwitchConnectionAsync connection)
                 (after.Generation & 1) == 0)
                 return (after, HostProbeMailbox.ParseCapture(raw));
         }
-        throw new IOException("Capture is changing while being read. Retry after the raid bootstrap.");
+        throw new IOException("捕获数据在读取期间发生变化，请在团体战加载完成后重试。");
     }
 
     private async Task CheckTitleAsync(CancellationToken token)
@@ -147,6 +147,6 @@ public sealed class HostProbeMailboxClient(ISwitchConnectionAsync connection)
             .Trim().Replace("0x", "", StringComparison.OrdinalIgnoreCase);
         if (!game.Equals(HostProbeMailbox.ExpectedTitleId, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException(
-                $"This probe is Violet 4.0.0 only (title {HostProbeMailbox.ExpectedTitleId}). Attached: {game}.");
+                $"此探针仅支持《紫》4.0.0（Title ID：{HostProbeMailbox.ExpectedTitleId}）。当前连接游戏：{game}。");
     }
 }
