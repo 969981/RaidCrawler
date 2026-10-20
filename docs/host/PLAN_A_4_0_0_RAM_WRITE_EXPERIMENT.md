@@ -1,5 +1,8 @@
 # 方案 A：4.0.0 状态偏移核对 + 纯 sys-botbase 奖励 RAM 写入实验
 
+> **2026-10-20 重要勘误（覆盖本页旧结论）**：PokéLDN 4.0.0 donor 的完整奖励记录从 `RaidPoint+0xE0` / `Bootstrap+0x798` 开始，四列为 `[condition_or_source, item_id, quantity, reserved]`；`+0xE4/+0x79C` 只是记录内部的道具 ID，不是完整行起点。以下旧版 `+0xE4 记录起点 / [Item,Quantity,Rare,Subject]` 的叙述**仅作为历史错误调查记录保存，不可作为写入指导**。最新版布局、subject0/5 和验证限制统一参见 [POKELDN_SUBJECT0_RETAIL_LAYOUT_TEST.md](POKELDN_SUBJECT0_RETAIL_LAYOUT_TEST.md)。
+
+
 > 日期：2026-10-20。**本方案已经完成 C# 工程实现及离线字节审计，尚未在真实 Switch 上证明房主实际发送对象、奖励到账或重载存档持久化。**
 >
 > **不需要** `subsdk9`、`main.npdm`、额外的 Socket 服务、SD 卡模块、ARM64 Hook。所有 Switch 操作仅通过 RaidCrawler 现有的 `SysBot.Base.ISwitchConnectionAsync` 完成。
