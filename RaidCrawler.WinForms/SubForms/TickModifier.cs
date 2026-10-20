@@ -30,7 +30,7 @@ namespace RaidCrawler.WinForms.SubForms
             }
             catch (Exception ex)
             {
-                await this.DisplayMessageBox(Webhook, $"Could not read the date: {ex.Message}", Token).ConfigureAwait(false);
+                await this.DisplayMessageBox(Webhook, $"无法读取日期：{ex.Message}", Token).ConfigureAwait(false);
             }
         }
 
@@ -43,7 +43,7 @@ namespace RaidCrawler.WinForms.SubForms
             }
             catch (Exception ex)
             {
-                await this.DisplayMessageBox(Webhook, $"Could not reset the date: {ex.Message}", Token).ConfigureAwait(false);
+                await this.DisplayMessageBox(Webhook, $"无法校准日期：{ex.Message}", Token).ConfigureAwait(false);
             }
         }
 
@@ -58,12 +58,12 @@ namespace RaidCrawler.WinForms.SubForms
                 }
                 else
                 {
-                    await this.DisplayMessageBox(Webhook, $"Could not write the date: {TB_Tick.Text} could not be parsed as a ulong!", Token).ConfigureAwait(false);
+                    await this.DisplayMessageBox(Webhook, $"无法写入日期：{TB_Tick.Text} 无法解析为无符号整数！", Token).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
             {
-                await this.DisplayMessageBox(Webhook, $"Could not write the date: {ex.Message}", Token).ConfigureAwait(false);
+                await this.DisplayMessageBox(Webhook, $"无法写入日期：{ex.Message}", Token).ConfigureAwait(false);
             }
         }
     }
