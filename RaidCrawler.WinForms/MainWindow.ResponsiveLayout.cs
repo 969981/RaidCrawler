@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Windows.Forms;
+using SysBot.Base;
 
 namespace RaidCrawler.WinForms;
 
