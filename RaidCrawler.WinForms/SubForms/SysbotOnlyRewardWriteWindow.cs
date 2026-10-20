@@ -10,6 +10,7 @@ namespace RaidCrawler.WinForms.SubForms;
 public sealed class SysbotOnlyRewardWriteWindow : Form
 {
     private readonly SysbotOnlyRewardWriter _writer;
+    private readonly HostRaidPointAutoLocator _locator;
     private readonly CancellationTokenSource _close = new();
     private readonly TextBox _address = new();
     private readonly NumericUpDown _quantity = new();
@@ -18,6 +19,7 @@ public sealed class SysbotOnlyRewardWriteWindow : Form
     private readonly CheckBox _confirmVersion = new();
     private readonly CheckBox _confirmUnverified = new();
     private readonly Button _prepare = new();
+    private readonly Button _autoFind = new();
     private readonly Button _apply = new();
     private readonly Button _restore = new();
     private readonly TextBox _log = new();
@@ -30,6 +32,7 @@ public sealed class SysbotOnlyRewardWriteWindow : Form
         bool useAllPlayersQuickBall500Preset = false)
     {
         _writer = new SysbotOnlyRewardWriter(connection);
+        _locator = new HostRaidPointAutoLocator(connection);
         Text = "方案 A：纯 sys-botbase 受控奖励写入（实验）";
         ClientSize = new Size(730, 620);
         StartPosition = FormStartPosition.CenterParent;
@@ -71,6 +74,10 @@ public sealed class SysbotOnlyRewardWriteWindow : Form
         _address.Size = new Size(250, 28);
         _address.PlaceholderText = "0x...（必须为对象起点）";
         _address.Text = candidateAddress ?? "";
+        _autoFind.Text = "自动定位";
+        _autoFind.Location = new Point(607, 111);
+        _autoFind.Size = new Size(108, 30);
+        _autoFind.Click += async (_, _) => await LocateOnlyAsync();
         var qtyLabel = new Label
         {
             Text = "先机球×", Location = new Point(455, 116), Size = new Size(75, 27)
@@ -109,7 +116,7 @@ public sealed class SysbotOnlyRewardWriteWindow : Form
         _log.Font = new Font(FontFamily.GenericMonospace, 9);
         _log.Location = new Point(14, 301);
         _log.Size = new Size(702, 301);
-        Controls.AddRange([intro, _subjectMode, _loadQuick500Preset, addrLabel, _address, qtyLabel, _quantity,
+        Controls.AddRange([intro, _subjectMode, _loadQuick500Preset, addrLabel, _address, _autoFind, qtyLabel, _quantity,
             _confirmVersion, _confirmUnverified, _prepare, _apply, _restore, _log]);
         FormClosed += (_, _) => _close.Cancel();
         if (useAllPlayersQuickBall500Preset)
@@ -154,6 +161,40 @@ public sealed class SysbotOnlyRewardWriteWindow : Form
             return true;
         Say("需要先勾选两项试验前提与风险确认。");
         return false;
+    }
+
+    private async Task LocateOnlyAsync()
+    {
+        if (_busy) return;
+        _busy = true;
+        _autoFind.Enabled = _prepare.Enabled = false;
+        try
+        {
+            Say("只读查找 RaidPoint 内存副本；不会写入奖励。");
+            var report = await _locator.FindAsync(8, null, _close.Token);
+            Say($"堆前8MiB找到{report.Candidates.Count}个结构候选。");
+            foreach (var candidate in report.Candidates)
+                Say($"  0x{candidate.OwnerAddress:X} {candidate.Name} {candidate.OwnerTypeEvidence}");
+            var recognized = report.Candidates.Where(c =>
+                c.OwnerTypeEvidence is
+                    HostOwnerVtableEvidence.SerializerSlotPointsToE327FC or
+                    HostOwnerVtableEvidence.DestructorVtableTriple).ToArray();
+            if (recognized.Length == 1 && report.Candidates.Count == 1)
+            {
+                _address.Text = $"0x{recognized[0].OwnerAddress:X}";
+                Say("已填入唯一类型关联候选地址。注意：仍未证明该对象属于当前房间！");
+            }
+            else
+                Say("尚未发现唯一类型关联的房主候选。请先用主诊断窗口扩大扫描范围，" +
+                    "并记录不同房间的对象变化；不要猜地址。");
+        }
+        catch (OperationCanceledException) when (_close.IsCancellationRequested) { }
+        catch (Exception e) { Say("自动定位失败：" + e.Message); }
+        finally
+        {
+            _busy = false;
+            if (!IsDisposed) _autoFind.Enabled = _prepare.Enabled = true;
+        }
     }
 
     private async Task PrepareAsync()
