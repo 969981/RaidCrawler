@@ -85,12 +85,12 @@ public static class SoloCharmAppendEvidenceGate
         if (b.Count == 0 || b[^1] != additional)
             return No(Finding.BonusLostInFilter,
                 "Subject=5 row did not survive filtering (not a missing-charm assumption).");
-        if (!b.SequenceEqual(c))
-            return No(Finding.FilterToSettlementMismatch,
-                "Filtered B rows differ from C actually consumed by settlement.");
         if (c.Count == 0 || c[^1] != additional)
             return No(Finding.BonusMissingAtSettlement,
                 "Custom row missing at settlement entry.");
+        if (!b.SequenceEqual(c))
+            return No(Finding.FilterToSettlementMismatch,
+                "Filtered B rows differ from C actually consumed by settlement.");
 
         if (a0.Any(row => row.ItemId == additional.ItemId))
             return No(Finding.BonusItemAlsoInOriginal,
