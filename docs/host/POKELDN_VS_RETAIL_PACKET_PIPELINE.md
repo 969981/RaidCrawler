@@ -1,4 +1,4 @@
-# PokéLDN 修改 `0x012F` 与真实 Switch 房主的差别（2026-10-20）
+> 注意：本页为历史分析，旧版的奖励行 `+0xE0` 解释已被证伪。请优先阅读 [最新 ELF 与 donor 验证](ELF_REVALIDATION_N1_N2.md)：奖励行起始为 `+0xE4`，字段顺序 ItemID/Quantity/RareFlag/Subject。\n\n# PokéLDN 修改 `0x012F` 与真实 Switch 房主的差别（2026-10-20）
 
 ## 结论
 
