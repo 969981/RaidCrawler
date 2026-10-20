@@ -118,7 +118,7 @@ public sealed class ScreenshotRewardPresetTests
             ScreenshotRewardPreset.Audit(original, changedTail, 21));
 
         byte[] changedPreset = (byte[])result.CandidateRaidPoint.Clone();
-        changedPreset[RaidPointLayout.RewardsInRaidPoint + 21 * 16 + 12] = 0;
+        changedPreset[RaidPointLayout.RewardsInRaidPoint + 21 * 16] = 0; // now source/subject is first u32
         Assert.Equal("PRESET_ROW_MISMATCH_0",
             ScreenshotRewardPreset.Audit(original, changedPreset, 21));
     }
