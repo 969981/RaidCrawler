@@ -1,84 +1,49 @@
-# RaidCrawler · 《紫》4.0.0 原生战斗奖励 Hook（实验）
+# RaidCrawler — Violet 4.0.0 实机 N0/N1 原生奖励观察器
 
-> **交付范围：已实现 Skyline ARM64 inline callback 源码；尚未用实际 Switch 验证联机／本地结算。** 只有 `HOOK_HIT` 能证明执行时命中，不代表其他玩家已收到奖励。旧的 Windows 程序只有 sys-botbase 读写能力，不能单独安装原生 Hook。
+**当前只观察，不修改奖励。** 这是针对真实 Switch 房主的 `0x012F` Bootstrap 序列化现场的研究代码；不会让参与者立刻得到新道具，也没有完成 N2 晶耀护符追加。必须搭配受支持的 Skyline 原生插件环境，单独运行 Windows 程序不构成 CPU 级 Hook。
 
-## 1. 精确的 ELF 位置
+## 已确认的版本、地址与工作方式
 
-只适配原始 `Violet4.0.0.elf`（SHA256 `d17403eaa9d844db82f647fd2f1518806b10c0518d53602fc0ac1766298fdba0`；Build ID `709bfd66115298640155fcc4979dba151c7cc79a`；Title ID `01008F6008C5E000`）。
+- 游戏：Pokémon Violet 4.0.0，Title ID `01008F6008C5E000`；ELF SHA-256 `d17403eaa9d844db82f647fd2f1518806b10c0518d53602fc0ac1766298fdba0`，Build ID `709bfd66115298640155fcc4979dba151c7cc79a`。
+- AArch64 入口 `main+0xE32984`，插件启动时检查周边八处原始机器码；校验失败则不安装 Hook。原游戏会继续按正常逻辑发送数据。
+- `x20+0x13C`：源消息中的 45×16B 原版奖励；`x23+0x79C`：复制到 `0xAA0` 明文 Bootstrap 中的 45×16B 奖励；`x23+0x6B8` 需以 `RaidPoint_` 开头。
+- 每行字段：小端 `itemId(u32),quantity(u32),rare(u32),subject(u32)`。`main.blua` 静态研究已支持 `subject=5` 与晶耀护符重要物品 ID 2481 的资格联系。
+- 采集数据逐槽记录 **全部 45 行**，包括非标准非零行、全零候选槽、各 subject 计数、原版/输出字节是否相同及 FNV64。全零槽不等于已证明可以安全追加。
 
-已从原始 ELF 直接核对：
+## 和旧插件最重要的区别
 
-```asm
-main+0xE32960  add x0,x23,#0x6d8    ; output RaidPoint remaining 0x3C8 bytes
-main+0xE32968  add x1,x20,#0x78
-main+0xE3296C  mov w2,#0x3c8
-main+0xE32980  bl  memcpy
-main+0xE32984  mov x8,x21           ; INLINE HOOK (last memcpy completed)
-main+0xE32990  mov x1,x23
-main+0xE32994  mov w2,w22           ; 0xAA0 bytes of plaintext
-main+0xE329B0  b   0x1592B7C       ; next serialization/compression chain
-```
+**N0/N1 强制 `observe-only`。** 不管 `hook-mode.txt` 是否为 `apply`，都不会对游戏内存写入奖励。旧版 `apply` 是整块 720B 覆盖，可能破坏原版固定/随机/料理/护符奖励，现已在此阶段拒绝。`rewards.bin` 本阶段不使用。源码中保留的旧 `format.rs` 覆盖工具仅作离线测试，不被实时 Hook 调用。
 
-Hook 在 `main+0xE32984`，从 `InlineCtx.registers[23]` 获取仅**本次函数执行时有效**的 `0xAA0` 输出缓冲区（不可缓存指针），检查 `[x23+0x6B8]` 的 `RaidPoint_` 标志，定位 `[x23+0x79C, x23+0xA6C)` 共 `0x2D0=720` 奖励字节。复制 45 槽配置、读回对比，不一致则恢复备份。除奖励区以外没有预期修改，原版继续从 `0xE32984` 执行。
+## 编译及安装
 
-此指令位于**一种战斗初始化序列化路径**，不是已经完成的跨模式／跨补丁版本 Hook 兼容证明。不是所有游戏版本甚至所有模式都保证执行此函数。高层对战奖励 API 路径及 Nintendo 官方服务端行为仍需实机核查。
+原生 `.nro` 构建入口：[Native SV reward Hook workflow](../../.github/workflows/native-sv-hook.yml)。另有 [N0/N1 Rust 独立测试](../../.github/workflows/native-raid-observer-offline-tests.yml)；只有真正的 Skyline 原生构建成功才会输出可部署 `.nro`。若本地已有对应 Switch Rust 工具链，可在 `native/sv_raid_reward_hook` 运行 `cargo skyline build --release`。
 
-## 2. 配置和启动
-
-源码位于 `native/sv_raid_reward_hook`。需要 Atmosphère、兼容的 Skyline loader、Rust + `cargo-skyline`（以及正常使用的插件启动环境）。**不要用于非《紫》4.0.0 或未核验的升级版本。**
-
-```bash
-cargo install cargo-skyline
-cd native/sv_raid_reward_hook
-cargo skyline update-std
-cargo skyline build --release
-```
-
-得到 `.nro` 后按 Skyline 的插件部署规则复制到 SD：
+将 **对应当前 N0/N1 提交的 `.nro`** 放到 Switch SD：
 
 ```text
 /atmosphere/contents/01008F6008C5E000/romfs/skyline/plugins/raidcrawler_sv_reward_hook.nro
-/switch/raidcrawler/rewards.bin
-/switch/raidcrawler/hook-mode.txt
+/switch/raidcrawler/hook-mode.txt     # 可选；observe，apply 会被强制拒绝
 ```
 
-PC 端新版 **奖励编辑器 → 写入奖励** 会准备 `%LOCALAPPDATA%\RaidCrawler\native-hook\rewards.bin` 和 `hook-mode.txt`。将两个文件复制到 Switch SD 卡的 `switch/raidcrawler/`，然后**重启游戏**使原生插件读取配置。若已运行的插件需要切换配置，必须重启游戏；不会从 Windows 程序自动推送到 Switch。运行时不会从任意公网 URL 更新配置。
+先创建 `/switch/raidcrawler/` 文件夹，关闭可能与同一 RVA 冲突的插件，然后重启游戏。实验前备份存档。
 
-- `hook-mode.txt = observe`（默认）：安装 Hook，遇到构建事件仅记录 `HOOK_HIT`，不写入。
-- `hook-mode.txt = apply`：显式授权当前游戏版本与当前实验，把 720 字节奖励表写入**正在序列化的这场对战**；不是固定地图或 Seed。
-- 删除或改回 `observe`，并**重启游戏**即可取消写入。若签名、`RaidPoint_` 标志或 720 字节格式不匹配，则不会安装或应用 Hook。
+## 真实房主 N0/N1 操作
 
-插件日志（尽力写入，另有 Skyline 输出）：
+1. 启动匹配的《紫》4.0.0，检查 Switch SD 的 `/switch/raidcrawler/hook.log`：应能看到 `START N0_N1 OBSERVER`、`ELF_FINGERPRINT verified 8/8`、`MODE observe-only forced`、`NATIVE_HOOK_INSTALLED`。
+2. 使用这台 Switch **当房主**，与另一台授权的 Switch 开一场本地 LDN 太晶团体战。从大厅准备到正式点击开始战斗，等待开始握手完成。PokéLDN 已记录 `0x0C`/`0x0D` 后、开战前发送 `0x2F`；玩家刚进入大厅时不应期待已发送。
+3. 若 CPU 命中，`hook.log` 会记录 `HOOK_HIT seq=... stage=N0_N1`；同时 `/switch/raidcrawler/raid-native-rewards.jsonl` 生成一条含源/输出各 45 行的 JSON。若没有命中则保留日志，不启用旧整表覆盖。
+4. 将两份日志拷到 Windows。在 RaidCrawler 的诊断窗口点击 **「导入实机 0x2F 奖励快照 JSONL」**，逐行比较原版 `x20` 与输出 `x23`。导入器会核验每行顺序、FNV64、数量统计和 `observe-only` 来源标志。
+5. 记录本次是本地 LDN、是否为房主、星级及开战时刻（用户手工说明）。仅凭原生序列化回调不能自动判断 Nintendo 官方互联网方向，更不能确认参与者收包、实际背包增量或保存。
 
-```text
-/switch/raidcrawler/hook.log
-```
+## 安全、隐私及运行限制
 
-重要事件：`START`、`ELF_FINGERPRINT`、`CONFIG_VALID`、`MODE observe/apply`、`NATIVE_HOOK_INSTALLED`、`HOOK_HIT`、`PATCH_VERIFIED`、`PATCH_VERIFY_FAILED`、`PATCH_REJECTED`。**只有 `PATCH_VERIFIED` 才表示本地输出缓冲区字节核对通过；并不等于参与者收到数据或保存成功。**
+- 回调内部只有固定长度内存复制和 **有界通道 `try_send`**；不执行 SD 文件写入、JSON 格式化或 Lua 堆扫描。独立工作线程负责写日志。通道满时有 `N1_EVENTS_DROPPED`。
+- JSONL 只含数字奖励行，不记录参与者 PK9、名称、账户或明文网络完整帧；FNV64 仅用于发现传输/复制不一致，不是取证签名。
+- Snapshot 表明的是“加载的原生插件报告了一个执行现场”，不能从复制出的 JSONL 自动证明回调真实来源或玩家实收。
+- 遇到异常退出游戏、删除该 `.nro` 并重启即可停止实验。仅适配同一版本和 Build ID；不要向其他版本移植硬编码 RVA。
 
-## 3. 两阶段实机验收
+## 后续 N2 仍需研究
 
-先**仅观察**单人及本地 LDN：
+只有获得真实房主 `HOOK_HIT`、原版/输出 45 行数据与有效空尾槽证据后，才研究新增单条 `subject=5, quantity=1` 并让第二台原版机验证；保留全部原版行且不跨越 45 行上限。**当前既未实测追加，也未修改任何道具。**
 
-1. `observe` 启动 `《紫》4.0.0`。检查 `ELF_FINGERPRINT verified 8/8`、`NATIVE_HOOK_INSTALLED`。
-2. 任选普通坑（不必让 RaidCrawler 选中同一坑），开启团体战。若命中，应看到 `HOOK_HIT seq=... mode=observe`。若未命中，即这个游戏路径没有经过已确定的序列化函数，需要另寻构建入口，**不应盲写内存**。
-3. 只有观察后，在自己授权的测试环境改为 `apply` 并重启。配置初期建议只填一行小数量的非稀有道具，不宜直接用 20 行 ×999 作为首次验证。
-4. 查 `PATCH_VERIFIED` 和实际结算、背包增量、保存再读取。再用无护符/持有晶耀护符以及 Subject 0/1/2/3/4/5 分别对照。
-5. 最后单独评估官方互联网房主是否触发相同 serializer，以及其他参与者实际获得的内容。不要推断任天堂服务端已接受或绕过任何校验。
-
-**恢复：** 有异常时退出游戏，删除插件 NRO（或设为 `observe` 并重启）即可禁用。插件只改运行时序列化输出，不触碰太晶坑持久化 Seed 记录；但游戏崩溃、异常奖励影响存档等风险仍需提前备份并谨慎实测。
-
-## 4. 开发限制
-
-- 日志写入失败不会影响基础游戏逻辑，但在即时 Hook 中写 SD 会增加延迟，正式版需要进一步把日志写入异步环形缓冲区。
-- 本版本没有区分所有网络传输路径，也没有确认该回调每场必触发；仅使用**准确的原版《紫》4.0.0 ELF 指纹**。
-- PC 发起的模板准备与 Switch `.nro` 之间目前使用**手动 SD 文件传输**；未实现通过 sys-botbase 写入 SD。
-- 与其他在同一 RVA 安装 Hook 的插件可能冲突；不要叠加未知 EXEFS 补丁。
-- 需要通过 native CI 的 cargo-skyline 构建与实机测试才能把目前的源码升级成已验收二进制。
-
-## 5. 代码与研究
-
-- `src/lib.rs`：Skyline A64InlineHook、构建时 x23 指针、8 条指纹、备份／替换／读回／回滚以及日志。
-- `src/format.rs`：独立可测试的 45×16 字节解码、字段约束及 0xAA0 差分替换。
-- `../../docs/research/global-any-raid-reward-hook.md`：为何要用全局模板，而不是选中 Seed。
-- `../../docs/research/live-raid-hook-diagnostics.md`：PC 端只读环境诊断；不能替代游戏内原生 Hook。
+相关技术方案：[真实 Switch 房主晶耀护符奖励追加](../../docs/research/violet400-retail-host-charm-append-implementation-plan-20261020.md)。
