@@ -18,6 +18,7 @@ public static class SoloCharmAppendEvidenceGate
         BonusLostInFilter,
         FilterToSettlementMismatch,
         BonusMissingAtSettlement,
+        BonusItemAlsoInOriginal,
         ActualBagDeltaNotObserved,
         BagDidNotReceiveBonus,
         SavePersistenceNotObserved,
@@ -91,6 +92,9 @@ public static class SoloCharmAppendEvidenceGate
             return No(Finding.BonusMissingAtSettlement,
                 "Custom row missing at settlement entry.");
 
+        if (a0.Any(row => row.ItemId == additional.ItemId))
+            return No(Finding.BonusItemAlsoInOriginal,
+                "The bonus item also occurs in original A0, so bag delta cannot be attributed uniquely.");
         if (!e.BagCountBefore.HasValue || !e.BagCountAfter.HasValue)
             return No(Finding.ActualBagDeltaNotObserved,
                 "A/B/C match, but no independently observed bag before/after counts.");
