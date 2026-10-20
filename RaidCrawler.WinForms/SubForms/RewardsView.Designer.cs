@@ -38,7 +38,7 @@
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "RewardsView";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "RewardsView";
+            this.Text = "奖励列表";
             this.ResumeLayout(false);
 
         }
