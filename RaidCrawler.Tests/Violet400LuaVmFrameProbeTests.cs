@@ -50,7 +50,7 @@ public sealed class Violet400LuaVmFrameProbeTests
             {
                 headerReads++;
                 if (shortHeader) return Task.FromResult(new byte[8]);
-                if ((changeHeader && headerReads > 1) || (changeHeaderOnce && headerReads == 2))
+                if ((changeHeader && headerReads % 2 == 0) || (changeHeaderOnce && headerReads == 2))
                 {
                     byte[] changed = header.ToArray();
                     Set(changed, 0x20, State + 0x400);
