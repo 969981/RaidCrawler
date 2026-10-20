@@ -33,7 +33,7 @@ llvm-objdump -d --start-address=0xE327FC --stop-address=0xE329B4 Violet4.0.0.elf
 llvm-objdump -d --start-address=0x1592B7C --stop-address=0x1592EB8 Violet4.0.0.elf
 ```
 
-仓库现有的 `tools/host/audit_violet_elf.py` 也能校验该 ELF 指纹及 12 个已审计的 Native 安装保护指令。**不要把用户 Library 中《紫》的地址、Build ID 套用到《朱》或其他版本。**
+仓库现有的 `tools/host/audit_violet_elf.py` 也能校验该 ELF 指纹及 17 个已审计的 Native 安装保护指令。**不要把用户 Library 中《紫》的地址、Build ID 套用到《朱》或其他版本。**
 
 ## 2. 对 0xE32984 的逐指令解释：谁在读，谁在写，什么时候复制完
 
@@ -205,7 +205,7 @@ exlaunch Entry → 保存寄存器 → 回调 RaidBootstrapReadOnly::Callback(ct
 **Native：**
 
 1. `HookRva=0xE32984`，`SourceRows=0x58+0xE4=0x13C`，`WireRows=0x6B8+0xE4=0x79C`。
-2. 启动时核对 12 条指定原始机器码，指纹异常时拒绝安装 Hook；**12 条指纹不等于动态验证了完整 Build ID**。
+2. 启动时核对 17 条指定原始机器码，指纹异常时拒绝安装 Hook；**17 条指纹不等于动态验证了完整 Build ID**。
 3. 只有状态启用才开始读取，捕获双方奖励各 720B 到 `RCHMB02\0` 邮箱；检查 `generation` 防止 PC 读取跨局混合数据。
 4. 追加前做 `memcmp(x20+0x58, x23+0x6B8, 0x3E8)`，并检查源奖励 45 行的合法性和连续空槽。
 5. CI 默认 Native **不会编译奖励写入代码**；只有显式 `HOST_N2_EXPERIMENTAL=1` 编译才具有单行实验写入能力：目前仅支持先机球（道具 ID 15）×1–10、`subject=5`。
