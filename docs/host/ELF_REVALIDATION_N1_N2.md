@@ -1,5 +1,8 @@
 # 《朱／紫》4.0.0 RaidPoint 实证与 N1/N2 实施记录
 
+> **2026-10-20 重要勘误（覆盖本页旧结论）**：PokéLDN 4.0.0 donor 的完整奖励记录从 `RaidPoint+0xE0` / `Bootstrap+0x798` 开始，四列为 `[condition_or_source, item_id, quantity, reserved]`；`+0xE4/+0x79C` 只是记录内部的道具 ID，不是完整行起点。以下旧版 `+0xE4 记录起点 / [Item,Quantity,Rare,Subject]` 的叙述**仅作为历史错误调查记录保存，不可作为写入指导**。最新版布局、subject0/5 和验证限制统一参见 [POKELDN_SUBJECT0_RETAIL_LAYOUT_TEST.md](POKELDN_SUBJECT0_RETAIL_LAYOUT_TEST.md)。
+
+
 > 2026-10-20 · 证据层级：紫 ELF/上游 donor 字节 **已静态核验**；Native/WinForms **CI 编译可测**；Switch 运行与网络参与者 **尚未验证**。
 > **旧文档以 RaidPoint+0xE0 为行起始以及 Marker/Item/Quantity/Reserved 的解释已经证伪，不能用于改写游戏奖励！**
 
