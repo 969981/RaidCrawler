@@ -73,7 +73,7 @@ public class HostProbeMailboxTests
         Array.Copy(bytes, 0, bytes, HostProbeMailbox.RegionLength, HostProbeMailbox.RegionLength);
         var cap = HostProbeMailbox.ParseCapture(bytes);
         Assert.True(cap.Compare().Matches);
-        cap.BootstrapRows[0] = 5;
+        cap.BootstrapRows[12] = 5;
         var mismatch = cap.Compare();
         Assert.False(mismatch.Matches);
         Assert.Equal(0, mismatch.FirstMismatchRow);
