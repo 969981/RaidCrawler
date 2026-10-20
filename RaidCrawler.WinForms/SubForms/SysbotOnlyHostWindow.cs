@@ -11,6 +11,7 @@ public sealed class SysbotOnlyHostWindow : Form
     private readonly TextBox _address = new();
     private readonly CheckBox _ownerMode = new();
     private readonly Button _inspect = new();
+    private readonly Button _scan = new();
     private readonly TextBox _results = new();
     private bool _running;
 
@@ -41,6 +42,10 @@ public sealed class SysbotOnlyHostWindow : Form
         _ownerMode.Checked = true;
         _ownerMode.Location = new Point(14, 107);
         _ownerMode.Size = new Size(455, 25);
+        _scan.Text = "只读扫描堆前 1 MiB";
+        _scan.Location = new Point(488, 105);
+        _scan.Size = new Size(180, 28);
+        _scan.Click += async (_, _) => await ScanAsync();
         _inspect.Text = "只读验证 / 离线预览";
         _inspect.Location = new Point(487, 64);
         _inspect.Size = new Size(181, 31);
@@ -52,7 +57,7 @@ public sealed class SysbotOnlyHostWindow : Form
         _results.Location = new Point(14, 145);
         _results.Size = new Size(654, 300);
         _results.Font = new Font(FontFamily.GenericMonospace, 9);
-        Controls.AddRange([information, label, _address, _ownerMode, _inspect, _results]);
+        Controls.AddRange([information, label, _address, _ownerMode, _inspect, _scan, _results]);
         FormClosed += (_, _) => _close.Cancel();
 
         Log("方案 A 仅读取当前进程的候选 RaidPoint。");
@@ -67,11 +72,48 @@ public sealed class SysbotOnlyHostWindow : Form
             _results.AppendText(message + Environment.NewLine);
     }
 
+    private async Task ScanAsync()
+    {
+        if (_running) return;
+        if (MessageBox.Show(this,
+            "这会通过现有 sys-botbase 只读检查堆起始处最多 1 MiB 内存，可能较慢，" +
+            "且只能找到候选副本，不能确认是当前发送对象。请勿在正在开战时执行。是否继续？",
+            "方案 A：只读扫描确认", MessageBoxButtons.YesNo,
+            MessageBoxIcon.Information) != DialogResult.Yes)
+            return;
+        _running = true;
+        _inspect.Enabled = false;
+        _scan.Enabled = false;
+        try
+        {
+            var candidates = await _inspector.ScanHeapStartAsync(1, _close.Token);
+            Log($"只读扫描结束，发现 {candidates.Count} 个符合布局的候选副本。");
+            foreach (var result in candidates)
+                Log($"  0x{result.Address:X} / {result.Name} / 原奖励行 {result.OriginalRows}：仅候选，未确认本局使用。");
+            if (candidates.Count == 1)
+            {
+                _address.Text = $"0x{candidates[0].Address:X}";
+                _ownerMode.Checked = false;
+                Log("已填写唯一候选地址；请再点击只读验证。");
+            }
+            if (candidates.Count == 0)
+                Log("本区域没有发现符合布局的对象，不代表游戏内不存在 RaidPoint。");
+        }
+        catch (OperationCanceledException) when (_close.IsCancellationRequested) { }
+        catch (Exception ex) { Log("扫描未完成：" + ex.Message); }
+        finally
+        {
+            _running = false;
+            if (!IsDisposed) _inspect.Enabled = _scan.Enabled = true;
+        }
+    }
+
     private async Task InspectAsync()
     {
         if (_running) return;
         _running = true;
         _inspect.Enabled = false;
+        _scan.Enabled = false;
         try
         {
             ulong address = HostProbeMailbox.ParseAddress(_address.Text);
@@ -93,7 +135,7 @@ public sealed class SysbotOnlyHostWindow : Form
         finally
         {
             _running = false;
-            if (!IsDisposed) _inspect.Enabled = true;
+            if (!IsDisposed) _inspect.Enabled = _scan.Enabled = true;
         }
     }
 }
