@@ -11,10 +11,11 @@ public sealed partial class RaidRewardDiagnosticForm
     private byte[]? remoteRewardTemplate;
     private ulong? remoteMainBase;
     private bool remoteBusy;
+    private bool legacySerializerExperimentUnlocked;
     private readonly Label hookStatusLabel = new()
     {
-        AutoSize = false, Width = 154, Height = 30,
-        Text = "Hook：检测中", TextAlign = ContentAlignment.MiddleLeft,
+        AutoSize = false, Width = 178, Height = 30,
+        Text = "旧网络 Hook：检测中", TextAlign = ContentAlignment.MiddleLeft,
         AutoEllipsis = true
     };
     private Button? armToggleButton;
@@ -42,16 +43,34 @@ public sealed partial class RaidRewardDiagnosticForm
             remoteHookButtons.Add(button);
             return button;
         }
-        var install = Add(primary, "安装 Hook");
-        armToggleButton = Add(primary, "启用 Hook");
-        var update = Add(primary, "应用新奖励");
+        // The old experiment OVERWRITES all 45 outbound network rows. It is
+        // incompatible with the new preserve-and-append contract, and has
+        // never been shown to affect solo Lua reward objects.
+        var unlockLegacy = Add(advanced, "解锁 Legacy 网络整表替换实验");
+        var install = Add(advanced, "Legacy：安装旧覆盖 Hook");
+        armToggleButton = Add(advanced, "Legacy：启用旧覆盖 Hook");
+        var update = Add(advanced, "Legacy：更新整表覆盖模板");
+        unlockLegacy.Click += (_, _) =>
+        {
+            if (legacySerializerExperimentUnlocked) return;
+            if (MessageBox.Show(this,
+                "这是旧版 LDN 出站45槽整表覆盖实验，并非晶耀护符奖励追加。\\r\\n" +
+                "它可能清除原版固定／随机奖励；单人是否命中未经证明。\\r\\n" +
+                "只有在已备份存档且明确需要研究旧版网络路径时才解锁。是否继续？",
+                "解锁 Legacy 实验", MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning) != DialogResult.Yes) return;
+            legacySerializerExperimentUnlocked = true;
+            unlockLegacy.Text = "Legacy 实验已解锁（仅本窗口）";
+            Append("legacy-experiment-unlocked",
+                "仅本窗口允许手工执行旧版网络整表替换；新晶耀追加模式始终不会调用旧写入接口。");
+        };
         var status = Add(advanced, "刷新 Hook 状态");
         var remove = Add(advanced, "卸载入口");
 
         status.Click += async (_, _) => await RunRemoteActionAsync("查询状态",
             async (manager, ct) => Describe(await manager.StatusAsync(ct)), false);
         install.Click += async (_, _) => await RunRemoteActionAsync("安装",
-            async (manager, ct) => Describe(await manager.InstallAsync(remoteRewardTemplate!, ct)), true);
+            async (manager, ct) => Describe(await manager.InstallAsync(remoteRewardTemplate!, ct)), true, requiresLegacyUnlock:true);
         armToggleButton.Click += async (_, _) =>
             await RunRemoteActionAsync("切换 Hook 启停", async (manager, ct) =>
             {
@@ -63,14 +82,14 @@ public sealed partial class RaidRewardDiagnosticForm
                     _ => throw new InvalidOperationException("请先检查或安装 Hook；当前状态不能切换。")
                 };
                 return Describe(await manager.SetEnabledAsync(enable, ct));
-            }, true);
+            }, true, requiresLegacyUnlock:true);
         update.Click += async (_, _) => await RunRemoteActionAsync("无重启应用奖励",
             async (manager, ct) =>
             {
                 var updated = await manager.UpdateAsync(remoteRewardTemplate!, ct);
                 return $"epoch {updated.OldEpoch} → {updated.NewEpoch}; " +
                     $"原状态启用={updated.Armed}; {updated.Detail}";
-            }, true);
+            }, true, requiresLegacyUnlock:true);
         remove.Click += async (_, _) => await RunRemoteActionAsync("卸载",
             async (manager, ct) => Describe(await manager.UninstallAsync(ct)), true);
     }
@@ -92,7 +111,7 @@ public sealed partial class RaidRewardDiagnosticForm
         {
             armToggleButton.Text = state.Installation ==
                 RemoteViolet400HookInstaller.InstallState.InstalledArmed
-                ? "停用 Hook" : "启用 Hook";
+                ? "Legacy：停用旧覆盖 Hook" : "Legacy：启用旧覆盖 Hook";
         }
     }
 
@@ -142,8 +161,14 @@ public sealed partial class RaidRewardDiagnosticForm
 
     private async Task RunRemoteActionAsync(string action,
         Func<RemoteViolet400HookInstaller, CancellationToken, Task<string>> operation,
-        bool writes)
+        bool writes, bool requiresLegacyUnlock = false)
     {
+        if (requiresLegacyUnlock && !legacySerializerExperimentUnlocked)
+        {
+            Append("legacy-experiment-blocked",
+                "晶耀追加配置不会执行旧45槽整表覆盖；如需研究旧版网络实验，请在高级工具明确解锁 Legacy。");
+            return;
+        }
         if (remoteBusy)
             return;
         if (remoteController is null)
