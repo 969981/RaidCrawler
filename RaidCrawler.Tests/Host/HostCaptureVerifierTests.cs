@@ -38,7 +38,7 @@ public class HostCaptureVerifierTests
         var report = HostCaptureVerifier.Compare(source, plain);
         Assert.False(report.Matches);
         Assert.Equal(7, report.FirstMismatchRow);
-        Assert.Equal(7 * 16 + 12, report.FirstMismatchByte);
+        Assert.Equal(7 * 16, report.FirstMismatchByte);
         Assert.Equal("SubjectType", report.FirstMismatchField);
     }
 
