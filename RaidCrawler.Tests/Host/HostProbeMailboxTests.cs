@@ -45,7 +45,7 @@ public class HostProbeMailboxTests
         b[0] ^= 1;
         Assert.Throws<InvalidDataException>(() => HostProbeMailbox.ParseHeader(b));
         b = MakeHeader();
-        BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(8), 2);
+        BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(8), 3);
         Assert.Throws<InvalidDataException>(() => HostProbeMailbox.ParseHeader(b));
         b = MakeHeader();
         BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(12), 0x500);
