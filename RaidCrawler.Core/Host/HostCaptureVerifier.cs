@@ -37,12 +37,17 @@ public static class HostCaptureVerifier
             break;
         }
 
-        string? field = firstMismatch < 0 ? null : (firstMismatch % RaidPointLayout.RewardRowLength) / 4 switch
+        int column = firstMismatch < 0
+            ? -1
+            : (firstMismatch % RaidPointLayout.RewardRowLength) / 4;
+        string? field = column switch
         {
+            -1 => null,
             0 => nameof(RewardRow.ItemId),
             1 => nameof(RewardRow.Quantity),
             2 => nameof(RewardRow.RareType),
-            _ => nameof(RewardRow.SubjectType),
+            3 => nameof(RewardRow.SubjectType),
+            _ => throw new InvalidOperationException("Invalid reward column."),
         };
 
         return new HostCaptureComparison(
