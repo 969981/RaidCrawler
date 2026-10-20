@@ -124,7 +124,7 @@ public partial class MainWindow : Form
         // Located beside Settings / Date Tools, so the WinForms designer is untouched.
         var hostProbeButton = new Button
         {
-            Text = "房主探针",
+            Text = "发包副本Hook",
             Name = "HostProbeButton",
             Location = new Point(222, 302),
             Size = new Size(103, 23),
@@ -140,14 +140,14 @@ public partial class MainWindow : Form
             using var form = new HostProbeWindow(ConnectionWrapper.Connection);
             form.ShowDialog(this);
         };
-        hostProbeButton.Text = "Native探针（需插件）";
+        hostProbeButton.Text = "发送副本Hook";
         hostProbeButton.Width = 136;
         Controls.Add(hostProbeButton);
 
         // True sys-botbase-only path (no NSO Hook, subsdk9, mailbox or SD file).
         var sysbotOnlyButton = new Button
         {
-            Text = "纯sys-botbase",
+            Text = "旧堆扫描（诊断）",
             Name = "SysbotOnlyHostButton",
             Location = new Point(368, 302),
             Size = new Size(116, 23),
