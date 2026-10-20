@@ -11,7 +11,7 @@ public class RewardAppendPlannerTests
     private static byte[] CreateSource(int count)
     {
         var data = new byte[RaidPointLayout.RaidPointLength];
-        data[RaidPointLayout.RewardTail] = 0xA5; // 0x3B0 is NOT reward 46.
+        data[RaidPointLayout.RewardTail] = 0xA5; // 0x3B4 is NOT reward 46.
         data[RaidPointLayout.SummaryStart] = 0x5A;
         for (int i = 0; i < count; i++)
             Put(data, i, new RewardRow(2, (uint)(i + 1), 0, 0));
@@ -23,12 +23,12 @@ public class RewardAppendPlannerTests
                               slot * RaidPointLayout.RewardRowLength, 16));
 
     [Fact]
-    public void DonorRecordsStartAtE0_WithItemAtE4()
+    public void DonorRecordsStartAtE4_WithItemAtE4()
     {
-        Assert.Equal(0xE0, RaidPointLayout.RewardsInRaidPoint);
+        Assert.Equal(0xE4, RaidPointLayout.RewardsInRaidPoint);
         Assert.Equal(0xE4, RaidPointLayout.ItemIdInRaidPoint);
-        Assert.Equal(0x798, RaidPointLayout.RewardsInBootstrap);
-        Assert.Equal(0x3B0, RaidPointLayout.RewardTail);
+        Assert.Equal(0x79C, RaidPointLayout.RewardsInBootstrap);
+        Assert.Equal(0x3B4, RaidPointLayout.RewardTail);
         Assert.Equal(45 * 16, RaidPointLayout.RewardsByteLength);
     }
 
@@ -139,23 +139,22 @@ public class RewardAppendPlannerTests
     }
 
     [Fact]
-    public void RetailDonorLittleEndianRecordHasSubjectAtZeroItemAtFourQuantityAtEight()
+    public void RetailDonorLittleEndianRecordHasItemAtZeroQuantityAtFourSubjectAtTwelve()
     {
         Span<byte> raw = stackalloc byte[16];
         var row = new RewardRow(0x12345678, 999, 0, 5);
         row.Write(raw);
-        Assert.Equal(new byte[] { 5, 0, 0, 0 }, raw[..4].ToArray());
-        Assert.Equal(new byte[] { 0x78, 0x56, 0x34, 0x12 }, raw.Slice(4, 4).ToArray());
-        Assert.Equal(new byte[] { 0xE7, 0x03, 0, 0 }, raw.Slice(8, 4).ToArray());
-        Assert.Equal(0u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(raw.Slice(12, 4)));
+        Assert.Equal(new byte[] { 0x78, 0x56, 0x34, 0x12 }, raw[..4].ToArray());
+        Assert.Equal(new byte[] { 0xE7, 0x03, 0, 0 }, raw.Slice(4, 4).ToArray());
+        Assert.Equal(0u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(raw.Slice(8, 4)));
+        Assert.Equal(5u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(raw.Slice(12, 4)));
         Assert.Equal(row, RewardRow.Read(raw));
     }
     [Fact]
-    public void DonorSourceFiveWithZeroItemIsNotMistakenForEmptyCapacity()
+    public void InvalidSubjectFiveWithoutItemIsNotMistakenForEmptyCapacity()
     {
         var data = CreateSource(20);
-        // The PokéLDN donor documents marker/source records whose item and
-        // quantity may be zero. Such rows MUST NOT be silently overwritten.
+        // An invalid partial row MUST NOT be treated as empty capacity.
         Put(data, 20, new RewardRow(0, 0, 0, 5));
         var plan = RewardAppendPlanner.Plan(data, [new RewardRow(15, 500, 0, 0)],
             Allowed, RewardAppendPlanner.AllPlayersSubject);
@@ -179,10 +178,10 @@ public class RewardAppendPlannerTests
         else Assert.True(plan.Accepted);
         byte[] slot = plan.CandidateRaidPoint.AsSpan(
             RaidPointLayout.RewardsInRaidPoint + 3 * 16, 16).ToArray();
-        Assert.Equal(subject, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(slot.AsSpan(0, 4)));
-        Assert.Equal(15u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(slot.AsSpan(4, 4)));
-        Assert.Equal(500u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(slot.AsSpan(8, 4)));
-        Assert.Equal(0u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(slot.AsSpan(12, 4)));
+        Assert.Equal(15u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(slot.AsSpan(0, 4)));
+        Assert.Equal(500u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(slot.AsSpan(4, 4)));
+        Assert.Equal(0u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(slot.AsSpan(8, 4)));
+        Assert.Equal(subject, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(slot.AsSpan(12, 4)));
     }
 
 }
