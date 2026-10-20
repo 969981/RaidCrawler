@@ -13,6 +13,7 @@ public sealed class SysbotOnlyRewardWriter(ISwitchConnectionAsync connection)
 {
     public const uint ExperimentalItem = 15; // Quick Ball only
     public const int MaxQuantity = 10;
+    public const int AllPlayersComparisonQuantity = 500;
     private readonly SysbotOnlyRaidPointInspector _inspector = new(connection);
     private readonly SvRaidLifecycleReader _lifecycle = new(connection);
     private readonly SemaphoreSlim _writeGate = new(1, 1);
@@ -23,11 +24,16 @@ public sealed class SysbotOnlyRewardWriter(ISwitchConnectionAsync connection)
     /// version 4.0.0, but the literal lobby offsets still carry 3.0.0 comments,
     /// so the lobby signal remains experimental.
     /// </summary>
+    public Task<HostPlanAWritePermit> PrepareAsync(
+        ulong ownerAddress, uint quantity, CancellationToken token) =>
+        PrepareAsync(ownerAddress, quantity, 5, token);
+
     public async Task<HostPlanAWritePermit> PrepareAsync(
-        ulong ownerAddress, uint quantity, CancellationToken token)
+        ulong ownerAddress, uint quantity, uint subject, CancellationToken token)
     {
-        if (quantity is 0 or > MaxQuantity)
-            throw new InvalidOperationException("目前仅支持先机球×1–10，且只能追加一行。");
+        if (!IsAllowedRequest(quantity, subject))
+            throw new InvalidOperationException(
+                "单行测试仅允许 subject=5：1–10球，或 subject=0：1–10球及先机球×500。");
 
         await CheckStateAsync(token).ConfigureAwait(false);
         var observed = await _inspector.InspectAsync(ownerAddress, true, token)
@@ -44,13 +50,13 @@ public sealed class SysbotOnlyRewardWriter(ISwitchConnectionAsync connection)
         if (!original.AsSpan().SequenceEqual(next))
             throw new InvalidOperationException("准备阶段的对象数据已发生变化；拒绝下发修改。");
 
-        var additions = new[] { new RewardRow(ExperimentalItem, quantity, 0, 5) };
-        var plan = RewardAppendPlanner.Plan(original, additions, id => id == ExperimentalItem);
+        var additions = new[] { new RewardRow(ExperimentalItem, quantity, 0, subject) };
+        var plan = RewardAppendPlanner.Plan(original, additions, id => id == ExperimentalItem, subject);
         if (!plan.Accepted)
             throw new InvalidOperationException($"内存追加计划未通过：{plan.Reason}");
 
         string audit = HostPlanAWriteAudit.Check(original, plan.CandidateRaidPoint,
-            plan.OriginalCount, ExperimentalItem, quantity);
+            plan.OriginalCount, ExperimentalItem, quantity, subject);
         if (audit != HostPlanAWriteAudit.Correct)
             throw new InvalidOperationException($"单行写入字节审计失败：{audit}");
 
@@ -62,7 +68,7 @@ public sealed class SysbotOnlyRewardWriter(ISwitchConnectionAsync connection)
         return new HostPlanAWritePermit(
             ownerAddress, raidPoint, observed.RaidPointName,
             DateTimeOffset.UtcNow, original, plan.CandidateRaidPoint,
-            plan.OriginalCount, slotOffset, ExperimentalItem, quantity,
+            plan.OriginalCount, slotOffset, ExperimentalItem, quantity, subject,
             Convert.ToHexString(SHA256.HashData(original)),
             "candidate-only; vtable identity + provisional lobby observation are NOT proof of active network serialization");
     }
@@ -77,19 +83,19 @@ public sealed class SysbotOnlyRewardWriter(ISwitchConnectionAsync connection)
             if (DateTimeOffset.UtcNow - permit.PreparedUtc > TimeSpan.FromSeconds(15))
                 throw new InvalidOperationException("预览凭证超过15秒，需要重新读取当前房间的对象。");
 
-            if (permit.ItemId != ExperimentalItem || permit.Quantity is 0 or > MaxQuantity ||
+            if (permit.ItemId != ExperimentalItem || !IsAllowedRequest(permit.Quantity, permit.SubjectType) ||
                 permit.OriginalRaidPoint.Length != RaidPointLayout.RaidPointLength ||
                 permit.PlannedRaidPoint.Length != RaidPointLayout.RaidPointLength ||
                 permit.RowOffset != RaidPointLayout.RewardsInRaidPoint + permit.OriginalRows * 16)
                 throw new InvalidOperationException("准备凭证参数不合法。");
 
             var plan = RewardAppendPlanner.Plan(permit.OriginalRaidPoint,
-                [new RewardRow(ExperimentalItem, permit.Quantity, 0, 5)],
-                id => id == ExperimentalItem);
+                [new RewardRow(ExperimentalItem, permit.Quantity, 0, permit.SubjectType)],
+                id => id == ExperimentalItem, permit.SubjectType);
             if (!plan.Accepted || plan.OriginalCount != permit.OriginalRows ||
                 !plan.CandidateRaidPoint.AsSpan().SequenceEqual(permit.PlannedRaidPoint) ||
                 HostPlanAWriteAudit.Check(permit.OriginalRaidPoint, permit.PlannedRaidPoint,
-                    permit.OriginalRows, ExperimentalItem, permit.Quantity) != HostPlanAWriteAudit.Correct)
+                    permit.OriginalRows, ExperimentalItem, permit.Quantity, permit.SubjectType) != HostPlanAWriteAudit.Correct)
                 throw new InvalidOperationException("离线追加计划或无损字节审计与准备时的原始对象不一致。");
 
             await CheckStateAsync(token).ConfigureAwait(false);
@@ -149,6 +155,10 @@ public sealed class SysbotOnlyRewardWriter(ISwitchConnectionAsync connection)
         finally { _writeGate.Release(); }
     }
 
+    private static bool IsAllowedRequest(uint quantity, uint subject) =>
+        subject == 5 ? quantity is >= 1 and <= MaxQuantity :
+        subject == 0 && (quantity is >= 1 and <= MaxQuantity || quantity == AllPlayersComparisonQuantity);
+
     internal async Task CheckStateAsync(CancellationToken token)
     {
         await _lifecycle.CheckViolet400Async(token).ConfigureAwait(false);
@@ -189,7 +199,7 @@ public sealed class SysbotOnlyRewardWriter(ISwitchConnectionAsync connection)
 public sealed record HostPlanAWritePermit(
     ulong OwnerAddress, ulong RaidPointAddress, string RaidPointName,
     DateTimeOffset PreparedUtc, byte[] OriginalRaidPoint, byte[] PlannedRaidPoint,
-    int OriginalRows, int RowOffset, uint ItemId, uint Quantity,
+    int OriginalRows, int RowOffset, uint ItemId, uint Quantity, uint SubjectType,
     string OriginalSha256, string EvidenceLimit);
 
 public sealed record HostPlanAWriteResult(
