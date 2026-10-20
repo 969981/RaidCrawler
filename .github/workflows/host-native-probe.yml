@@ -39,3 +39,10 @@ jobs:
           path: switch/host-probe/out/
           if-no-files-found: error
           retention-days: 7
+
+      - name: Compile opt-in N2 writer codepath (NO artifact, NO deployment)
+        if: success()
+        run: |
+          make -C switch/host-probe/.work/exlaunch clean
+          HOST_N2_EXPERIMENTAL=1 bash switch/host-probe/build.sh
+          echo "N2 opt-in C++ build syntax validated. This binary is NOT uploaded."
