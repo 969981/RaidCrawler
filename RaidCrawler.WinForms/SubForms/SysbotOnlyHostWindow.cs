@@ -42,7 +42,7 @@ public sealed class SysbotOnlyHostWindow : Form
         _ownerMode.Checked = true;
         _ownerMode.Location = new Point(14, 107);
         _ownerMode.Size = new Size(455, 25);
-        _scan.Text = "只读扫描堆前 1 MiB";
+        _scan.Text = "虚表定位（只读）";
         _scan.Location = new Point(488, 105);
         _scan.Size = new Size(180, 28);
         _scan.Click += async (_, _) => await ScanAsync();
@@ -76,8 +76,8 @@ public sealed class SysbotOnlyHostWindow : Form
     {
         if (_running) return;
         if (MessageBox.Show(this,
-            "这会通过现有 sys-botbase 只读检查堆起始处最多 1 MiB 内存，可能较慢，" +
-            "且只能找到候选副本，不能确认是当前发送对象。请勿在正在开战时执行。是否继续？",
+            "仅用现有 sys-botbase 扫描堆前 1 MiB，查找具有 ELF 三张虚表指针的房主序列化类实例。" +
+            "找到相符的对象也不能证明该对象属于当前房间。请在非开战时操作，是否继续？",
             "方案 A：只读扫描确认", MessageBoxButtons.YesNo,
             MessageBoxIcon.Information) != DialogResult.Yes)
             return;
@@ -86,18 +86,18 @@ public sealed class SysbotOnlyHostWindow : Form
         _scan.Enabled = false;
         try
         {
-            var candidates = await _inspector.ScanHeapStartAsync(1, _close.Token);
-            Log($"只读扫描结束，发现 {candidates.Count} 个符合布局的候选副本。");
+            var candidates = await _inspector.ScanSerializerObjectsAsync(1, _close.Token);
+            Log($"只读类型扫描结束，发现 {candidates.Count} 个虚表和RaidPoint同时匹配的候选对象。");
             foreach (var result in candidates)
-                Log($"  0x{result.Address:X} / {result.Name} / 原奖励行 {result.OriginalRows}：仅候选，未确认本局使用。");
+                Log($"  对象0x{result.OwnerAddress:X} RaidPoint0x{result.RaidPointAddress:X} / {result.Name} / 原奖励行{result.OriginalRows}：只确认对象类型，不证明正在发包。");
             if (candidates.Count == 1)
             {
-                _address.Text = $"0x{candidates[0].Address:X}";
-                _ownerMode.Checked = false;
-                Log("已填写唯一候选地址；请再点击只读验证。");
+                _address.Text = $"0x{candidates[0].OwnerAddress:X}";
+                _ownerMode.Checked = true;
+                Log("已填写唯一虚表匹配的对象地址；请再点击只读验证。它仍可能是未使用的旧对象。");
             }
             if (candidates.Count == 0)
-                Log("本区域没有发现符合布局的对象，不代表游戏内不存在 RaidPoint。");
+                Log("堆起始1 MiB没有匹配对象，不代表当前对象不存在（可能不在该区域或短暂存活）。");
         }
         catch (OperationCanceledException) when (_close.IsCancellationRequested) { }
         catch (Exception ex) { Log("扫描未完成：" + ex.Message); }
