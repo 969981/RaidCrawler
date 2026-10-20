@@ -65,8 +65,10 @@ Build ID expected: 709bfd66115298640155fcc4979dba151c7cc79a
 Atmosphere target: atmosphere/contents/${TITLE_ID}/exefs/subsdk9
 Companion NPDM: follow exlaunch's installation guidance; do not replace stock
 main.npdm without checking intended loader compatibility.
-SD opt-in: /raidcrawler/host-probe.enable
-Captured data: /raidcrawler/n1/*.source-rewards.bin and *.bootstrap-rewards.bin
-No reward or network writes. Gameplay process IS instrumented.
+Control: C# Host Probe window via the existing sys-botbase absolute read/write connection.
+Mailbox: locate runtime [RC-N1] mailbox=0x... debug log address after starting game.
+Protocol: RC protocol v1, header 0x40, mailbox 0x600, enable at +0x10.
+Default: disabled, no SD files, no second TCP listener.
+No game reward/network/save writes. Gameplay code IS instrumented.
 EOF
 echo "Build completed; artifacts: ${OUT}"
