@@ -1,0 +1,41 @@
+name: host N1 ARM64 probe (experimental)
+
+on:
+  push:
+    branches: [host]
+    paths:
+      - 'switch/host-probe/**'
+      - '.github/workflows/host-native-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-violet400-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    container:
+      image: devkitpro/devkita64:20260219
+    steps:
+      - name: Checkout RaidCrawler host branch
+        uses: actions/checkout@v4
+
+      - name: Check devkitA64 toolchain
+        run: |
+          test -f /opt/devkitpro/libnx/switch_rules
+          test -x /opt/devkitpro/devkitA64/bin/aarch64-none-elf-g++
+          git --version
+          make --version
+
+      - name: Build pinned exlaunch probe (no deploy)
+        run: bash switch/host-probe/build.sh
+
+      - name: Upload research-only native artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RaidCrawler-host-N1-Violet400-UNVERIFIED
+          path: switch/host-probe/out/
+          if-no-files-found: error
+          retention-days: 7
