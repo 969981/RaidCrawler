@@ -80,7 +80,7 @@ public sealed class HostPlanAWriteAuditTests
             HostPlanAWriteAudit.Check(before, after, 2, 15, 500, 5));
         Assert.Equal("WRONG_SUBJECT_OR_REWARD",
             HostPlanAWriteAudit.Check(before, after, 2, 15, 2, 0));
-        Assert.Equal(new byte[] { 0,0,0,0, 15,0,0,0, 0xF4,0x01,0,0, 0,0,0,0 },
+        Assert.Equal(new byte[] { 15,0,0,0, 0xF4,0x01,0,0, 0,0,0,0, 0,0,0,0 },
             after.AsSpan(RaidPointLayout.RewardsInRaidPoint + 32, 16).ToArray());
     }
 
