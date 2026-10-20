@@ -102,8 +102,11 @@ public sealed partial class RaidRewardDiagnosticForm
                         new { source = "WINDOW_CONFIG_ONLY", rows = tableViewerSlots.Count(x => x is not null),
                               configuredRows = tableViewerSlots.Select((row, index) => new { row, index })
                                   .Where(x => x.row is not null)
-                                  .Select(x => new { slot = x.index, x.row!.ItemId,
-                                      x.row.Quantity, x.row.Rare, x.row.Subject }).ToArray(),
+                                  .Select(x => new { slot = x.index,
+                                      ItemId = x.row!.ItemId,
+                                      Quantity = x.row.Quantity,
+                                      Rare = x.row.Rare,
+                                      Subject = x.row.Subject }).ToArray(),
                               currentRaidRewardsCaptured = false });
                 }
                 else
