@@ -1,52 +1,40 @@
-> **更新提示（2026-10-20）**：本实验模块已升级到 RAM mailbox v2（`RCHMB02\0`），新增 C# 自动寻址 + N2 `Subject=5` 预览。原文描述 v1 和手工读取 Debug 地址的流程已过时；以 [最新 ELF、定位及 N2 开发记录](../../docs/host/ELF_REVALIDATION_N1_N2.md) 为准。普通 CI 原生二进制仍是只读构建，测试机需独立验收。
+# RaidCrawler / Switch 房主 N1-N2 探针（《紫》4.0.0）
 
-# N1 RAM mailbox: RaidCrawler C# + sys-botbase
+> **状态：工程编译与离线验证通过，尚未实机加载和参与者领取验证。** 普通公开 CI 只打包只读 Native；实验写入必须手动明确编译，且不自动上传。
 
-**Scope (2026-10-20):** Research only. Native ARM64 build and Windows tests are separate from real Switch validation. Supports Pokémon Violet 4.0.0 ONLY, title ID 01008F6008C5E000. Static research Build ID 709bfd66115298640155fcc4979dba151c7cc79a still requires independent console verification. Inline Hook installation patches code; gameplay rewards/network/save are read-only.
+## 下载与部署
 
-## Use
+在 [host Windows Actions](https://github.com/969981/RaidCrawler/actions/workflows/host.yml) 选择最新成功任务，下载 **RaidCrawler-host-experimental**。此构建包含：
 
-1. Install the experimental subsdk9 native probe on an authorized, recoverable test Switch with Atmosphère and sys-botbase. This is still required ONCE for each native-module build; no sys-botbase firmware modification is necessary.
-2. Boot Violet 4.0.0; native module defaults to capture DISABLED. Its debug output contains **[RC-N1] mailbox=0x... protocol=1 size=0x600**. Copy the actual runtime address, not an address from another boot. There is currently **no automatic subsdk9 global-address discovery via the standard sys-botbase API**, so access to that initial debug line is necessary.
-3. Open RaidCrawler, connect to Switch normally via Wi-Fi or USB, click the new **Host Probe** button next to Settings/Date Tools, paste the mailbox address, click **Read status**. A valid probe shows hook=1.
-4. Click **Start capture**; C# writes little-endian 1 to mailbox absolute address +0x10 via sys-botbase. Begin a real host local raid. Clicking **Read / compare** will read two 720-byte reward regions and show source and bootstrap SHA-256 equality. Press **Stop capture** to write zero to the enable flag.
-5. This does not modify raid rewards and does not claim receiver receipt or NSO compatibility. Do not concurrently run background RaidCrawler scanning on the same connection while probing.
+- Windows RaidCrawler 客户端和中文“房主探针”窗口
+- 与同一 GitHub commit 生成的 `mailbox-locator.json`（位于程序同目录）
+- `Native/subsdk9`、`Native/main.npdm`、哈希与安装提示（该 Native 仅用于只读与预览）
 
-## Mailbox v1, 0x600 bytes total, all little-endian
+实际测试设备必须可恢复、授权使用，并核对《紫》Title ID `01008F6008C5E000`、版本 `4.0.0` 与 Build ID `709bfd66115298640155fcc4979dba151c7cc79a`。需根据 Atmosphère/exlaunch 自身部署说明安装 Native；不要盲目覆盖已有同名插件。无需修改 sys-botbase 固件，也不添加第二条通信端口。**本项目不会通过 CI 自动向 Switch 部署文件。**
 
-| Offset | Bytes | Description |
-|---:|---:|---|
-| +0x00 | 8 | RCHMB01 followed by NUL |
-| +0x08 | 4 | version = 1 |
-| +0x0C | 4 | size = 0x600 |
-| +0x10 | 4 | enabled (0 or 1) - the ONLY writable control field exposed to C# |
-| +0x14 | 4 | status: 0 not ready, 1 hook installed, 2 fingerprint mismatch |
-| +0x18 | 4 | capture count |
-| +0x1C | 4 | dropped count |
-| +0x20 | 4 | generation, odd while being written |
-| +0x24 | 4 | reserved |
-| +0x28 | 8 | last capture tick |
-| +0x30 | 16 | reserved |
-| +0x40 | 720 | source reward 45 rows |
-| +0x310 | 720 | decoded bootstrap reward 45 rows |
-| +0x5E0 | 32 | reserved |
+## C# 只通过 sys-botbase 操作
 
-Native callback copies both regions without SD, IO, or network. C# reads header, arrays, header and rejects if count/generation differ. C++ static_assert and C# tests check offsets. This guards against torn captures but NOT against incorrect native pointer assumptions.
+1. 打开 RaidCrawler，连接 Switch，点击主窗口“房主探针”。
+2. 点击 **自动定位**。C# 通过 `GetMainNsoBaseAsync`、原版 Hook 跳板和同次构建的定位清单查找内存邮箱。若无对应文件或指令不匹配则拒绝。调试时仍可手动输入本次启动日志中的地址。
+3. 点击 **读取状态**：期望 Hook 状态=1，普通 Native 的“写入能力”=否；然后点击 **开始捕获**。
+4. 真正的房主进行一次太晶团体战后，点击 **读取并比较**；核对捕获次数增长、原版两份 720B 是否完全一致。
+5. 可以点 **预览 Subject=5**，设置先机球 ID15 数量1–10。下一次 Bootstrap 的返回码 10 表示当前布局允许安排单行、但没有实际改写。
+6. 普通 CI 的 **试验追加** 因原生写入能力被禁用，会安全拒绝；停止捕获同时清空请求模式。
 
-## Files
+## 手动编译的单行实验分支（不上传）
 
-- Native code: [source/program/main.cpp](source/program/main.cpp)
-- Native build: [build.sh](build.sh); [ARM64 CI](https://github.com/969981/RaidCrawler/actions/workflows/host-native-probe.yml)
-- C# mailbox protocol: [HostProbeMailbox.cs](../../RaidCrawler.Core/Host/HostProbeMailbox.cs)
-- C# UI: [HostProbeWindow.cs](../../RaidCrawler.WinForms/SubForms/HostProbeWindow.cs)
-- Tests: [HostProbeMailboxTests.cs](../../RaidCrawler.Tests/Host/HostProbeMailboxTests.cs)
+只有经过 N1 真实房主的完整只读验收后才适合考虑。命令：
 
-## Limitations and safeguards
+```bash
+HOST_N2_EXPERIMENTAL=1 bash switch/host-probe/build.sh
+```
 
-- Native static 12-word opcode fingerprint must match Violet 4.0.0. It DOES NOT query the actual NSO Build ID; manual verification remains essential.
-- Native game pointer offsets x20+0x138 and x23+0x798 are based on audited static instructions and donor data. Failure to prove their live validity can crash the process; build success is not real-console proof.
-- The address shown in debug logs changes with ASLR. It is not a persistent fixed main offset. Do not blindly memory-scan all RAM, reuse an old address, or assume main NSO base equals subsdk9 base.
-- Captures only the most recent pair, and the capture can be overwritten on another hook hit. A single pair matching establishes only two input buffers match during that callback, not a verified end-to-end network chain.
-- The default sys-botbase connector does not support arbitrary custom commands to change the game's outgoing packets. Only +0x10 mailbox enable/disable is implemented; NO reward injection or custom pack sending.
-- Other C# routines share the same sys-botbase connection; concurrent reads should be avoided pending a shared IO scheduler.
+必须将 **同一次手动编译** 的 `out/subsdk9` 和 `out/mailbox-locator.json` 一起替换，以避免 ASLR 清单与 Native 回调不匹配。Native 只支持在原版 memcpy 后、压缩前，对输出 Bootstrap 第一条空行追加 **先机球 ×1–10、Subject=5**；原版奖励必须字节级保持不变。N2 的请求只尝试一次，即使失败也会自动解除武装。
 
+Native 返回码 **20 只代表发送前的明文缓冲已修改**；并不能证明 Pia 网络传输、参与者筛选、背包入账、保存持久化或 NSO 官方互联网房间有效。
+
+## 当前内存邮箱 ABI
+
+邮箱大小为 `0x600` 字节，版本 v2，Magic `RCHMB02\0`。`+0x10` 捕获开关，`+0x24` Native 写入能力，`+0x40` 原始奖励 720B，`+0x310` 发送前明文奖励 720B，`+0x5E0` N2 模式，`+0x5E4` 起 16B 奖励请求，`+0x5F4/+0x5F8/+0x5FC` 返回码/追加次数/原行数。C# 读两份奖励及 N2 结果时检查捕获的 generation 与 count 不变，拒绝跨局拼接的数据。
+
+完整结构、ELF 地址、donor 复核和实机验收矩阵参见 [ELF_REVALIDATION_N1_N2.md](../../docs/host/ELF_REVALIDATION_N1_N2.md)。**尚未取得《朱》的 4.0.0 ELF，现有探针严禁用于《朱》。**
