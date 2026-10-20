@@ -1,3 +1,5 @@
+> **更新提示（2026-10-20）**：本实验模块已升级到 RAM mailbox v2（`RCHMB02\0`），新增 C# 自动寻址 + N2 `Subject=5` 预览。原文描述 v1 和手工读取 Debug 地址的流程已过时；以 [最新 ELF、定位及 N2 开发记录](../../docs/host/ELF_REVALIDATION_N1_N2.md) 为准。普通 CI 原生二进制仍是只读构建，测试机需独立验收。
+
 # N1 RAM mailbox: RaidCrawler C# + sys-botbase
 
 **Scope (2026-10-20):** Research only. Native ARM64 build and Windows tests are separate from real Switch validation. Supports Pokémon Violet 4.0.0 ONLY, title ID 01008F6008C5E000. Static research Build ID 709bfd66115298640155fcc4979dba151c7cc79a still requires independent console verification. Inline Hook installation patches code; gameplay rewards/network/save are read-only.
