@@ -7,6 +7,7 @@ namespace RaidCrawler.WinForms.SubForms;
 public sealed class SysbotOnlyHostWindow : Form
 {
     private readonly SysbotOnlyRaidPointInspector _inspector;
+    private readonly HostRaidPointAutoLocator _autoLocator;
     private readonly CancellationTokenSource _close = new();
     private readonly TextBox _address = new();
     private readonly CheckBox _ownerMode = new();
@@ -22,6 +23,7 @@ public sealed class SysbotOnlyHostWindow : Form
     {
         _connection = connection;
         _inspector = new SysbotOnlyRaidPointInspector(connection);
+        _autoLocator = new HostRaidPointAutoLocator(connection);
         Text = "方案 A：纯 sys-botbase 房主 RaidPoint 诊断";
         ClientSize = new Size(690, 570);
         StartPosition = FormStartPosition.CenterParent;
