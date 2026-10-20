@@ -133,4 +133,61 @@ public sealed class ScreenshotRewardPresetTests
         Assert.Equal("TARGET_SLOTS_NOT_EMPTY",
             ScreenshotRewardPreset.Audit(original, planned.CandidateRaidPoint, 20));
     }
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(5u)]
+    public void DonorAccurateRecipientsUseFirstU32AndPreserveExistingRewards(uint subject)
+    {
+        byte[] original = Source(21);
+        byte[] baseline = original.ToArray();
+        var result = ScreenshotRewardPreset.Plan(original, subject);
+        Assert.True(result.Accepted);
+        Assert.Equal(20, result.AddedCount);
+        Assert.Equal("EXACT_20_ROWS_ONLY",
+            ScreenshotRewardPreset.Audit(original, result.CandidateRaidPoint, 21, subject));
+        Assert.Equal(baseline, original);
+        int offset = RaidPointLayout.RewardsInRaidPoint + 21 * 16;
+        for (int i = 0; i < 20; i++)
+        {
+            var bytes = result.CandidateRaidPoint.AsSpan(offset + i * 16, 16);
+            Assert.Equal(subject,
+                System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes[..4]));
+            Assert.Equal(ScreenshotIds[i],
+                System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes.Slice(4, 4)));
+            Assert.Equal(999u,
+                System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes.Slice(8, 4)));
+            Assert.Equal(0u,
+                System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes.Slice(12, 4)));
+        }
+    }
+
+    [Fact]
+    public void WrongSubjectOrUnsupportedSubjectCannotPassTheByteAudit()
+    {
+        var original = Source(25);
+        var everyone = ScreenshotRewardPreset.Plan(original, 0);
+        var charm = ScreenshotRewardPreset.Plan(original, 5);
+        Assert.True(everyone.Accepted);
+        Assert.True(charm.Accepted);
+        Assert.NotEqual(everyone.CandidateRaidPoint, charm.CandidateRaidPoint);
+        Assert.Equal("PRESET_ROW_MISMATCH_0",
+            ScreenshotRewardPreset.Audit(original, everyone.CandidateRaidPoint, 25, 5));
+        Assert.Equal("PRESET_ROW_MISMATCH_0",
+            ScreenshotRewardPreset.Audit(original, charm.CandidateRaidPoint, 25, 0));
+        Assert.Equal("UNSUPPORTED_SUBJECT",
+            ScreenshotRewardPreset.Plan(original, 2).Reason);
+    }
+
+    [Fact]
+    public void RetailDonorLayoutPlacesSourceAt798AndItemAt79C()
+    {
+        Assert.Equal(0xE0, RaidPointLayout.RewardsInRaidPoint);
+        Assert.Equal(0x798, RaidPointLayout.RewardsInBootstrap);
+        Assert.Equal(0xE4, RaidPointLayout.ItemIdInRaidPoint);
+        var row = new RewardRow(1128, 1, 0, 0);
+        byte[] bytes = new byte[16];
+        row.Write(bytes);
+        Assert.Equal(new byte[] { 0,0,0,0, 0x68,0x04,0,0, 1,0,0,0, 0,0,0,0 }, bytes);
+    }
+
 }
