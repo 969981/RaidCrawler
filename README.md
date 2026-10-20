@@ -1,3 +1,5 @@
+> **纯 sys-botbase 方案 A（无需 Switch 额外插件）**：默认 Windows 构建现只发布 `RaidCrawler-host-sysbot-only`，不会携带 `subsdk9` 或 `main.npdm`。C# 主窗口的“纯sys-botbase”用于只读调查真实房主 RaidPoint；尚未证实稳定当前对象指针，**没有开放实机奖励修改**。使用方法与 GO/NO-GO 见 [方案 A 技术说明](docs/host/PLAN_A_SYSBOT_ONLY.md)。Native 探针是另一个可选研究分支，用户无需安装。
+
 # RaidCrawler
 
 > **简体中文版（host 分支）**：已汉化主界面、设置、筛选、奖励、太晶坑资料和 Host Probe。说明与下载方式见 [简体中文使用说明](docs/zh-CN/README.md)；[查看 host 分支 Windows 构建](https://github.com/969981/RaidCrawler/actions/workflows/host.yml)。该版本为实验分支，非 upstream/main 正式发布。
