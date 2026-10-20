@@ -116,20 +116,16 @@ public sealed class SysbotOnlyHostWindow : Form
         };
         var presetButton = new Button
         {
-            Text = "截图奖励20种×999（实验）",
+            Text = "默认25种×999（自定义28）",
             Location = new Point(260, 186),
             Size = new Size(253, 34)
         };
         presetButton.Click += (_, _) =>
         {
-            if (_running)
-            {
-                Log("请等待只读检索结束，再打开20种奖励预设。");
-                return;
-            }
-            var owner = _ownerMode.Checked ? _address.Text : "";
-            using var preset = new SysbotOnlyScreenshotPresetWindow(_connection, owner);
+            using var preset = new HostRewardPresetWindow();
             preset.ShowDialog(this);
+            Log("已打开/保存额外奖励预设；25种×999为默认，最多可编辑28种。" +
+                " 仅保存PC设置；该窗口不执行候选RAM写入，也不代表Native支持批量发奖。");
         };
         var quick500PresetButton = new Button
         {
