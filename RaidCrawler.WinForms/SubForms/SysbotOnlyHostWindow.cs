@@ -30,8 +30,8 @@ public sealed class SysbotOnlyHostWindow : Form
 
         var information = new Label
         {
-            Text = "不需要 subsdk9 或额外插件；只读检查内存候选地址，不修改游戏。" +
-                   "当前尚未证明能自动定位本局房主对象。",
+            Text = "无需安装额外 Switch 插件。定位默认只读；写入需进入独立实验窗口并二次确认。" +
+                   " 尚未证明候选就是本局真实发包对象。",
             Location = new Point(14, 12), Size = new Size(654, 42)
         };
         var label = new Label
