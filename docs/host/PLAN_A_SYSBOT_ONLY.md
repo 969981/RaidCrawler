@@ -1,5 +1,8 @@
 # 方案 A：仅用 sys-botbase 的真实房主 RaidPoint 直接内存路线
 
+> **2026-10-20 重要勘误（覆盖本页旧结论）**：PokéLDN 4.0.0 donor 的完整奖励记录从 `RaidPoint+0xE0` / `Bootstrap+0x798` 开始，四列为 `[condition_or_source, item_id, quantity, reserved]`；`+0xE4/+0x79C` 只是记录内部的道具 ID，不是完整行起点。以下旧版 `+0xE4 记录起点 / [Item,Quantity,Rare,Subject]` 的叙述**仅作为历史错误调查记录保存，不可作为写入指导**。最新版布局、subject0/5 和验证限制统一参见 [POKELDN_SUBJECT0_RETAIL_LAYOUT_TEST.md](POKELDN_SUBJECT0_RETAIL_LAYOUT_TEST.md)。
+
+
 > **2026-10-20 当前结论：纯 sys-botbase 读内存诊断已实现；尚未证明可得到“当前房主真正用于下一次序列化”的稳定指针。没有任何实机发奖写入。方案 B 暂不开发。**
 >
 > 本路线不安装 `subsdk9`、`main.npdm`、任何 exlaunch 插件，不启用 Hook，也不需要 `mailbox-locator.json`。仅使用原有 `ISwitchConnectionAsync` 的 `GetTitleID`、`GetGameInfo("version")`、`ReadBytesMainAsync`、`ReadBytesAbsoluteAsync` 与 `GetHeapBaseAsync`。
