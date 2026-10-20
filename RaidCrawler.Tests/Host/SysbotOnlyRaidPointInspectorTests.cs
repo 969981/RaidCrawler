@@ -64,4 +64,35 @@ public sealed class SysbotOnlyRaidPointInspectorTests
         Assert.Throws<InvalidDataException>(() =>
             SysbotOnlyRaidPointInspector.GetRaidPointName(new byte[12]));
     }
+    [Fact]
+    public void SerializingClassIsVerifiedByThreeVTablePointers()
+    {
+        const ulong mainBase = 0x710000000UL;
+        var header = new byte[0x30];
+        BinaryPrimitives.WriteUInt64LittleEndian(header.AsSpan(0),
+            mainBase + SysbotOnlyRaidPointInspector.SerializerVTableRva);
+        BinaryPrimitives.WriteUInt64LittleEndian(header.AsSpan(0x20),
+            mainBase + SysbotOnlyRaidPointInspector.SecondaryVTableRva);
+        BinaryPrimitives.WriteUInt64LittleEndian(header.AsSpan(0x28),
+            mainBase + SysbotOnlyRaidPointInspector.TertiaryVTableRva);
+        Assert.True(SysbotOnlyRaidPointInspector.MatchesSerializerType(header, mainBase));
+
+        // String-only copies of RaidPoint do not have this class identity.
+        header[0x28]++;
+        Assert.False(SysbotOnlyRaidPointInspector.MatchesSerializerType(header, mainBase));
+        Assert.False(SysbotOnlyRaidPointInspector.MatchesSerializerType(new byte[16], mainBase));
+    }
+
+    [Fact]
+    public void VTableSlotMatchesExactElfRelocation()
+    {
+        Assert.Equal(0x4459278UL, SysbotOnlyRaidPointInspector.SerializerVTableRva);
+        Assert.Equal(0x44592E0UL, SysbotOnlyRaidPointInspector.SerializerEntrySlotRva);
+        Assert.Equal(0x68, SysbotOnlyRaidPointInspector.SerializerVirtualSlotOffset);
+        Assert.Equal(
+            SysbotOnlyRaidPointInspector.SerializerEntrySlotRva,
+            SysbotOnlyRaidPointInspector.SerializerVTableRva +
+            (ulong)SysbotOnlyRaidPointInspector.SerializerVirtualSlotOffset);
+    }
+
 }
