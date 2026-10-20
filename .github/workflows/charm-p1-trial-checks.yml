@@ -1,0 +1,43 @@
+name: Charm P1 isolated offline trial
+on:
+  push:
+    branches: [benefit]
+    paths:
+      - "tools/research/prepare_violet400_charm_trial.py"
+      - "tools/research/test_prepare_violet400_charm_trial.py"
+      - ".github/workflows/charm-p1-trial-checks.yml"
+  pull_request:
+    paths:
+      - "tools/research/prepare_violet400_charm_trial.py"
+      - "tools/research/test_prepare_violet400_charm_trial.py"
+      - ".github/workflows/charm-p1-trial-checks.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run isolated SHA and non-overwrite contract tests
+        run: python -m unittest discover -s tools/research -p "test_prepare_violet400_charm_trial.py" -v
+      - name: Stage one row and assert no runtime hook is claimed
+        run: |
+          python tools/research/prepare_violet400_charm_trial.py --out-dir "$RUNNER_TEMP/charm-p1"
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          import os
+          root = Path(os.environ["RUNNER_TEMP"]) / "charm-p1"
+          row = json.loads((root / "p1-single-charm-bonus.json").read_text())
+          report = json.loads((root / "p1-trial-manifest.json").read_text())
+          assert row["Items"] == [{"ItemId": 492, "Quantity": 1}]
+          assert report["TrialRewardRow"]["subjectType"] == 5
+          assert report["HookInstalled"] is False
+          assert report["RuntimeVerified"] is False
+          print("OFFLINE_ONLY_PASS")
+          PY
