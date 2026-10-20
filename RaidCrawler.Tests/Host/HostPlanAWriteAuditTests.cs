@@ -67,4 +67,21 @@ public sealed class HostPlanAWriteAuditTests
         Assert.Equal("INVALID_RAIDPOINT_LENGTH",
             HostPlanAWriteAudit.Check(new byte[10], after, 2, 15, 2));
     }
+    [Fact]
+    public void QuickBall500SubjectZeroMatchesDonorInspiredSingleRow()
+    {
+        var (before, _) = Example();
+        var after = before.ToArray();
+        var entry = new RewardRow(15, 500, 0, 0);
+        entry.Write(after.AsSpan(RaidPointLayout.RewardsInRaidPoint + 32, 16));
+        Assert.Equal(HostPlanAWriteAudit.Correct,
+            HostPlanAWriteAudit.Check(before, after, 2, 15, 500, 0));
+        Assert.Equal("ITEM_OR_QUANTITY_NOT_ALLOWED",
+            HostPlanAWriteAudit.Check(before, after, 2, 15, 500, 5));
+        Assert.Equal("WRONG_SUBJECT_OR_REWARD",
+            HostPlanAWriteAudit.Check(before, after, 2, 15, 2, 0));
+        Assert.Equal(new byte[] { 0,0,0,0, 15,0,0,0, 0xF4,0x01,0,0, 0,0,0,0 },
+            after.AsSpan(RaidPointLayout.RewardsInRaidPoint + 32, 16).ToArray());
+    }
+
 }
