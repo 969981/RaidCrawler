@@ -3,7 +3,11 @@
     <Platform Name="Any CPU" />
     <Platform Name="x64" />
   </Configurations>
+  <Project Path="SysBot.Base/SysBot.Base.csproj">
+    <Platform Project="x64" />
+  </Project>
   <Project Path="RaidCrawler.Core/RaidCrawler.Core.csproj">
+    <BuildDependency Project="SysBot.Base/SysBot.Base.csproj" />
     <Platform Project="x64" />
   </Project>
   <Project Path="RaidCrawler.Tests/RaidCrawler.Tests.csproj">
