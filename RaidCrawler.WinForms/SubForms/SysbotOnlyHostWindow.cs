@@ -13,6 +13,8 @@ public sealed class SysbotOnlyHostWindow : Form
     private readonly CheckBox _ownerMode = new();
     private readonly Button _inspect = new();
     private readonly Button _scan = new();
+    private readonly Button _stopScan = new();
+    private CancellationTokenSource? _scanCancel;
     private readonly ISwitchConnectionAsync _connection;
     private readonly TextBox _results = new();
     private readonly ComboBox _phase = new();
@@ -55,6 +57,16 @@ public sealed class SysbotOnlyHostWindow : Form
         _scan.BackColor = Color.FromArgb(42, 111, 198);
         _scan.ForeColor = Color.White;
         _scan.FlatStyle = FlatStyle.Flat;
+        _stopScan.Text = "停止扫描";
+        _stopScan.Location = new Point(520, 186);
+        _stopScan.Size = new Size(148, 34);
+        _stopScan.Enabled = false;
+        _stopScan.Click += (_, _) =>
+        {
+            Log("用户请求取消只读扫描；正在等待当前sys-botbase内存命令结束。");
+            _scanCancel?.Cancel();
+            _stopScan.Enabled = false;
+        };
         _inspect.Text = "② 验证找到的地址";
         _inspect.Location = new Point(487, 64);
         _inspect.Size = new Size(181, 31);
@@ -144,8 +156,8 @@ public sealed class SysbotOnlyHostWindow : Form
         _results.Location = new Point(14, 276);
         _results.Size = new Size(654, 269);
         _results.Font = new Font(FontFamily.GenericMonospace, 9);
-        Controls.AddRange([information, label, _address, _ownerMode, _inspect, _scan, phaseLabel, _phase, monitorButton, writeButton, presetButton, quick500PresetButton, _results]);
-        FormClosed += (_, _) => _close.Cancel();
+        Controls.AddRange([information, label, _address, _ownerMode, _inspect, _scan, _stopScan, phaseLabel, _phase, monitorButton, writeButton, presetButton, quick500PresetButton, _results]);
+        FormClosed += (_, _) => { _scanCancel?.Cancel(); _close.Cancel(); };
 
         Log("操作顺序：先连接Switch → 点击①自动查找候选 → 有地址后点击②验证。");
         Log("地址栏为空时不要点②；不会自动拿 ELF 的 x0/x20 当实际指针。");
@@ -166,18 +178,41 @@ public sealed class SysbotOnlyHostWindow : Form
         if (_running) return;
         _running = true;
         _inspect.Enabled = _scan.Enabled = false;
+        _stopScan.Enabled = true;
+        using var scanCts = CancellationTokenSource.CreateLinkedTokenSource(_close.Token);
+        _scanCancel = scanCts;
+        string originalTitle = Text;
         try
         {
-            Log("只读搜索中：根据 PokéLDN 的完整 RaidPoint 结构查找，不再只依靠析构期虚表。");
+            Log("只读搜索启动：Wi-Fi模式临时降低SysBot内部逐块等待，结束后自动恢复。");
+            Log("进度按KiB/百分比/速度显示；如果单个16KiB请求超过12秒，会自动停止。");
             foreach (int sizeMiB in new[] { 8, 32, 64 })
             {
+                long lastLoggedMs = -2500;
                 var progress = new Progress<HostRaidPointScanProgress>(p =>
                 {
-                    if (p.CompletedMegabytes % 4 == 0)
-                        Log($"进度 {p.CompletedMegabytes}/{p.TotalMegabytes}MiB，" +
-                            $"候选 {p.Candidates}，不可读块 {p.FailedBlocks}");
+                    if (IsDisposed) return;
+                    if (p.ScannedBytes == 0)
+                    {
+                        Log(p.Stage);
+                        Text = originalTitle + " — 检查连接和读取配置";
+                        return;
+                    }
+                    double processedKiB = p.ScannedBytes / 1024.0;
+                    double totalKiB = p.TotalMegabytes * 1024.0;
+                    double percent = totalKiB > 0 ? processedKiB / totalKiB * 100.0 : 0;
+                    double seconds = Math.Max(.001, p.ElapsedMilliseconds / 1000.0);
+                    double speed = processedKiB / seconds;
+                    double eta = speed > 0 ? (totalKiB - processedKiB) / speed : 0;
+                    Text = $"{originalTitle} — {processedKiB:N0}/{totalKiB:N0} KiB {percent:F1}% | {speed:F0} KiB/s";
+                    if (p.ElapsedMilliseconds - lastLoggedMs < 2200 && p.ScannedBytes < p.TotalMegabytes * 1024L * 1024L)
+                        return;
+                    lastLoggedMs = p.ElapsedMilliseconds;
+                    Log($"扫描：{processedKiB:N0}/{totalKiB:N0} KiB ({percent:F1}%)，" +
+                        $"速率约{speed:F0}KiB/s，预计剩余{eta:F0}秒；" +
+                        $"候选={p.Candidates}，已读块={p.ReadableBlocks}，失败块={p.FailedBlocks}");
                 });
-                var result = await _autoLocator.FindAsync(sizeMiB, progress, _close.Token);
+                var result = await _autoLocator.FindAsync(sizeMiB, progress, scanCts.Token);
                 Log($"扫描 {sizeMiB}MiB 完成：结构候选 {result.Candidates.Count}，" +
                     $"可读块 {result.ReadableBlocks}，不可读块 {result.FailedBlocks}");
                 foreach (var candidate in result.Candidates)
@@ -208,12 +243,22 @@ public sealed class SysbotOnlyHostWindow : Form
                     break;
             }
         }
-        catch (OperationCanceledException) when (_close.IsCancellationRequested) { }
+        catch (OperationCanceledException) when (scanCts.IsCancellationRequested)
+        {
+            if (!_close.IsCancellationRequested)
+                Log("扫描已取消，未执行任何写入。");
+        }
         catch (Exception ex) { Log("结构扫描失败：" + ex.Message); }
         finally
         {
+            _scanCancel = null;
             _running = false;
-            if (!IsDisposed) _inspect.Enabled = _scan.Enabled = true;
+            if (!IsDisposed)
+            {
+                Text = originalTitle;
+                _stopScan.Enabled = false;
+                _inspect.Enabled = _scan.Enabled = true;
+            }
         }
     }
 
