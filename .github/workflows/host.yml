@@ -52,6 +52,9 @@ jobs:
       - name: N1 offline snapshot parser tests (synthetic data)
         run: python tools/host/test_compare_capture.py
 
+      - name: Violet ELF signature contract tests (without distributing ELF)
+        run: python tools/host/test_elf_audit.py
+
       - name: Restore
         run: dotnet restore RaidCrawler.slnx
 
