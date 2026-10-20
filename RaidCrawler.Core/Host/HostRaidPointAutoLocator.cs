@@ -164,11 +164,13 @@ public sealed class HostRaidPointAutoLocator(ISwitchConnectionAsync connection)
                         "同一TCP连接可能已失去同步，请断开并重新连接后再操作。");
                 }
                 if (bytes.Length != BlockSize)
-                    throw new IOException(
+                    throw new InvalidDataException(
                         $"读入字节数为{bytes.Length}/{BlockSize}。停止扫描，" +
                         "请检查 sys-botbase Wi-Fi 连接及版本，勿继续大量请求。");
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+            catch (TimeoutException) { throw; } // A stalled TCP read must fail immediately.
+            catch (InvalidDataException) { throw; } // Partial protocol response is unsafe to retry.
             catch (Exception e)
             {
                 token.ThrowIfCancellationRequested();
