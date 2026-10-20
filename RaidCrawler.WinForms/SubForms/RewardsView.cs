@@ -24,8 +24,8 @@ public partial class RewardsView : Form
             var reward = rewards[i];
             var item = reward.Item1 switch
             {
-                10000 => "Material",
-                20000 => "Tera Shard",
+                10000 => "宝可梦掉落素材",
+                20000 => "太晶碎块",
                 _ => Rewards.IsTM(reward.Item1)
                    ? Rewards.GetNameTM(reward.Item1, itemStrings, moveStrings, Rewards.TMIndexes)
                    : itemStrings[reward.Item1],
@@ -33,9 +33,9 @@ public partial class RewardsView : Form
 
             var subject = reward.Item3 switch
             {
-                1 => "(Host)",
-                2 => "(Client)",
-                3 => "(Once)",
+                1 => "（房主）",
+                2 => "（参与者）",
+                3 => "（一次性）",
                 _ => string.Empty,
             };
 
