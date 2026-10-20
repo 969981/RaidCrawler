@@ -28,7 +28,7 @@ public sealed class HostProbeWindow : Form
     {
         _probe = new HostProbeMailboxClient(connection);
         Text = "RaidCrawler 房主 Bootstrap 发送副本（4.0.0）";
-        ClientSize = new Size(660, 505);
+        ClientSize = new Size(660, 558);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterParent;
@@ -56,14 +56,41 @@ public sealed class HostProbeWindow : Form
         var qtyLabel = new Label {
             Text = "先机球×", Location = new Point(14, 143), Size = new Size(70, 26),
         };
+        var rewardSettingsButton = MakeButton("默认奖励25种（自定义最多28）", 14, 184, 298);
+        rewardSettingsButton.Click += (_, _) =>
+        {
+            using var editor = new HostRewardPresetWindow();
+            editor.ShowDialog(this);
+            Append("已关闭奖励设置：默认25种×999、最多28种；配置仅保存在本机，" +
+                   "当前Native一次仅支持一行先机球×1–10，不能直接发送此25/28行列表。");
+        };
+        var capacityButton = MakeButton("空间预检（不写入）", 327, 184, 195);
+        capacityButton.Click += async (_, _) => await Run(async (address, token) =>
+        {
+            string file = HostRewardPresetWindow.PresetPath;
+            var profile = File.Exists(file)
+                ? HostRewardPreset.FromJson(await File.ReadAllTextAsync(file, token))
+                : HostRewardPreset.CreateDefault();
+            var capture = await _probe.ReadCaptureAsync(address, token);
+            var source = new byte[RaidPointLayout.RaidPointLength];
+            var wire = new byte[RaidPointLayout.BootstrapLength];
+            capture.Capture.SourceRows.CopyTo(source, RaidPointLayout.RewardsInRaidPoint);
+            capture.Capture.BootstrapRows.CopyTo(wire, RaidPointLayout.RewardsInBootstrap);
+            // Only 720B snapshots are available; reconstruct blank metadata for
+            // OFFLINE reward capacity validation. No bag item allowlist is proven.
+            var plan = HostRewardPreset.Plan(profile, source, wire, _ => true);
+            return $"离线奖励空间预检：{profile.Items.Length} 种、原版 {plan.OriginalCount} 行，" +
+                   $"结果 {plan.Reason}。只按捕获的720B计算，不验证背包合法性、" +
+                   "当前Native多行能力或任何网络实际到账。";
+        });
         _log = new TextBox {
-            Location = new Point(14, 186), Size = new Size(625, 294),
+            Location = new Point(14, 226), Size = new Size(625, 308),
             Multiline = true, ScrollBars = ScrollBars.Both, ReadOnly = true,
             WordWrap = false, Font = new Font(FontFamily.GenericMonospace, 9),
         };
         Controls.AddRange([intro, _address, _statusButton, _autoButton,
             _startButton, _stopButton, _captureButton, qtyLabel, _quantity,
-            _previewButton, _applyButton, _log]);
+            _previewButton, _applyButton, rewardSettingsButton, capacityButton, _log]);
 
         _autoButton.Click += async (_, _) =>
         {
