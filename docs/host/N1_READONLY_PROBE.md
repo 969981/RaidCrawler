@@ -9,6 +9,25 @@
 - `RaidCrawler.Core/Host/HostCaptureVerifier.cs`: `CopySourceRewards`、`CopyBootstrapRewards` 与 `Compare(sourceRaidPoint, decodedBootstrap)`。本 API **仅分析已经拿到的两段明文快照**；不负责从 Switch 读取，不能当成 Native Hook 已就绪。
 - `RaidCrawler.Tests/Host/HostCaptureVerifierTests.cs`: 同源一致、字段级差异、错误长度拒绝、拷贝后不别名化瞬时内存。
 
+## 本地命令行比对：已提供可运行实现
+
+在使用合法、受控的只读原生探针得到**同一场**两份文件后：
+
+```powershell
+python tools/host/compare_capture.py `
+  --source source_raidpoint.bin `
+  --bootstrap outgoing_bootstrap_plain.bin `
+  --session local-test-001 `
+  --build-id 709bfd66115298640155fcc4979dba151c7cc79a `
+  --jsonl host-capture.jsonl
+```
+
+- `source_raidpoint.bin` 必须恰好 **1000 B / 0x3E8**。
+- `outgoing_bootstrap_plain.bin` 必须恰好 **2720 B / 0xAA0**，**不能直接输入 LZ4 压缩包**。
+- 比对 `source[0xE4:0x3B4]` 与 `bootstrap[0x79C:0xA6C]`，总长 720 B。相同返回退出码 0，发现差异返回退出码 2，并输出首个不同槽位与字段。
+- `--session` 与 `--build-id` 是操作者提供的标签，命令行无法验证它们的真实性。因此即便结果 `equal: true`，证据级别仍是 **USER_SUPPLIED_SNAPSHOTS_UNVERIFIED**，不是实机 Hook / 接收端 PASS。
+- Python 纯标准库测试：`python tools/host/test_compare_capture.py`；测试数据是合成字节，不作为零售实证。
+
 ## Native 捕获对象及版本要求
 
 研究基线：已有《紫》4.0.0 原始 ELF 审计 SHA-256 `d17403eaa9d844db82f647fd2f1518806b10c0518d53602fc0ac1766298fdba0`，Build ID `709bfd66115298640155fcc4979dba151c7cc79a`。**必须在当前实际 Switch 游戏进程中核实 title ID/Build ID/模块基址后才使用 4.0.0 RVA；不默认其他补丁版适用。**
