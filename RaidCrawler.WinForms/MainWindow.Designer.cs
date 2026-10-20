@@ -106,8 +106,8 @@
             ButtonAdvanceDate.Name = "ButtonAdvanceDate";
             ButtonAdvanceDate.Size = new Size(96, 27);
             ButtonAdvanceDate.TabIndex = 81;
-            ButtonAdvanceDate.Text = "Advance Date";
-            toolTip.SetToolTip(ButtonAdvanceDate, "Advance Date performs one (1) time set.\r\n\r\nIf Stop Filters are defined, Advance Date\r\ncontinues advancing the date until a stop\r\nfilter has been hit.");
+            ButtonAdvanceDate.Text = "日期推进";
+            toolTip.SetToolTip(ButtonAdvanceDate, "执行日期推进；如果配置了停止条件，会在符合条件时停止。");
             ButtonAdvanceDate.UseVisualStyleBackColor = true;
             ButtonAdvanceDate.Click += ButtonAdvanceDate_Click;
             // 
@@ -120,8 +120,8 @@
             CheckEnableFilters.Name = "CheckEnableFilters";
             CheckEnableFilters.Size = new Size(95, 19);
             CheckEnableFilters.TabIndex = 119;
-            CheckEnableFilters.Text = "Enable Filters";
-            toolTip.SetToolTip(CheckEnableFilters, "Enable Filters enables or disables all filters\r\nentirely.\r\n\r\nEnabled - Advance Date will continue until\r\na match occurs from a filter.\r\n\r\nDisabled - Advance Date will only advance\r\none (1) day.");
+            CheckEnableFilters.Text = "启用筛选";
+            toolTip.SetToolTip(CheckEnableFilters, "开启或关闭全部筛选条件。启用后，日期推进将在发现匹配目标时停止。");
             CheckEnableFilters.UseVisualStyleBackColor = true;
             CheckEnableFilters.Click += EnableFilters_Click;
             // 
@@ -133,7 +133,7 @@
             ButtonDisconnect.Name = "ButtonDisconnect";
             ButtonDisconnect.Size = new Size(97, 27);
             ButtonDisconnect.TabIndex = 11;
-            ButtonDisconnect.Text = "Disconnect";
+            ButtonDisconnect.Text = "断开连接";
             ButtonDisconnect.UseVisualStyleBackColor = true;
             ButtonDisconnect.Click += Disconnect_Click;
             // 
@@ -144,7 +144,7 @@
             ButtonConnect.Name = "ButtonConnect";
             ButtonConnect.Size = new Size(97, 27);
             ButtonConnect.TabIndex = 10;
-            ButtonConnect.Text = "Connect";
+            ButtonConnect.Text = "连接设备";
             ButtonConnect.UseVisualStyleBackColor = true;
             ButtonConnect.Click += ButtonConnect_Click;
             // 
@@ -166,7 +166,7 @@
             LabelSwitchIP.Name = "LabelSwitchIP";
             LabelSwitchIP.Size = new Size(58, 15);
             LabelSwitchIP.TabIndex = 6;
-            LabelSwitchIP.Text = "Switch IP:";
+            LabelSwitchIP.Text = "Switch IP：";
             // 
             // LabelLoadedRaids
             // 
@@ -176,7 +176,7 @@
             LabelLoadedRaids.Name = "LabelLoadedRaids";
             LabelLoadedRaids.Size = new Size(67, 15);
             LabelLoadedRaids.TabIndex = 12;
-            LabelLoadedRaids.Text = "Matches: 0";
+            LabelLoadedRaids.Text = "符合条件：0";
             // 
             // TeraType
             // 
@@ -195,7 +195,7 @@
             LabelTeraType.Name = "LabelTeraType";
             LabelTeraType.Size = new Size(58, 15);
             LabelTeraType.TabIndex = 48;
-            LabelTeraType.Text = "Tera Type:";
+            LabelTeraType.Text = "太晶属性：";
             LabelTeraType.TextAlign = ContentAlignment.MiddleRight;
             // 
             // PID
@@ -215,7 +215,7 @@
             LabelPID.Name = "LabelPID";
             LabelPID.Size = new Size(28, 15);
             LabelPID.TabIndex = 46;
-            LabelPID.Text = "PID:";
+            LabelPID.Text = "PID：";
             LabelPID.TextAlign = ContentAlignment.MiddleRight;
             // 
             // EC
@@ -235,7 +235,7 @@
             LabelEC.Name = "LabelEC";
             LabelEC.Size = new Size(24, 15);
             LabelEC.TabIndex = 44;
-            LabelEC.Text = "EC:";
+            LabelEC.Text = "EC：";
             LabelEC.TextAlign = ContentAlignment.MiddleRight;
             // 
             // Seed
@@ -256,7 +256,7 @@
             LabelSeed.Name = "LabelSeed";
             LabelSeed.Size = new Size(35, 15);
             LabelSeed.TabIndex = 42;
-            LabelSeed.Text = "Seed:";
+            LabelSeed.Text = "种子：";
             LabelSeed.TextAlign = ContentAlignment.MiddleRight;
             // 
             // ButtonNext
@@ -299,7 +299,7 @@
             LabelUNK_2.Name = "LabelUNK_2";
             LabelUNK_2.Size = new Size(34, 15);
             LabelUNK_2.TabIndex = 60;
-            LabelUNK_2.Text = "Area:";
+            LabelUNK_2.Text = "区域：";
             LabelUNK_2.TextAlign = ContentAlignment.MiddleRight;
             // 
             // IVs
@@ -319,7 +319,7 @@
             LabelIVs.Name = "LabelIVs";
             LabelIVs.Size = new Size(25, 15);
             LabelIVs.TabIndex = 68;
-            LabelIVs.Text = "IVs:";
+            LabelIVs.Text = "个体值：";
             LabelIVs.TextAlign = ContentAlignment.MiddleRight;
             // 
             // ButtonReadRaids
@@ -330,7 +330,7 @@
             ButtonReadRaids.Name = "ButtonReadRaids";
             ButtonReadRaids.Size = new Size(90, 25);
             ButtonReadRaids.TabIndex = 80;
-            ButtonReadRaids.Text = "Read Raids";
+            ButtonReadRaids.Text = "读取太晶坑";
             ButtonReadRaids.UseVisualStyleBackColor = true;
             ButtonReadRaids.Click += ButtonReadRaids_Click;
             // 
@@ -343,7 +343,7 @@
             labelEvent.Name = "labelEvent";
             labelEvent.Size = new Size(73, 15);
             labelEvent.TabIndex = 84;
-            labelEvent.Text = "~~Event~~";
+            labelEvent.Text = "【活动坑】";
             labelEvent.TextAlign = ContentAlignment.MiddleLeft;
             labelEvent.Visible = false;
             // 
@@ -364,7 +364,7 @@
             LabelDifficulty.Name = "LabelDifficulty";
             LabelDifficulty.Size = new Size(58, 15);
             LabelDifficulty.TabIndex = 85;
-            LabelDifficulty.Text = "Difficulty:";
+            LabelDifficulty.Text = "星级：";
             LabelDifficulty.TextAlign = ContentAlignment.MiddleRight;
             // 
             // ButtonViewRAM
@@ -374,7 +374,7 @@
             ButtonViewRAM.Name = "ButtonViewRAM";
             ButtonViewRAM.Size = new Size(90, 25);
             ButtonViewRAM.TabIndex = 89;
-            ButtonViewRAM.Text = "Dump Raid";
+            ButtonViewRAM.Text = "导出坑数据";
             ButtonViewRAM.UseVisualStyleBackColor = true;
             ButtonViewRAM.Click += ViewRAM_Click;
             // 
@@ -395,7 +395,7 @@
             LabelSpecies.Name = "LabelSpecies";
             LabelSpecies.Size = new Size(49, 15);
             LabelSpecies.TabIndex = 92;
-            LabelSpecies.Text = "Species:";
+            LabelSpecies.Text = "宝可梦：";
             LabelSpecies.TextAlign = ContentAlignment.MiddleRight;
             // 
             // LabelMoves
@@ -405,7 +405,7 @@
             LabelMoves.Name = "LabelMoves";
             LabelMoves.Size = new Size(45, 15);
             LabelMoves.TabIndex = 94;
-            LabelMoves.Text = "Moves:";
+            LabelMoves.Text = "招式：";
             LabelMoves.TextAlign = ContentAlignment.MiddleRight;
             // 
             // Move1
@@ -469,7 +469,7 @@
             LabelNature.Name = "LabelNature";
             LabelNature.Size = new Size(46, 15);
             LabelNature.TabIndex = 105;
-            LabelNature.Text = "Nature:";
+            LabelNature.Text = "性格：";
             LabelNature.TextAlign = ContentAlignment.MiddleRight;
             // 
             // Gender
@@ -489,7 +489,7 @@
             LabelGender.Name = "LabelGender";
             LabelGender.Size = new Size(48, 15);
             LabelGender.TabIndex = 103;
-            LabelGender.Text = "Gender:";
+            LabelGender.Text = "性别：";
             LabelGender.TextAlign = ContentAlignment.MiddleRight;
             // 
             // StopFilter
@@ -498,7 +498,7 @@
             StopFilter.Name = "StopFilter";
             StopFilter.Size = new Size(97, 23);
             StopFilter.TabIndex = 107;
-            StopFilter.Text = "Edit Filters";
+            StopFilter.Text = "编辑筛选";
             StopFilter.UseVisualStyleBackColor = true;
             StopFilter.Click += StopFilter_Click;
             // 
@@ -528,7 +528,7 @@
             LabelAbility.Name = "LabelAbility";
             LabelAbility.Size = new Size(44, 15);
             LabelAbility.TabIndex = 109;
-            LabelAbility.Text = "Ability:";
+            LabelAbility.Text = "特性：";
             LabelAbility.TextAlign = ContentAlignment.MiddleRight;
             // 
             // GemIcon
@@ -547,7 +547,7 @@
             ButtonDownloadEvents.Name = "ButtonDownloadEvents";
             ButtonDownloadEvents.Size = new Size(90, 25);
             ButtonDownloadEvents.TabIndex = 112;
-            ButtonDownloadEvents.Text = "Pull Events";
+            ButtonDownloadEvents.Text = "获取活动数据";
             ButtonDownloadEvents.UseVisualStyleBackColor = true;
             ButtonDownloadEvents.Click += DownloadEvents_Click;
             // 
@@ -557,7 +557,7 @@
             ConfigSettings.Name = "ConfigSettings";
             ConfigSettings.Size = new Size(97, 23);
             ConfigSettings.TabIndex = 115;
-            ConfigSettings.Text = "Open Settings";
+            ConfigSettings.Text = "程序设置";
             ConfigSettings.UseVisualStyleBackColor = true;
             ConfigSettings.Click += ConfigSettings_Click;
             // 
@@ -567,7 +567,7 @@
             Rewards.Name = "Rewards";
             Rewards.Size = new Size(90, 25);
             Rewards.TabIndex = 116;
-            Rewards.Text = "Rewards";
+            Rewards.Text = "查看奖励";
             Rewards.UseVisualStyleBackColor = true;
             Rewards.Click += Rewards_Click;
             // 
@@ -578,7 +578,7 @@
             LabelSandwichBonus.Name = "LabelSandwichBonus";
             LabelSandwichBonus.Size = new Size(120, 15);
             LabelSandwichBonus.TabIndex = 118;
-            LabelSandwichBonus.Text = "Raid Sandwich Boost:";
+            LabelSandwichBonus.Text = "团战力加成：";
             // 
             // RaidBoost
             // 
@@ -609,7 +609,7 @@
             SendScreenshot.Name = "SendScreenshot";
             SendScreenshot.Size = new Size(90, 25);
             SendScreenshot.TabIndex = 121;
-            SendScreenshot.Text = "Screenshot";
+            SendScreenshot.Text = "截图";
             SendScreenshot.UseVisualStyleBackColor = true;
             SendScreenshot.Click += SendScreenshot_Click;
             // 
@@ -626,7 +626,7 @@
             btnOpenMap.Name = "btnOpenMap";
             btnOpenMap.Size = new Size(90, 25);
             btnOpenMap.TabIndex = 124;
-            btnOpenMap.Text = "Open Map";
+            btnOpenMap.Text = "查看地图";
             btnOpenMap.UseVisualStyleBackColor = true;
             btnOpenMap.Click += DisplayMap;
             // 
@@ -643,7 +643,7 @@
             groupBox1.Size = new Size(200, 110);
             groupBox1.TabIndex = 125;
             groupBox1.TabStop = false;
-            groupBox1.Text = "Raid Controls";
+            groupBox1.Text = "太晶坑操作";
             // 
             // statusStrip1
             // 
@@ -659,19 +659,19 @@
             // 
             StatusLabel.Name = "StatusLabel";
             StatusLabel.Size = new Size(42, 17);
-            StatusLabel.Text = "Status:";
+            StatusLabel.Text = "状态：";
             // 
             // ToolStripStatusLabel
             // 
             ToolStripStatusLabel.Name = "ToolStripStatusLabel";
             ToolStripStatusLabel.Size = new Size(89, 17);
-            ToolStripStatusLabel.Text = "Not connected.";
+            ToolStripStatusLabel.Text = "未连接";
             // 
             // Label_DayAdvance
             // 
             Label_DayAdvance.Name = "Label_DayAdvance";
             Label_DayAdvance.Size = new Size(136, 17);
-            Label_DayAdvance.Text = "Day Skip Successes: 0 / 0";
+            Label_DayAdvance.Text = "日期推进成功：0 / 0";
             Label_DayAdvance.Visible = false;
             // 
             // USB_Port_label
@@ -681,7 +681,7 @@
             USB_Port_label.Name = "USB_Port_label";
             USB_Port_label.Size = new Size(56, 15);
             USB_Port_label.TabIndex = 127;
-            USB_Port_label.Text = "USB Port:";
+            USB_Port_label.Text = "USB 端口：";
             // 
             // USB_Port_TB
             // 
@@ -699,7 +699,7 @@
             StopAdvance_Button.Name = "StopAdvance_Button";
             StopAdvance_Button.Size = new Size(96, 27);
             StopAdvance_Button.TabIndex = 129;
-            StopAdvance_Button.Text = "Stop";
+            StopAdvance_Button.Text = "停止";
             StopAdvance_Button.UseVisualStyleBackColor = true;
             StopAdvance_Button.Visible = false;
             StopAdvance_Button.Click += StopAdvanceButton_Click;
@@ -711,7 +711,7 @@
             B_DateTools.Name = "B_DateTools";
             B_DateTools.Size = new Size(97, 23);
             B_DateTools.TabIndex = 130;
-            B_DateTools.Text = "Date Tools";
+            B_DateTools.Text = "时间工具";
             B_DateTools.UseVisualStyleBackColor = true;
             B_DateTools.Click += B_DateTools_Click;
             // 
