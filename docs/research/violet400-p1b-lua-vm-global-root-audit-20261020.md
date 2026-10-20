@@ -2,6 +2,8 @@
 
 状态：**ELF 静态候选已精确验证；实机读取、Lua VM 调度、BattleRewardData A/B/C 均未验证**。2026-10-20。实现分支：`RaidCrawler/benefit`。
 
+详细的 ELF 程序头分段、19 处 ARM64 指令原码、三个 BL 目标、全局 BSS 槽位置及可复现 objdump 命令，已另行整理为 [《紫》4.0.0 ELF — Lua VM 状态指针逆向技术文档](violet400-elf-lua-vm-state-pointer-reverse-engineering-20261020.md)。本文保留为 P1-B 功能状态与实机验收入口。
+
 ## 1. 用户提供的精确原始输入
 
 - `Violet4.0.0.elf` 74,362,480B；SHA256 `d17403eaa9d844db82f647fd2f1518806b10c0518d53602fc0ac1766298fdba0`。
