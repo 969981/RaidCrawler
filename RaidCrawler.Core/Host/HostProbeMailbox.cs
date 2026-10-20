@@ -177,8 +177,9 @@ public sealed class HostProbeMailboxClient(ISwitchConnectionAsync connection)
             throw new InvalidDataException("追加状态区长度不正确。");
         static uint Get(ReadOnlySpan<byte> b, int offset) =>
             BinaryPrimitives.ReadUInt32LittleEndian(b.Slice(offset, 4));
-        return new HostProbeResult(Get(data, 0), Get(data, 0x14),
-            Get(data, 0x18), Get(data, 0x1C));
+        return new HostProbeResult(Get(data, 0), Get(data, 4), Get(data, 8),
+            Get(data, 12), Get(data, 16), Get(data, 20),
+            Get(data, 24), Get(data, 28));
     }
 
     /// <summary>
@@ -223,4 +224,6 @@ public sealed class HostProbeMailboxClient(ISwitchConnectionAsync connection)
 }
 
 /// <summary>Outcome is updated at the next real host bootstrap, not immediately on request.</summary>
-public sealed record HostProbeResult(uint RequestMode, uint LastResult, uint AppendedCount, uint OriginalRows);
+public sealed record HostProbeResult(
+    uint RequestMode, uint ItemId, uint Quantity, uint RareFlag, uint SubjectType,
+    uint LastResult, uint AppendedCount, uint OriginalRows);
