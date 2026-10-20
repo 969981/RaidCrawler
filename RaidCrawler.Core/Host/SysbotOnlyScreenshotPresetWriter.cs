@@ -14,9 +14,14 @@ public sealed class SysbotOnlyScreenshotPresetWriter(ISwitchConnectionAsync conn
     private readonly SysbotOnlyRewardWriter _guard = new(connection);
     private readonly SemaphoreSlim _mutex = new(1, 1);
 
+    public Task<HostScreenshotPresetPermit> PrepareAsync(
+        ulong owner, CancellationToken token) => PrepareAsync(owner, ScreenshotRewardPreset.Subject, token);
+
     public async Task<HostScreenshotPresetPermit> PrepareAsync(
-        ulong owner, CancellationToken token)
+        ulong owner, uint subject, CancellationToken token)
     {
+        if (!ScreenshotRewardPreset.IsSupportedSubject(subject))
+            throw new InvalidOperationException("只允许 subject=0（全体）或 subject=5（晶耀护符）。");
         await _guard.CheckStateAsync(token).ConfigureAwait(false);
         var observed = await _inspector.InspectAsync(owner, true, token).ConfigureAwait(false);
         if (!observed.SnapshotsStable || !observed.OfflineAppendEligible)
@@ -29,19 +34,19 @@ public sealed class SysbotOnlyScreenshotPresetWriter(ISwitchConnectionAsync conn
         if (!original.AsSpan().SequenceEqual(again))
             throw new InvalidOperationException("准备预设期间对象发生变化；不进行任何写入。");
         string name = SysbotOnlyRaidPointInspector.GetRaidPointName(original);
-        var plan = ScreenshotRewardPreset.Plan(original);
+        var plan = ScreenshotRewardPreset.Plan(original, subject);
         if (!plan.Accepted || plan.AddedCount != ScreenshotRewardPreset.Count)
             throw new InvalidOperationException(
                 $"无法无损追加全部20条（原有{plan.OriginalCount}条、最多25条）：{plan.Reason}。不拆分、不覆盖、不删减。");
-        string audit = ScreenshotRewardPreset.Audit(original, plan.CandidateRaidPoint, plan.OriginalCount);
+        string audit = ScreenshotRewardPreset.Audit(original, plan.CandidateRaidPoint, plan.OriginalCount, subject);
         if (audit != "EXACT_20_ROWS_ONLY")
             throw new InvalidOperationException("完整预设字节审计不通过：" + audit);
         int offset = RaidPointLayout.RewardsInRaidPoint +
                      plan.OriginalCount * RaidPointLayout.RewardRowLength;
         return new HostScreenshotPresetPermit(
             owner, raidPoint, name, DateTimeOffset.UtcNow, original, plan.CandidateRaidPoint,
-            plan.OriginalCount, offset, Convert.ToHexString(SHA256.HashData(original)),
-            "仅候选 RAM 副本：真实网络发送对象/晶耀护符资格/背包上限均尚未实机验证");
+            plan.OriginalCount, offset, subject, Convert.ToHexString(SHA256.HashData(original)),
+            "仅候选 RAM 副本：真实网络发送对象/subject条件筛选/背包上限均尚未实机验证");
     }
 
     public async Task<HostPlanAWriteResult> ApplyAsync(
@@ -74,7 +79,7 @@ public sealed class SysbotOnlyScreenshotPresetWriter(ISwitchConnectionAsync conn
                 return new HostPlanAWriteResult(false, "PRESET_WRITE_UNCERTAIN",
                     "写后整个RaidPoint不一致，可能是竞态或部分写入；不要认定到账，不自动强行恢复。", rowAddress);
             return new HostPlanAWriteResult(true, "PRESET_20_ROWS_WRITTEN_TO_CANDIDATE",
-                "候选RAM中20条×999数据已完整读回；未验证原版发送、参与者获得或存档持久化。", rowAddress);
+                $"候选RAM中20条×999、subject={permit.SubjectType}已完整读回；未验证原版发送、参与者获得或存档持久化。", rowAddress);
         }
         finally { _mutex.Release(); }
     }
@@ -114,14 +119,15 @@ public sealed class SysbotOnlyScreenshotPresetWriter(ISwitchConnectionAsync conn
         if (permit.OriginalRaidPoint.Length != RaidPointLayout.RaidPointLength ||
             permit.PlannedRaidPoint.Length != RaidPointLayout.RaidPointLength ||
             permit.OriginalRows is < 0 or > ScreenshotRewardPreset.MaxOriginalRows ||
+            !ScreenshotRewardPreset.IsSupportedSubject(permit.SubjectType) ||
             permit.StartOffset != RaidPointLayout.RewardsInRaidPoint +
                                   permit.OriginalRows * RaidPointLayout.RewardRowLength)
             throw new InvalidOperationException("20条预设凭证地址或奖励行数非法。");
-        var expected = ScreenshotRewardPreset.Plan(permit.OriginalRaidPoint);
+        var expected = ScreenshotRewardPreset.Plan(permit.OriginalRaidPoint, permit.SubjectType);
         if (!expected.Accepted || expected.OriginalCount != permit.OriginalRows ||
             !expected.CandidateRaidPoint.AsSpan().SequenceEqual(permit.PlannedRaidPoint) ||
             ScreenshotRewardPreset.Audit(permit.OriginalRaidPoint,
-                permit.PlannedRaidPoint, permit.OriginalRows) != "EXACT_20_ROWS_ONLY")
+                permit.PlannedRaidPoint, permit.OriginalRows, permit.SubjectType) != "EXACT_20_ROWS_ONLY")
             throw new InvalidOperationException("原版奖励、预设内容或追加位置未通过完整审计。");
     }
 }
@@ -129,4 +135,4 @@ public sealed class SysbotOnlyScreenshotPresetWriter(ISwitchConnectionAsync conn
 public sealed record HostScreenshotPresetPermit(
     ulong OwnerAddress, ulong RaidPointAddress, string RaidPointName,
     DateTimeOffset PreparedUtc, byte[] OriginalRaidPoint, byte[] PlannedRaidPoint,
-    int OriginalRows, int StartOffset, string OriginalSha256, string EvidenceLimit);
+    int OriginalRows, int StartOffset, uint SubjectType, string OriginalSha256, string EvidenceLimit);
