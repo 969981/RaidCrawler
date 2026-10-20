@@ -16,6 +16,19 @@ public partial class ConfigWindow : Form
 
         InitializeComponent();
 
+        // Display translated version names WITHOUT altering Scarlet/Violet values
+        // used by JSON configuration and existing event handlers.
+        Game.DrawMode = DrawMode.OwnerDrawFixed;
+        Game.DrawItem += (_, e) =>
+        {
+            if (e.Index < 0) return;
+            e.DrawBackground();
+            var name = e.Index == 0 ? "朱" : e.Index == 1 ? "紫" : Game.Items[e.Index]?.ToString() ?? "";
+            TextRenderer.DrawText(e.Graphics, name, e.Font ?? Game.Font,
+                e.Bounds, e.ForeColor, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+            e.DrawFocusRectangle();
+        };
+
         InstanceName.Text = c.InstanceName;
         StoryProgress.SelectedIndex = c.Progress;
         EventProgress.SelectedIndex = c.EventProgress;
@@ -84,7 +97,7 @@ public partial class ConfigWindow : Form
         linkLabel1.Left = (tabAbout.Width - linkLabel1.Width) / 2;
 
         labelWebhooks.Text =
-            "Webhooks are " + (DiscordWebhook.Enabled ? "enabled." : "disabled.");
+            "Webhook 通知已" + (DiscordWebhook.Enabled ? "启用。" : "禁用。");
     }
 
     private void EnableAlert_CheckedChanged(object sender, EventArgs e)
@@ -97,7 +110,7 @@ public partial class ConfigWindow : Form
         DiscordWebhook.Enabled = EnableDiscordNotifications.Checked;
         DiscordMessageContent.Enabled = EnableDiscordNotifications.Checked;
         labelWebhooks.Text =
-            "Webhooks are " + (DiscordWebhook.Enabled ? "enabled." : "disabled.");
+            "Webhook 通知已" + (DiscordWebhook.Enabled ? "启用。" : "禁用。");
     }
 
     private void Config_Closing(object sender, EventArgs e)
