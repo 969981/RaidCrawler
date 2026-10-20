@@ -49,7 +49,7 @@
             FormBorderStyle = FormBorderStyle.FixedToolWindow;
             Name = "MapView";
             StartPosition = FormStartPosition.CenterParent;
-            Text = "Raid Location";
+            Text = "太晶坑地图";
             ((System.ComponentModel.ISupportInitialize)Map).EndInit();
             ResumeLayout(false);
         }
