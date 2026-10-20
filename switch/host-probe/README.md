@@ -1,4 +1,4 @@
-# RaidCrawler / Switch 房主 N1-N2 探针（《紫》4.0.0）
+# RaidCrawler / Switch 房主 Bootstrap 发送副本探针（《紫》4.0.0）\n\n> **当前主路径**：已知 `main+0xE32984` 的原生复制后/压缩前 Hook；**无需全堆扫描、不修改 data.bin**。奖励行从 `RaidPoint+0xE4` / `Bootstrap+0x79C` 开始，`45×16B`，顺序 `item/quantity/rare/subject`。详见 [新重构技术文档](../../docs/host/BOOTSTRAP_SEND_COPY_REFACTOR.md)。
 
 > **状态：工程编译与离线验证通过，尚未实机加载和参与者领取验证。** 普通公开 CI 只打包只读 Native；实验写入必须手动明确编译，且不自动上传。
 
@@ -29,7 +29,7 @@
 HOST_N2_EXPERIMENTAL=1 bash switch/host-probe/build.sh
 ```
 
-必须将 **同一次手动编译** 的 `out/subsdk9` 和 `out/mailbox-locator.json` 一起替换，以避免 ASLR 清单与 Native 回调不匹配。Native 只支持在原版 memcpy 后、压缩前，对输出 Bootstrap 第一条空行追加 **先机球 ×1–10、Subject=5**；原版奖励必须字节级保持不变。N2 的请求只尝试一次，即使失败也会自动解除武装。
+必须将 **同一次手动编译** 的 `out/subsdk9` 和 `out/mailbox-locator.json` 一起替换，以避免 ASLR 清单与 Native 回调不匹配。Native 只支持在原版 memcpy 后、压缩前，对输出 Bootstrap 第一条空行追加 **先机球 ×1–10、Subject=5**；原版奖励必须字节级保持不变，且压缩前的整块 RaidPoint 必须与源数据一致。N2 的请求只尝试一次，即使失败也会自动解除武装。
 
 Native 返回码 **20 只代表发送前的明文缓冲已修改**；并不能证明 Pia 网络传输、参与者筛选、背包入账、保存持久化或 NSO 官方互联网房间有效。
 
