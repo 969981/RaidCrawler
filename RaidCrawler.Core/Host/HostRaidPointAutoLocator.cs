@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using SysBot.Base;
 
@@ -123,6 +124,16 @@ public sealed class HostRaidPointAutoLocator(ISwitchConnectionAsync connection)
             checked(mainBase + SysbotOnlyRaidPointInspector.SerializerRva))
             throw new InvalidDataException("主模块序列化槽指令指针不一致；已停止。");
 
+        // The stock SysBot Wi-Fi client may use a 0x1C0-byte default transfer
+        // and 64ms delay PER internal chunk. An 8 MiB sweep can otherwise
+        // take ~20 minutes in intentional delays alone. Temporarily reduce
+        // delay while using only the same proven chunk size; restore settings
+        // in finally, even if cancelled or a TCP request fails.
+        using var wifiSpeedMode = ScopedWifiScanTuning.Create(connection);
+        var timer = Stopwatch.StartNew();
+        progress?.Report(new HostRaidPointScanProgress(
+            0, maxMegabytes, 0, 0, 0, 0, 0,
+            wifiSpeedMode.Description));
         int totalBlocks = maxMegabytes * 1024 * 1024 / BlockSize;
         var found = new List<HostRaidPointDiscoveryCandidate>();
         int failedBlocks = 0;
@@ -135,16 +146,38 @@ public sealed class HostRaidPointAutoLocator(ISwitchConnectionAsync connection)
             byte[] bytes;
             try
             {
-                bytes = await connection.ReadBytesAbsoluteAsync(blockAddress, BlockSize, token)
-                    .ConfigureAwait(false);
-                if (bytes.Length != BlockSize) throw new IOException("读取长度不足");
+                // Abort a stalled command instead of waiting minutes at "0 MiB".
+                // Use the connection's CancellationToken, NOT an abandoned
+                // Task.WaitAsync that would leave an unsafe pending TCP reply.
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+                timeout.CancelAfter(TimeSpan.FromSeconds(12));
+                try
+                {
+                    bytes = await connection.ReadBytesAbsoluteAsync(
+                        blockAddress, BlockSize, timeout.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (!token.IsCancellationRequested)
+                {
+                    throw new TimeoutException(
+                        $"读取 0x{blockAddress:X} 的16KiB超过12秒。停止扫描；" +
+                        "同一TCP连接可能已失去同步，请断开并重新连接后再操作。");
+                }
+                if (bytes.Length != BlockSize)
+                    throw new IOException(
+                        $"读入字节数为{bytes.Length}/{BlockSize}。停止扫描，" +
+                        "请检查 sys-botbase Wi-Fi 连接及版本，勿继续大量请求。");
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
             catch (Exception e)
             {
                 failedBlocks++;
                 if (errors.Count < 5) errors.Add($"0x{blockAddress:X}: {e.Message}");
-                continue; // unallocated/disallowed pages are not fake negatives
+                if (failedBlocks >= 3)
+                    throw new IOException(
+                        $"连续/累计 {failedBlocks} 次内存读取失败，已停止扫描；" +
+                        "请检查连接与地址范围，避免继续发出数千条命令。", e);
+                // Unreadable pages remain incomplete evidence, not zero data.
+                continue;
             }
             validBlocks++;
             foreach (int index in FindAlignedRaidPointPrefixes(bytes))
@@ -205,18 +238,66 @@ public sealed class HostRaidPointAutoLocator(ISwitchConnectionAsync connection)
                     "MEMORY_COPY_ONLY_NOT_PROVEN_CURRENT_ROOM_OR_OUTGOING_BOOTSTRAP"));
                 if (found.Count >= MaxCandidates) break;
             }
-            if (blockIndex % 32 == 0 || found.Count >= MaxCandidates)
+            // Exact completed bytes + elapsed time: always show sub-MiB
+            // progress. Avoid thousands of UI callbacks on fast connections.
+            if ((blockIndex & 3) == 0 || found.Count >= MaxCandidates)
                 progress?.Report(new HostRaidPointScanProgress(
                     (blockIndex + 1) * BlockSize / (1024 * 1024),
-                    maxMegabytes, validBlocks, failedBlocks, found.Count));
+                    maxMegabytes, validBlocks, failedBlocks, found.Count,
+                    (long)(blockIndex + 1) * BlockSize, timer.ElapsedMilliseconds,
+                    $"读到 0x{blockAddress:X}"));
             if (found.Count >= MaxCandidates) break;
-            if (blockIndex % 16 == 0)
-                await Task.Delay(1, token).ConfigureAwait(false);
         }
         progress?.Report(new HostRaidPointScanProgress(
-            maxMegabytes, maxMegabytes, validBlocks, failedBlocks, found.Count));
+            (validBlocks + failedBlocks) * BlockSize / (1024 * 1024),
+            maxMegabytes, validBlocks, failedBlocks, found.Count,
+            (long)(validBlocks + failedBlocks) * BlockSize, timer.ElapsedMilliseconds,
+            "本轮扫描完成"));
         return new HostRaidPointDiscovery(heapBase, mainBase, maxMegabytes,
             found, validBlocks, failedBlocks, errors);
+    }
+}
+
+/// <summary>
+/// Restore the shared SysBot connection's original Wi-Fi pacing on leaving
+/// the read-only scan. Do NOT enlarge its individual TCP receive size: some
+/// SysBot.Base versions assume one ReceiveAsync completes a whole reply.
+/// </summary>
+internal sealed class ScopedWifiScanTuning : IDisposable
+{
+    private readonly SwitchSocketAsync? _socket;
+    private readonly int _oldDelay;
+    private readonly int _oldFactor;
+    public string Description { get; }
+
+    private ScopedWifiScanTuning(ISwitchConnectionAsync connection)
+    {
+        if (connection is not SwitchSocketAsync socket)
+        {
+            Description = "非标准Wi-Fi Socket（USB/其他）：不更改传输配置";
+            return;
+        }
+        _socket = socket;
+        _oldDelay = socket.BaseDelay;
+        _oldFactor = socket.DelayFactor;
+        int chunk = socket.MaximumTransferSize;
+        // Keep stock per-command transfer length. Only eliminate the slow
+        // artificial delay (64ms default + transfer/delayFactor).
+        socket.BaseDelay = Math.Min(_oldDelay, 2);
+        socket.DelayFactor = Math.Max(_oldFactor, 1024);
+        Description = $"Wi-Fi传输优化：chunk={chunk}B；每块附加延迟" +
+            $" {_oldDelay + chunk / Math.Max(1, _oldFactor)}→" +
+            $"{socket.BaseDelay + chunk / Math.Max(1, socket.DelayFactor)}ms；" +
+            "扫描结束恢复原参数";
+    }
+
+    public static ScopedWifiScanTuning Create(ISwitchConnectionAsync connection) => new(connection);
+
+    public void Dispose()
+    {
+        if (_socket is null) return;
+        _socket.BaseDelay = _oldDelay;
+        _socket.DelayFactor = _oldFactor;
     }
 }
 
@@ -236,7 +317,8 @@ public sealed record HostRaidPointDiscoveryCandidate(
 
 public sealed record HostRaidPointScanProgress(
     int CompletedMegabytes, int TotalMegabytes,
-    int ReadableBlocks, int FailedBlocks, int Candidates);
+    int ReadableBlocks, int FailedBlocks, int Candidates,
+    long ScannedBytes = 0, long ElapsedMilliseconds = 0, string Stage = "");
 
 public sealed record HostRaidPointDiscovery(
     ulong HeapBase, ulong MainBase, int ScannedMegabytes,
