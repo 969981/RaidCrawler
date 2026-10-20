@@ -181,11 +181,43 @@ public sealed class SysbotOnlyHostWindow : Form
         _stopScan.Enabled = true;
         using var scanCts = CancellationTokenSource.CreateLinkedTokenSource(_close.Token);
         _scanCancel = scanCts;
+        FastSysbotReadChannel? fastReader = null;
         string originalTitle = Text;
         try
         {
-            Log("只读搜索启动：Wi-Fi模式临时降低SysBot内部逐块等待，结束后自动恢复。");
-            Log("进度按KiB/百分比/速度显示；如果单个16KiB请求超过12秒，会自动停止。");
+            Log("先尝试本次游戏已缓存的房主候选指针；首次定位再使用独立高速TCP读通道。");
+            Log("进度按KiB/百分比/速度显示；超时会自动停止，并拒绝使用不完整读取数据。");
+            if (_connection is SwitchSocketAsync wifi)
+            {
+                try
+                {
+                    Log("先校准独立高速TCP只读通道：448B→4KiB→16KiB与原SysBot逐字节对照。");
+                    ulong baseAddress = await _connection.GetMainNsoBaseAsync(scanCts.Token);
+                    fastReader = await FastSysbotReadChannel.ConnectAndCalibrateAsync(
+                        _connection, wifi.Name, 6000,
+                        checked(baseAddress + SysbotOnlyRaidPointInspector.SerializerRva),
+                        scanCts.Token);
+                    Log($"高速TCP校准通过：{fastReader.CalibrationEvidence}，" +
+                        $"本次每条读取最多{fastReader.CalibratedChunkSize}B。");
+                }
+                catch (OperationCanceledException) when (scanCts.IsCancellationRequested) { throw; }
+                catch (Exception ex)
+                {
+                    Log("高速TCP校准失败：" + ex.Message +
+                        "。没有启用不可信的高速数据，请检查 sys-botbase 当前版本。");
+                    if (MessageBox.Show(this,
+                        "高速只读通道验证失败。是否继续旧版慢速Wi-Fi读取？" +
+                        "8MiB可能需要十几分钟。推荐先取消、检查连接与原版sys-botbase。",
+                        "高速模式不可用", MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Warning) != DialogResult.Yes)
+                        return;
+                    if (fastReader is not null)
+                    {
+                        await fastReader.DisposeAsync();
+                        fastReader = null;
+                    }
+                }
+            }
             foreach (int sizeMiB in new[] { 8, 32, 64 })
             {
                 long lastLoggedMs = -2500;
@@ -212,7 +244,8 @@ public sealed class SysbotOnlyHostWindow : Form
                         $"速率约{speed:F0}KiB/s，预计剩余{eta:F0}秒；" +
                         $"候选={p.Candidates}，已读块={p.ReadableBlocks}，失败块={p.FailedBlocks}");
                 });
-                var result = await _autoLocator.FindAsync(sizeMiB, progress, scanCts.Token);
+                var result = await _autoLocator.FindAsync(sizeMiB, progress,
+                    scanCts.Token, fastReader?.ReadBytesAbsoluteAsync);
                 Log($"扫描 {sizeMiB}MiB 完成：结构候选 {result.Candidates.Count}，" +
                     $"可读块 {result.ReadableBlocks}，不可读块 {result.FailedBlocks}");
                 foreach (var candidate in result.Candidates)
@@ -251,6 +284,8 @@ public sealed class SysbotOnlyHostWindow : Form
         catch (Exception ex) { Log("结构扫描失败：" + ex.Message); }
         finally
         {
+            if (fastReader is not null)
+                await fastReader.DisposeAsync();
             _scanCancel = null;
             _running = false;
             if (!IsDisposed)
