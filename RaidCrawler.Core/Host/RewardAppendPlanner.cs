@@ -1,14 +1,14 @@
 namespace RaidCrawler.Core.Host;
 
 /// <summary>
-/// Pure offline planner. Never writes Switch memory. Rejected plans contain
-/// an unchanged copy of the input. The caller must supply a version-specific
-/// item legality predicate; positive IDs alone do not prove bag eligibility.
+/// Pure offline experiment. No output must be sent to a game unless the
+/// captured version and reward interpretation are independently validated.
+/// Keeps the original bytes unchanged on every rejected plan.
 /// </summary>
 public static class RewardAppendPlanner
 {
-    public const uint GlimmeringCharmSubject = 5;
-    // This is an editor limit, NOT a promise about each item's SlotMaxNum.
+    public const uint GlimmeringCharmMarker = 5;
+    // UI/editor limit, NOT the receiving item's tested SlotMaxNum.
     public const uint EditorQuantityLimit = 999;
 
     public static RewardAppendPlan Plan(
@@ -18,8 +18,6 @@ public static class RewardAppendPlanner
     {
         ArgumentNullException.ThrowIfNull(additions);
         ArgumentNullException.ThrowIfNull(isAllowedBagItem);
-
-        // Candidate never aliases the input data, even when the plan fails.
         byte[] candidate = sourceRaidPoint.ToArray();
         RewardAppendPlan Reject(string reason, int count = 0) =>
             new(false, reason, count, 0, candidate);
@@ -32,18 +30,20 @@ public static class RewardAppendPlanner
         var rows = RaidPointLayout.GetRaidPointRewards(sourceRaidPoint);
         for (int i = 0; i < RaidPointLayout.RewardCapacity; i++)
         {
-            RewardRow row = RewardRow.Read(rows.Slice(i * RaidPointLayout.RewardRowLength,
-                                                       RaidPointLayout.RewardRowLength));
+            RewardRow row = RewardRow.Read(rows.Slice(
+                i * RaidPointLayout.RewardRowLength, RaidPointLayout.RewardRowLength));
             if (row.IsEmpty)
             {
                 sawPadding = true;
                 continue;
             }
 
-            // Do not infer slot usage if the original encoding is unusual.
             if (sawPadding)
                 return Reject("NONCONTIGUOUS_ORIGINAL_ROWS", count);
-            if (row.ItemId == 0 || row.Quantity == 0 || row.SubjectType > 5)
+            // Important: the retail donor contains (5,0,0,0), which is not an
+            // ordinary item and may delimit or control the reward table.
+            // Never append through such an ambiguous metadata row.
+            if (row.ItemId == 0 || row.Quantity == 0 || row.Reserved != 0 || row.Marker > 5)
                 return Reject("AMBIGUOUS_ORIGINAL_ROW", count);
             count++;
         }
@@ -51,23 +51,23 @@ public static class RewardAppendPlanner
         if (additions.Count > RaidPointLayout.RewardCapacity - count)
             return Reject("INSUFFICIENT_REWARD_SLOTS", count);
 
-        // Check the entire request before changing any bytes: no partial writes.
+        // Precheck all additions before writing one byte.
         foreach (RewardRow row in additions)
         {
             if (row.ItemId == 0 || !isAllowedBagItem(row.ItemId))
                 return Reject("ITEM_NOT_ALLOWLISTED", count);
             if (row.Quantity is 0 or > EditorQuantityLimit)
                 return Reject("INVALID_QUANTITY", count);
-            if (row.SubjectType != GlimmeringCharmSubject)
-                return Reject("SUBJECT_NOT_GLIMMERING_CHARM", count);
-            if (row.RareType != 0)
-                return Reject("UNSUPPORTED_CUSTOM_RARE_TYPE", count);
+            if (row.Marker != GlimmeringCharmMarker)
+                return Reject("MARKER_NOT_GLIMMERING_CHARM", count);
+            if (row.Reserved != 0)
+                return Reject("UNSUPPORTED_RESERVED_FIELD", count);
         }
 
         for (int i = 0; i < additions.Count; i++)
         {
-            int offset = RaidPointLayout.RewardsInRaidPoint
-                       + (count + i) * RaidPointLayout.RewardRowLength;
+            int offset = RaidPointLayout.RewardsInRaidPoint +
+                         (count + i) * RaidPointLayout.RewardRowLength;
             additions[i].Write(candidate.AsSpan(offset, RaidPointLayout.RewardRowLength));
         }
 
