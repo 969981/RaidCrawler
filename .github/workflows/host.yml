@@ -36,6 +36,9 @@ jobs:
       - name: Violet ELF signature contract tests (without distributing ELF)
         run: python tools/host/test_elf_audit.py
 
+      - name: Serializer vtable auditor syntax (offline ELF not bundled)
+        run: python -m py_compile tools/host/audit_violet_serializer_vtable.py
+
       - name: Restore
         run: dotnet restore RaidCrawler.slnx
 
