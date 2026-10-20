@@ -1,5 +1,8 @@
 > **已被新审计修订：2026-10-20** 此文档含历史研究描述；关于奖励行真实 ABI、自动发现内存邮箱、Subject=5 试验，**统一以 [Violet ELF + donor 重新验证与 N1/N2 最新记录](ELF_REVALIDATION_N1_N2.md) 为准**。旧文档中的 `RaidPoint+0xE0`、`Marker/Item/Quantity/Reserved`、SD 导出和 v1 邮箱均已过时，禁止据此修改游戏内存。
 
+> **2026-10-20 重要勘误（覆盖本页旧结论）**：PokéLDN 4.0.0 donor 的完整奖励记录从 `RaidPoint+0xE0` / `Bootstrap+0x798` 开始，四列为 `[condition_or_source, item_id, quantity, reserved]`；`+0xE4/+0x79C` 只是记录内部的道具 ID，不是完整行起点。以下旧版 `+0xE4 记录起点 / [Item,Quantity,Rare,Subject]` 的叙述**仅作为历史错误调查记录保存，不可作为写入指导**。最新版布局、subject0/5 和验证限制统一参见 [POKELDN_SUBJECT0_RETAIL_LAYOUT_TEST.md](POKELDN_SUBJECT0_RETAIL_LAYOUT_TEST.md)。
+
+
 > **2026-10-20 N1.1 升级：** 本文件保留原始 SD 导出/静态 ELF 研究过程作为历史记录。当前 `host` 最新实现已改为 [C# + sys-botbase 共享内存邮箱](../../switch/host-probe/README.md)：无需 SD 文件，C# 主窗口新增 Host Probe，原生源代码和构建步骤见其 README。首次获取邮箱地址仍依赖当前进程 `[RC-N1] mailbox=0x...` 调试日志；自动发现跟踪 [Issue #5](https://github.com/969981/RaidCrawler/issues/5)。两端编译不代表真实 Switch UAT 通过。
 
 # N1：真实房主只读捕获（研究入口与验收）
