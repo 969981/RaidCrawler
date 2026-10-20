@@ -58,7 +58,9 @@ public record RaidContainer
     public RaidContainer(string game)
     {
         Game = game;
-        Strings = GameInfo.GetStrings("en");
+        // PKHeX includes Simplified Chinese resources for species, moves, items, abilities,
+        // natures and types; keep the game/version values in English for configs.
+        Strings = GameInfo.GetStrings("zh-Hans");
         GemTeraRaidsBase = TeraEncounter.GetAllEncounters(RaidDataBase, TeraRaidMapParent.Paldea);
         GemTeraRaidsKitakami = TeraEncounter.GetAllEncounters(RaidDataKitakami, TeraRaidMapParent.Kitakami);
         GemTeraRaidsBlueberry = TeraEncounter.GetAllEncounters(RaidDataBlueberry, TeraRaidMapParent.Blueberry);
