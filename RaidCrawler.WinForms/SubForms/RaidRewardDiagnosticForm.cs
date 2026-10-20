@@ -78,6 +78,7 @@ public sealed partial class RaidRewardDiagnosticForm : Form
         panel.Controls.Add(advancedActions, 0, 3);
 
         ConfigureRemoteHookControls(toolbar, advancedActions, slots);
+        ConfigureNativeRewardCaptureImport(toolbar);
         // Routine diagnostic actions no longer occupy the everyday toolbar.
         advancedActions.Controls.Add(inspect);
         ConfigureLuaVmRootProbe(advancedActions);
