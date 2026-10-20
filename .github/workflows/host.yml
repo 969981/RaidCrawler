@@ -1,4 +1,4 @@
-name: RaidCrawler host (experimental)
+name: RaidCrawler host (pure sys-botbase Windows)
 
 on:
   push:
@@ -11,26 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  native-pair:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    container:
-      image: devkitpro/devkita64:20260219
-    steps:
-      - name: Checkout exact host commit
-        uses: actions/checkout@v4
-      - name: Build paired read-only Native and ASLR manifest
-        run: HOST_N2_EXPERIMENTAL=0 bash switch/host-probe/build.sh
-      - name: Upload paired native files
-        uses: actions/upload-artifact@v4
-        with:
-          name: host-native-same-commit
-          path: switch/host-probe/out/
-          if-no-files-found: error
-          retention-days: 7
-
   test-and-build:
-    needs: native-pair
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
@@ -73,29 +54,11 @@ jobs:
       - name: Publish experimental WinForms app
         run: dotnet publish RaidCrawler.WinForms/RaidCrawler.WinForms.csproj -c Release -r win-x64 --self-contained false
 
-      - name: Download exact-commit read-only Native build
-        uses: actions/download-artifact@v4
-        with:
-          name: host-native-same-commit
-          path: paired-native
-
-      - name: Bundle paired mailbox manifest and Switch module
-        shell: pwsh
-        run: |
-          $publish = "RaidCrawler.WinForms/bin/Release/net10.0-windows/win-x64/publish"
-          New-Item -ItemType Directory -Force -Path "$publish/Native" | Out-Null
-          Copy-Item paired-native/mailbox-locator.json "$publish/mailbox-locator.json"
-          Copy-Item paired-native/subsdk9 "$publish/Native/subsdk9"
-          Copy-Item paired-native/main.npdm "$publish/Native/main.npdm"
-          Copy-Item paired-native/SHA256SUMS.txt "$publish/Native/SHA256SUMS.txt"
-          Copy-Item paired-native/INSTALL_NOT_AUTOMATIC.txt "$publish/Native/INSTALL_NOT_AUTOMATIC.txt"
-          Write-Host "Matched Native + C# at commit $env:GITHUB_SHA"
-
       - name: Upload non-release test artifact
         if: success()
         uses: actions/upload-artifact@v7
         with:
-          name: RaidCrawler-host-experimental
+          name: RaidCrawler-host-sysbot-only
           path: RaidCrawler.WinForms/bin/Release/net10.0-windows/win-x64/publish/
           if-no-files-found: error
           retention-days: 7
