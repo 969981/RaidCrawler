@@ -43,10 +43,10 @@ public static class HostCaptureVerifier
         string? field = column switch
         {
             -1 => null,
-            0 => nameof(RewardRow.SubjectType),
-            1 => nameof(RewardRow.ItemId),
-            2 => nameof(RewardRow.Quantity),
-            3 => nameof(RewardRow.Reserved),
+            0 => nameof(RewardRow.ItemId),
+            1 => nameof(RewardRow.Quantity),
+            2 => nameof(RewardRow.RareFlag),
+            3 => nameof(RewardRow.SubjectType),
             _ => throw new InvalidOperationException("Invalid reward column."),
         };
 
