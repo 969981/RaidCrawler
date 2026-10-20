@@ -29,7 +29,8 @@ public sealed class Violet400LuaVmFrameProbeTests
 
     private static async Task<(Violet400LuaVmFrameProbe.Observation Result, List<string> Reads)>
         Run(byte[] header, bool active = false, byte functionTag = 0x66,
-            bool changeHeader = false, bool shortHeader = false)
+            bool changeHeader = false, bool shortHeader = false,
+            bool retry = false, bool changeHeaderOnce = false)
     {
         List<string> calls = [];
         int headerReads = 0;
@@ -49,7 +50,7 @@ public sealed class Violet400LuaVmFrameProbeTests
             {
                 headerReads++;
                 if (shortHeader) return Task.FromResult(new byte[8]);
-                if (changeHeader && headerReads > 1)
+                if ((changeHeader && headerReads > 1) || (changeHeaderOnce && headerReads == 2))
                 {
                     byte[] changed = header.ToArray();
                     Set(changed, 0x20, State + 0x400);
@@ -73,7 +74,9 @@ public sealed class Violet400LuaVmFrameProbeTests
             }
             throw new InvalidOperationException($"Unexpected read 0x{address:X} len={count}");
         }
-        var result = await Violet400LuaVmFrameProbe.ProbeAsync(Main, Absolute, CancellationToken.None);
+        var result = retry
+            ? await Violet400LuaVmFrameProbe.ProbeWithRetryAsync(Main, Absolute, CancellationToken.None)
+            : await Violet400LuaVmFrameProbe.ProbeAsync(Main, Absolute, CancellationToken.None);
         return (result, calls);
     }
 
@@ -141,8 +144,31 @@ public sealed class Violet400LuaVmFrameProbeTests
     {
         var (result, _) = await Run(Header(active:true), active:true, changeHeader:true);
         Assert.Equal("STATE_FIELDS_CHANGED_DURING_READ", result.Status);
+        Assert.Contains("CallInfo", result.ChangedFields!);
         Assert.False(result.SnapshotStable);
         Assert.False(result.ClosureIdentityVerified);
+    }
+
+    [Fact]
+    public async Task RetryRecoversAfterOneTransientCallInfoChange()
+    {
+        var (result, _) = await Run(Header(active:true), active:true,
+            retry:true, changeHeaderOnce:true);
+        Assert.Equal("ACTIVE_CALLINFO_SAMPLED_NO_EXECUTION_ATTESTATION", result.Status);
+        Assert.Equal(2, result.ReadAttempts);
+        Assert.True(result.SnapshotStable);
+        Assert.Equal("NOT_VERIFIED", result.PrototypeIdentity);
+    }
+
+    [Fact]
+    public async Task RepeatedVolatilityReportsChangedFieldAndAttemptCount()
+    {
+        var (result, _) = await Run(Header(active:true), active:true,
+            retry:true, changeHeader:true);
+        Assert.Equal("STATE_FIELDS_CHANGED_DURING_READ", result.Status);
+        Assert.Equal(3, result.ReadAttempts);
+        Assert.Contains("CallInfo", result.ChangedFields!);
+        Assert.False(result.SnapshotStable);
     }
 
     [Fact]
