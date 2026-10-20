@@ -1,3 +1,5 @@
+> **2026-10-20 重要修订：** 用 Decryptu/pokeldn@8b2c19c 的真实 donor LZ4 明文重新核对：奖励行从 RaidPoint+0xE0 开始；行字段顺序为 marker/item/quantity/reserved；+0xE4 是首行 item 字段。原先版本曾误把 +0xE4 作为整行起点，相关测试和探针现已修正。遇到 marker=5,item=0 的特殊元数据必须保守拒绝，不能直接把其后的空字节视为追加空间。参考 [差异分析](POKELDN_VS_RETAIL_PACKET_PIPELINE.md)。
+
 # RaidCrawler `host`：正版 Switch 房主太晶坑奖励追加开发规划
 
 > 状态：**PLAN / N0 待实机验证** · 2026-10-20  
@@ -122,14 +124,14 @@ Switch Native Probe / Hook （单独开发、按 Game Build ID 精确匹配）
 }
 ```
 
-阶段对齐：`S1` 原始 Lottery 结果（若能定位）；`S2` 原始 `RaidPoint+0xE4` 的 720 B；`S3` 源游戏 bootstrap **解压前的明文** `[0x79C,0xA6C)` 对应 720 B；`S4` 接收端所见 720 B；`S5` 接收端资格筛选后；`S6` 战后背包；`S7` 重启后背包。S2/S3 比较完整区域与保留字节，差异时输出首个不同 slot/字段；S4/S5 不能只凭房主日志声称 PASS。日志仅记录结构化摘要，原始 dump 需在用户主动开启的诊断模式中限时保存且脱敏。
+阶段对齐：`S1` 原始 Lottery 结果（若能定位）；`S2` 原始 `RaidPoint+0xE0` 的 720 B；`S3` 源游戏 bootstrap **解压前的明文** `[0x798,0xA68)` 对应 720 B；`S4` 接收端所见 720 B；`S5` 接收端资格筛选后；`S6` 战后背包；`S7` 重启后背包。S2/S3 比较完整区域与保留字节，差异时输出首个不同 slot/字段；S4/S5 不能只凭房主日志声称 PASS。日志仅记录结构化摘要，原始 dump 需在用户主动开启的诊断模式中限时保存且脱敏。
 
 **Go 条件**：实机捕获同一场的 `S2 == S3`，且行数语义明确、时机稳定；在此之前，N2 写入开关不得可用。**终极 PASS**：C01+C02+C03，并满足「原版不减少 + 新奖励到账 + 重启保留」。
 
 ## 5. 代码分层与建议文件（待开发，不表示已存在）
 
 - `RaidCrawler.Core/Host/RewardRow.cs`：4×u32、序列化/反序列化；原版行不可变快照。
-- `RaidCrawler.Core/Host/RaidPointLayout.cs`：`0x3E8`、`0xE4`、45×16、`0x3B4`、`0x3B8` 常量断言。
+- `RaidCrawler.Core/Host/RaidPointLayout.cs`：`0x3E8`、`0xE0`、45×16、`0x3B0`、`0x3B8` 常量断言。
 - `RaidCrawler.Core/Host/RewardAppendPlanner.cs`：`Plan(original, requested)`，保留原版，计算容量，拒绝未知/超限/无效物品。
 - `RaidCrawler.Core/Host/HostSession.cs`：状态机、断线重置、一次性令牌。
 - `RaidCrawler.Core/Host/HostTrace.cs`：只读日志、匿名化、字段差分/摘要。
@@ -149,7 +151,7 @@ Switch Native Probe / Hook （单独开发、按 Game Build ID 精确匹配）
 ## 7. 直接开始的工作（依赖顺序）
 
 1. **N0**：实现不可写的 45 槽结构、append 计划、完整保留断言和假桥接回归测试；先打通 `host` 独立 CI。
-2. **N1（最高优先级实机）**：在**房主本人**的真实开始战斗流程里，只读 Hook/trace `main+0xE327FC` 附近输入和输出，采集一次 `RaidPoint+0xE4` / `0x2F` 明文，配对 run_id、数据 SHA；不要复用模拟房主替代它。
+2. **N1（最高优先级实机）**：在**房主本人**的真实开始战斗流程里，只读 Hook/trace `main+0xE327FC` 附近输入和输出，采集一次 `RaidPoint+0xE0` / `0x2F` 明文，配对 run_id、数据 SHA；不要复用模拟房主替代它。
 3. **决策点 D1**：确认「Source → native copy → bootstrap」原版一致和对象生命周期，再选择 Lua post-lottery wrapper 或 native pre-serializer 原位追加的具体入口。
 4. **N2/N3**：仅加入一行小数量 subject=5 完成 C01/C02、背包净增及重载闭环，再逐步扩展容量、地图和互联网覆盖。
 
