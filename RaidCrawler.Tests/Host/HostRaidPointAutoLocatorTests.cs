@@ -44,7 +44,7 @@ public sealed class HostRaidPointAutoLocatorTests
     public void CorruptScalarFieldsRejectCandidate(int offset)
     {
         var data = RetailLikeRaidPoint();
-        data[offset] = 0;
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(offset, 4), 0);
         Assert.False(HostRaidPointAutoLocator.LooksLikeRetailRaidPoint(
             data, out _, out _));
     }
