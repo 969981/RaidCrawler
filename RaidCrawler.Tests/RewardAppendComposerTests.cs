@@ -132,6 +132,63 @@ public sealed class RewardAppendComposerTests
     }
 
     [Fact]
+    public void PokeLdnStyleFixedLotteryMealAndOriginalCharmAllSurvive()
+    {
+        var source = Frame(18, true);
+        int start = 0x6B8 + 0xE4;
+        // The published PokéLDN model orders fixed + random + up-to-three
+        // Raid Power rows (4) + original Glimmering Charm shard (5).
+        for (int j = 14; j < 17; j++)
+            BinaryPrimitives.WriteUInt32LittleEndian(source.AsSpan(start + j*16 + 12), 4);
+        BinaryPrimitives.WriteUInt32LittleEndian(source.AsSpan(start + 17*16), 1862);
+        BinaryPrimitives.WriteUInt32LittleEndian(source.AsSpan(start + 17*16 + 4), 12); // 6 stars
+        BinaryPrimitives.WriteUInt32LittleEndian(source.AsSpan(start + 17*16 + 12), 5);
+        var before = source.ToArray();
+        var bonus = CharmBonusProfile.Create(true, [new CharmBonusItem(800, 7)]);
+        var result = RewardAppendComposer.ComposeBootstrap(source, bonus);
+        Assert.Equal(RewardAppendStatus.Applied, result.Status);
+        Assert.Equal(before.AsSpan(start, 18*16).ToArray(),
+            result.Bytes.AsSpan(start, 18*16).ToArray());
+        var rows = RaidRewardEditor.Decode(result.Bytes.AsSpan(start, 720));
+        Assert.Equal(19, rows.Count);
+        Assert.Equal(new RaidRewardEntry(1862, 12, 0, 5), rows[17]);
+        Assert.Equal(new RaidRewardEntry(800, 7, 0, 5), rows[18]);
+        Assert.True(RaidPointOfflinePatch.UntouchedFieldsEqual(before, result.Bytes, 0x6B8));
+    }
+
+    [Fact]
+    public void SeededPropertyTestOverCapacityAndAllOriginalLengths()
+    {
+        var rng = new Random(0x4A39);
+        for (int iteration = 0; iteration < 400; iteration++)
+        {
+            int originalCount = rng.Next(0, 46);
+            int bonusCount = rng.Next(1, 21);
+            bool bootstrap = rng.Next(0, 2) == 1;
+            var before = Frame(originalCount, bootstrap);
+            var old = before.ToArray();
+            var profile = Profile(bonusCount);
+            var result = bootstrap ? RewardAppendComposer.ComposeBootstrap(before, profile)
+                : RewardAppendComposer.ComposeRaidPoint(before, profile);
+            if (originalCount + bonusCount > 45)
+            {
+                Assert.Equal(RewardAppendStatus.InsufficientCapacity, result.Status);
+                Assert.Equal(old, result.Bytes);
+            }
+            else
+            {
+                Assert.Equal(RewardAppendStatus.Applied, result.Status);
+                int header = bootstrap ? 0x6B8 : 0;
+                Assert.True(RaidPointOfflinePatch.UntouchedFieldsEqual(old, result.Bytes, header));
+                int originalLength = originalCount * 16;
+                Assert.Equal(old.AsSpan(header + 0xE4, originalLength).ToArray(),
+                    result.Bytes.AsSpan(header + 0xE4, originalLength).ToArray());
+            }
+            Assert.Equal(old, before);
+        }
+    }
+
+    [Fact]
     public void LogicalArrayHasNoUnproven45CapAndNeverMutatesCaller()
     {
         var original = Enumerable.Range(0, 42).Select(i =>
