@@ -165,6 +165,11 @@ public partial class MainWindow : Form
         };
         Controls.Add(sysbotOnlyButton);
 
+        // Reparent existing designer buttons and fields into a responsive
+        // layout. This changes presentation only; all Click handlers and
+        // runtime enable/disable logic remain attached to the same controls.
+        InitializeResponsiveMainLayout(hostProbeButton, sysbotOnlyButton);
+
         btnOpenMap.Enabled = false;
         Rewards.Enabled = false;
         SendScreenshot.Enabled = false;
