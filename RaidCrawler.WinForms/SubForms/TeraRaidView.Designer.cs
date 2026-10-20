@@ -162,7 +162,7 @@
             Species.Name = "Species";
             Species.Size = new Size(348, 57);
             Species.TabIndex = 115;
-            Species.Text = "Species";
+            Species.Text = "宝可梦";
             Species.TextAlign = ContentAlignment.BottomCenter;
             // 
             // Shiny
@@ -174,7 +174,7 @@
             Shiny.Name = "Shiny";
             Shiny.Size = new Size(148, 26);
             Shiny.TabIndex = 116;
-            Shiny.Text = "✨ Shiny ✨";
+            Shiny.Text = "✨ 闪光 ✨";
             Shiny.TextAlign = ContentAlignment.MiddleCenter;
             Shiny.Visible = false;
             // 
@@ -187,7 +187,7 @@
             Gender.Name = "Gender";
             Gender.Size = new Size(109, 22);
             Gender.TabIndex = 118;
-            Gender.Text = "Gender";
+            Gender.Text = "性别";
             Gender.TextAlign = ContentAlignment.BottomCenter;
             // 
             // TeraType
@@ -208,7 +208,7 @@
             Ability.Name = "Ability";
             Ability.Size = new Size(200, 25);
             Ability.TabIndex = 121;
-            Ability.Text = "Ability";
+            Ability.Text = "特性";
             // 
             // Nature
             // 
@@ -219,7 +219,7 @@
             Nature.Name = "Nature";
             Nature.Size = new Size(200, 25);
             Nature.TabIndex = 122;
-            Nature.Text = "Nature";
+            Nature.Text = "性格";
             // 
             // groupBox1
             // 
@@ -233,7 +233,7 @@
             groupBox1.Size = new Size(546, 65);
             groupBox1.TabIndex = 123;
             groupBox1.TabStop = false;
-            groupBox1.Text = "Details";
+            groupBox1.Text = "详细信息";
             // 
             // label1
             // 
@@ -243,7 +243,7 @@
             label1.Name = "label1";
             label1.Size = new Size(46, 15);
             label1.TabIndex = 124;
-            label1.Text = "Nature:";
+            label1.Text = "性格：";
             label1.TextAlign = ContentAlignment.MiddleRight;
             // 
             // labelAbility
@@ -254,7 +254,7 @@
             labelAbility.Name = "labelAbility";
             labelAbility.Size = new Size(44, 15);
             labelAbility.TabIndex = 123;
-            labelAbility.Text = "Ability:";
+            labelAbility.Text = "特性：";
             labelAbility.TextAlign = ContentAlignment.MiddleRight;
             // 
             // groupBox2
@@ -277,7 +277,7 @@
             groupBox2.Size = new Size(546, 65);
             groupBox2.TabIndex = 124;
             groupBox2.TabStop = false;
-            groupBox2.Text = "IVs";
+            groupBox2.Text = "个体值";
             // 
             // labelSpeed
             // 
@@ -287,7 +287,7 @@
             labelSpeed.Name = "labelSpeed";
             labelSpeed.Size = new Size(42, 15);
             labelSpeed.TabIndex = 133;
-            labelSpeed.Text = "Speed:";
+            labelSpeed.Text = "速度：";
             labelSpeed.TextAlign = ContentAlignment.MiddleRight;
             // 
             // SPEED
@@ -310,7 +310,7 @@
             labelSpD.Name = "labelSpD";
             labelSpD.Size = new Size(31, 15);
             labelSpD.TabIndex = 131;
-            labelSpD.Text = "SpD:";
+            labelSpD.Text = "特防：";
             labelSpD.TextAlign = ContentAlignment.MiddleRight;
             // 
             // SPD
@@ -333,7 +333,7 @@
             labelSpA.Name = "labelSpA";
             labelSpA.Size = new Size(31, 15);
             labelSpA.TabIndex = 129;
-            labelSpA.Text = "SpA:";
+            labelSpA.Text = "特攻：";
             labelSpA.TextAlign = ContentAlignment.MiddleRight;
             // 
             // SPA
@@ -356,7 +356,7 @@
             labelDef.Name = "labelDef";
             labelDef.Size = new Size(28, 15);
             labelDef.TabIndex = 127;
-            labelDef.Text = "Def:";
+            labelDef.Text = "防御：";
             labelDef.TextAlign = ContentAlignment.MiddleRight;
             // 
             // DEF
@@ -379,7 +379,7 @@
             labelAtk.Name = "labelAtk";
             labelAtk.Size = new Size(28, 15);
             labelAtk.TabIndex = 125;
-            labelAtk.Text = "Atk:";
+            labelAtk.Text = "攻击：";
             labelAtk.TextAlign = ContentAlignment.MiddleRight;
             // 
             // ATK
@@ -402,7 +402,7 @@
             labelHP.Name = "labelHP";
             labelHP.Size = new Size(26, 15);
             labelHP.TabIndex = 123;
-            labelHP.Text = "HP:";
+            labelHP.Text = "HP：";
             labelHP.TextAlign = ContentAlignment.MiddleRight;
             // 
             // HP
@@ -433,7 +433,7 @@
             groupBox3.Size = new Size(546, 157);
             groupBox3.TabIndex = 125;
             groupBox3.TabStop = false;
-            groupBox3.Text = "Raid Moveset";
+            groupBox3.Text = "太晶团体战招式";
             // 
             // Move8
             // 
@@ -444,7 +444,7 @@
             Move8.Name = "Move8";
             Move8.Size = new Size(200, 25);
             Move8.TabIndex = 128;
-            Move8.Text = "Move8";
+            Move8.Text = "招式8";
             // 
             // Move6
             // 
@@ -455,7 +455,7 @@
             Move6.Name = "Move6";
             Move6.Size = new Size(200, 25);
             Move6.TabIndex = 127;
-            Move6.Text = "Move6";
+            Move6.Text = "招式6";
             // 
             // Move4
             // 
@@ -466,7 +466,7 @@
             Move4.Name = "Move4";
             Move4.Size = new Size(200, 25);
             Move4.TabIndex = 126;
-            Move4.Text = "Move4";
+            Move4.Text = "招式4";
             // 
             // Move7
             // 
@@ -477,7 +477,7 @@
             Move7.Name = "Move7";
             Move7.Size = new Size(200, 25);
             Move7.TabIndex = 125;
-            Move7.Text = "Move7";
+            Move7.Text = "招式7";
             // 
             // Move5
             // 
@@ -488,7 +488,7 @@
             Move5.Name = "Move5";
             Move5.Size = new Size(200, 25);
             Move5.TabIndex = 124;
-            Move5.Text = "Move5";
+            Move5.Text = "招式5";
             // 
             // Move3
             // 
@@ -499,7 +499,7 @@
             Move3.Name = "Move3";
             Move3.Size = new Size(200, 25);
             Move3.TabIndex = 123;
-            Move3.Text = "Move3";
+            Move3.Text = "招式3";
             // 
             // Move1
             // 
@@ -510,7 +510,7 @@
             Move1.Name = "Move1";
             Move1.Size = new Size(200, 25);
             Move1.TabIndex = 121;
-            Move1.Text = "Move1";
+            Move1.Text = "招式1";
             // 
             // Move2
             // 
@@ -521,7 +521,7 @@
             Move2.Name = "Move2";
             Move2.Size = new Size(200, 25);
             Move2.TabIndex = 122;
-            Move2.Text = "Move2";
+            Move2.Text = "招式2";
             // 
             // picShinyAlert
             // 
@@ -612,7 +612,7 @@
             labelAbilityPatch.Name = "labelAbilityPatch";
             labelAbilityPatch.Size = new Size(37, 15);
             labelAbilityPatch.TabIndex = 135;
-            labelAbilityPatch.Text = "Patch";
+            labelAbilityPatch.Text = "特性膏药";
             labelAbilityPatch.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textAbilityPatch
@@ -636,7 +636,7 @@
             labelSweetHerba.Name = "labelSweetHerba";
             labelSweetHerba.Size = new Size(38, 15);
             labelSweetHerba.TabIndex = 143;
-            labelSweetHerba.Text = "Sweet";
+            labelSweetHerba.Text = "甜秘传";
             labelSweetHerba.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textSweetHerba
@@ -660,7 +660,7 @@
             labelSaltyHerba.Name = "labelSaltyHerba";
             labelSaltyHerba.Size = new Size(32, 15);
             labelSaltyHerba.TabIndex = 145;
-            labelSaltyHerba.Text = "Salty";
+            labelSaltyHerba.Text = "咸秘传";
             labelSaltyHerba.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textSaltyHerba
@@ -684,7 +684,7 @@
             labelBottleCap.Name = "labelBottleCap";
             labelBottleCap.Size = new Size(28, 15);
             labelBottleCap.TabIndex = 147;
-            labelBottleCap.Text = "Cap";
+            labelBottleCap.Text = "银冠";
             labelBottleCap.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBottleCap
@@ -708,7 +708,7 @@
             labelSourHerba.Name = "labelSourHerba";
             labelSourHerba.Size = new Size(31, 15);
             labelSourHerba.TabIndex = 149;
-            labelSourHerba.Text = "Sour";
+            labelSourHerba.Text = "酸秘传";
             labelSourHerba.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textSourHerba
@@ -732,7 +732,7 @@
             labelSpicyHerba.Name = "labelSpicyHerba";
             labelSpicyHerba.Size = new Size(35, 15);
             labelSpicyHerba.TabIndex = 151;
-            labelSpicyHerba.Text = "Spicy";
+            labelSpicyHerba.Text = "辣秘传";
             labelSpicyHerba.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textSpicyHerba
@@ -788,7 +788,7 @@
             labelBitterHerba.Name = "labelBitterHerba";
             labelBitterHerba.Size = new Size(35, 15);
             labelBitterHerba.TabIndex = 159;
-            labelBitterHerba.Text = "Bitter";
+            labelBitterHerba.Text = "苦秘传";
             labelBitterHerba.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBitterHerba
@@ -811,7 +811,7 @@
             labelAbilityCapsule.Name = "labelAbilityCapsule";
             labelAbilityCapsule.Size = new Size(49, 15);
             labelAbilityCapsule.TabIndex = 157;
-            labelAbilityCapsule.Text = "Capsule";
+            labelAbilityCapsule.Text = "特性胶囊";
             labelAbilityCapsule.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textAbilityCapsule
@@ -837,7 +837,7 @@
             DaySkips.Name = "DaySkips";
             DaySkips.Size = new Size(141, 15);
             DaySkips.TabIndex = 161;
-            DaySkips.Text = "Day Skip Successes 0 / 0";
+            DaySkips.Text = "日期推进成功 0 / 0";
             DaySkips.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // TeraRaidView
@@ -889,7 +889,7 @@
             FormBorderStyle = FormBorderStyle.None;
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "TeraRaidView";
-            Text = "TeraRaidView";
+            Text = "太晶坑详情";
             DoubleClick += TeraRaidView_DoubleClick;
             MouseDown += TeraRaidView_MouseDown;
             MouseMove += TeraRaidView_MouseMove;
