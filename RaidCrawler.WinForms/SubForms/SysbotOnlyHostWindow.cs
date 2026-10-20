@@ -23,7 +23,7 @@ public sealed class SysbotOnlyHostWindow : Form
         _connection = connection;
         _inspector = new SysbotOnlyRaidPointInspector(connection);
         Text = "方案 A：纯 sys-botbase 房主 RaidPoint 诊断";
-        ClientSize = new Size(690, 515);
+        ClientSize = new Size(690, 570);
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -80,17 +80,34 @@ public sealed class SysbotOnlyHostWindow : Form
             using var monitor = new SvRaidAutoMonitorWindow(_connection);
             monitor.ShowDialog(this);
         };
+        var writeButton = new Button
+        {
+            Text = "受控奖励写入（实验）",
+            Location = new Point(14, 186),
+            Size = new Size(228, 34)
+        };
+        writeButton.Click += (_, _) =>
+        {
+            if (_running)
+            {
+                Log("请等待当前只读检索完成，再进入实验写入窗口。");
+                return;
+            }
+            var candidate = _ownerMode.Checked ? _address.Text : "";
+            using var writer = new SysbotOnlyRewardWriteWindow(_connection, candidate);
+            writer.ShowDialog(this);
+        };
         _results.Multiline = true;
         _results.WordWrap = true;
         _results.ScrollBars = ScrollBars.Vertical;
         _results.ReadOnly = true;
-        _results.Location = new Point(14, 191);
-        _results.Size = new Size(654, 299);
+        _results.Location = new Point(14, 231);
+        _results.Size = new Size(654, 314);
         _results.Font = new Font(FontFamily.GenericMonospace, 9);
-        Controls.AddRange([information, label, _address, _ownerMode, _inspect, _scan, phaseLabel, _phase, monitorButton, _results]);
+        Controls.AddRange([information, label, _address, _ownerMode, _inspect, _scan, phaseLabel, _phase, monitorButton, writeButton, _results]);
         FormClosed += (_, _) => _close.Cancel();
 
-        Log("方案 A 仅读取当前进程的候选 RaidPoint。");
+        Log("默认只读；额外的受控写入实验需要独立确认，且不能证明实际发送。");
         Log("必须先有可证实的绝对地址；ELF 中的 x20 / x0 不是固定指针。");
         Log("原有 RaidBlockPointerBase 指向存档太晶坑块，不能直接当作当前房主 RaidPoint。");
         Log("读取结果相同只证明这份候选内存稳定，不证明即将发送或能安全写入。");
