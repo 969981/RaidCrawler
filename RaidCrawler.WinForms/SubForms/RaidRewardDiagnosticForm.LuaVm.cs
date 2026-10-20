@@ -13,10 +13,75 @@ public sealed partial class RaidRewardDiagnosticForm
         Text = "P1-B：只读探测 Lua 状态候选", AutoSize = true,
     };
 
+    private readonly Button luaVmFrameProbeButton = new()
+    {
+        Text = "P1-B2：只读验证 Lua 主状态/调用帧", AutoSize = true,
+    };
+
     private void ConfigureLuaVmRootProbe(FlowLayoutPanel actions)
     {
         actions.Controls.Add(luaVmRootProbeButton);
+        actions.Controls.Add(luaVmFrameProbeButton);
         luaVmRootProbeButton.Click += async (_, _) => await RunLuaVmRootProbeAsync();
+        luaVmFrameProbeButton.Click += async (_, _) => await RunLuaVmFrameProbeAsync();
+    }
+
+    private async Task RunLuaVmFrameProbeAsync()
+    {
+        if (connection is null || closing || remoteBusy)
+        {
+            Append("lua-frame-blocked", "Switch 未连接、窗口关闭或已有其他远程操作；跳过只读采样。");
+            return;
+        }
+        remoteBusy = true;
+        luaVmFrameProbeButton.Enabled = false;
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stop.Token);
+            timeout.CancelAfter(TimeSpan.FromSeconds(30));
+            CancellationToken ct = timeout.Token;
+            await VerifyViolet400IdentityAsync(ct);
+            ulong baseBefore = await connection.GetMainNsoBaseAsync(ct);
+            var result = await Violet400LuaVmFrameProbe.ProbeAsync(
+                (rva, len, token) => connection.ReadBytesMainAsync(rva, len, token),
+                (address, len, token) => connection.ReadBytesAbsoluteAsync(address, len, token),
+                ct);
+            ulong baseAfter = await connection.GetMainNsoBaseAsync(ct);
+            bool stableBase = baseAfter == baseBefore;
+            string status = stableBase ? result.Status : "MAIN_BASE_CHANGED_DURING_SAMPLE";
+            Append("lua-frame-readonly",
+                "P1-B2 Lua5.4 主状态/CallInfo 只读结构检查：" + status +
+                "；即使发现 Lua 闭包 TValue 标记，也不能证明执行 LotteryRewardItem。",
+                new
+                {
+                    status, mainBaseStable = stableBase, root = result.RootStatus,
+                    mainStateLayout = result.MainStateLayoutMatched,
+                    stackRange = result.StackPointersPlausible,
+                    activeCallInfoCandidate = stableBase && result.SnapshotStable &&
+                        result.ActiveCallInfoCandidate,
+                    functionSlotType = result.FunctionSlotClassification,
+                    luaClosureTagCandidate = result.LuaClosureValueTagObserved,
+                    snapshotStable = stableBase && result.SnapshotStable,
+                    luaProtoIdentity = "NOT_VERIFIED",
+                    vmCpuHit = "NOT_OBSERVED", abcRewardData = "NOT_CAPTURED",
+                    stateOrHeapPointersLogged = false,
+                    gameWrites = false, hookInstalled = false,
+                });
+        }
+        catch (OperationCanceledException)
+        {
+            Append("lua-frame-error", "P1-B2 只读采样超时或取消，游戏未被修改。");
+        }
+        catch (Exception ex)
+        {
+            Append("lua-frame-error", "P1-B2 只读采样失败：" + ex.GetType().Name +
+                "；未修改游戏，不能判定 Lua VM 或奖励执行状态。");
+        }
+        finally
+        {
+            remoteBusy = false;
+            if (!closing) luaVmFrameProbeButton.Enabled = true;
+        }
     }
 
     private async Task RunLuaVmRootProbeAsync()
