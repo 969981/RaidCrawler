@@ -10,7 +10,7 @@ public class HostCaptureVerifierTests
     {
         byte[] source = new byte[RaidPointLayout.RaidPointLength];
         byte[] plain = new byte[RaidPointLayout.BootstrapLength];
-        RewardRow expected = new(5, 1128, 3, 0);
+        RewardRow expected = new(1128, 3, 0, 5);
         expected.Write(source.AsSpan(RaidPointLayout.RewardsInRaidPoint, 16));
         source.AsSpan(RaidPointLayout.RewardsInRaidPoint, RaidPointLayout.RewardsByteLength)
             .CopyTo(plain.AsSpan(RaidPointLayout.RewardsInBootstrap, RaidPointLayout.RewardsByteLength));
@@ -26,20 +26,20 @@ public class HostCaptureVerifierTests
     }
 
     [Fact]
-    public void AChangedEligibilityMarkerGivesExactSlotAndField()
+    public void AChangedSubjectGivesExactSlotAndField()
     {
         byte[] source = new byte[RaidPointLayout.RaidPointLength];
         byte[] plain = new byte[RaidPointLayout.BootstrapLength];
-        // Source item 2, qty 1; transmitted item 2, qty 1 but marker differs.
-        new RewardRow(5, 2, 1, 0).Write(
+        // Source item 2, qty 1; transmitted item 2, qty 1 but subject differs.
+        new RewardRow(2, 1, 0, 5).Write(
             source.AsSpan(RaidPointLayout.RewardsInRaidPoint + 7 * 16, 16));
-        new RewardRow(0, 2, 1, 0).Write(
+        new RewardRow(2, 1, 0, 0).Write(
             plain.AsSpan(RaidPointLayout.RewardsInBootstrap + 7 * 16, 16));
         var report = HostCaptureVerifier.Compare(source, plain);
         Assert.False(report.Matches);
         Assert.Equal(7, report.FirstMismatchRow);
-        Assert.Equal(7 * 16, report.FirstMismatchByte);
-        Assert.Equal("Marker", report.FirstMismatchField);
+        Assert.Equal(7 * 16 + 12, report.FirstMismatchByte);
+        Assert.Equal("SubjectType", report.FirstMismatchField);
     }
 
     [Fact]
