@@ -40,7 +40,7 @@ public sealed class HostRewardPresetTests
         config.Items[0] = new("自定义A", 42, 27);
         string json = HostRewardPreset.ToJson(config);
         var recovered = HostRewardPreset.FromJson(json);
-        Assert.Equal(config, recovered with { Items = config.Items });
+        Assert.Equal(config.Items, recovered.Items);
         Assert.Equal(42u, recovered.Items[0].ItemId);
         Assert.Equal(492u, HostRewardPreset.CreateDefault().Items[0].ItemId);
     }
@@ -75,7 +75,7 @@ public sealed class HostRewardPresetTests
         source[0xE0] = 0x11;
         source[RaidPointLayout.SummaryStart] = 0x67;
         for (int i = 0; i < occupied; i++)
-            new RewardRow((uint)(1000 + i), 1, i == 0 ? 1u : 0u, i % 6u)
+            new RewardRow((uint)(1000 + i), 1, i == 0 ? 1u : 0u, (uint)(i % 6))
                 .Write(source.AsSpan(RaidPointLayout.RewardsInRaidPoint + i * 16, 16));
         var wire = new byte[RaidPointLayout.BootstrapLength];
         wire[0] = 0xFF;
