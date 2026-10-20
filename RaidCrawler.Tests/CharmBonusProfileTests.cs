@@ -32,7 +32,12 @@ public sealed class CharmBonusProfileTests
             var enabled = CharmBonusProfile.Create(true, migrated.Items);
             var saved = CharmBonusProfileStore.Save(newPath, enabled);
             Assert.Equal(1, saved.Revision);
-            Assert.Equal(saved, CharmBonusProfileStore.Load(newPath, oldPath));
+            var reloaded = CharmBonusProfileStore.Load(newPath, oldPath);
+            Assert.Equal(saved.Revision, reloaded.Revision);
+            Assert.Equal(saved.Enabled, reloaded.Enabled);
+            Assert.Equal(saved.SchemaVersion, reloaded.SchemaVersion);
+            Assert.Equal(saved.Sha256, reloaded.Sha256);
+            Assert.True(saved.Items.SequenceEqual(reloaded.Items));
             Assert.Equal(legacyBytes, File.ReadAllText(oldPath));
 
             var disabled = CharmBonusProfileStore.Save(newPath,
