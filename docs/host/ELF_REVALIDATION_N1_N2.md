@@ -1,4 +1,4 @@
-# 《朱／紫》4.0.0 RaidPoint 实证与 N1/N2 实施记录
+> **2026-10-20 新版主路径：** [Bootstrap 发送副本重构](BOOTSTRAP_SEND_COPY_REFACTOR.md)。当前 `host` 代码以 `RaidPoint+0xE4` 为第一条完整奖励行，字段为 `[ItemId, Quantity, RareFlag, SubjectType]`；`+0xE0` 不再作为写入依据。历史章节与先前的自相矛盾修订保留供追溯，**不代表目前代码 ABI**。默认只读。\n\n# 《朱／紫》4.0.0 RaidPoint 实证与 N1/N2 实施记录
 
 > **2026-10-20 重要勘误（覆盖本页旧结论）**：PokéLDN 4.0.0 donor 的完整奖励记录从 `RaidPoint+0xE0` / `Bootstrap+0x798` 开始，四列为 `[condition_or_source, item_id, quantity, reserved]`；`+0xE4/+0x79C` 只是记录内部的道具 ID，不是完整行起点。以下旧版 `+0xE4 记录起点 / [Item,Quantity,Rare,Subject]` 的叙述**仅作为历史错误调查记录保存，不可作为写入指导**。最新版布局、subject0/5 和验证限制统一参见 [POKELDN_SUBJECT0_RETAIL_LAYOUT_TEST.md](POKELDN_SUBJECT0_RETAIL_LAYOUT_TEST.md)。
 
