@@ -50,9 +50,9 @@ public sealed class RewardAppendComposerTests
             result.Bytes.AsSpan(offset, n*16).ToArray());
         Assert.True(RaidPointOfflinePatch.UntouchedFieldsEqual(before,
             result.Bytes, bootstrap ? 0x6B8 : 0));
-        Assert.Equal(5, BinaryPrimitives.ReadUInt32LittleEndian(
+        Assert.Equal(5u, BinaryPrimitives.ReadUInt32LittleEndian(
             result.Bytes.AsSpan(offset + n*16 + 12)));
-        Assert.Equal(999, BinaryPrimitives.ReadUInt32LittleEndian(
+        Assert.Equal(999u, BinaryPrimitives.ReadUInt32LittleEndian(
             result.Bytes.AsSpan(offset + n*16 + 4)));
         Assert.Equal(before, original); // input is immutable
         Assert.All(RaidRewardEditor.Decode(result.Bytes.AsSpan(offset, 720))
