@@ -18,6 +18,20 @@ public sealed class HostRaidPointAutoLocator(ISwitchConnectionAsync connection)
     private const ulong MainStaticDataStart = 0x4383000;
     private const ulong MainStaticDataEnd = 0x46D9000;
     private static readonly byte[] Needle = "RaidPoint_"u8.ToArray();
+    // Current-process discovery cache, never a static ELF pointer root.
+    // Invalidated when main/heap base or the observed structure changes.
+    private static readonly object CacheGate = new();
+    private static HostSessionAddress? _lastSessionAddress;
+
+    public static void ForgetCachedAddress()
+    {
+        lock (CacheGate) _lastSessionAddress = null;
+    }
+
+    private sealed record HostSessionAddress(
+        ulong MainBase, ulong HeapBase, ulong Owner, ulong RaidPoint,
+        DateTimeOffset ObservedAt);
+
 
     /// <summary>
     /// Validate the name, its metadata, repeated difficulty+level, and
@@ -92,7 +106,8 @@ public sealed class HostRaidPointAutoLocator(ISwitchConnectionAsync connection)
 
     public async Task<HostRaidPointDiscovery> FindAsync(
         int maxMegabytes, IProgress<HostRaidPointScanProgress>? progress,
-        CancellationToken token)
+        CancellationToken token,
+        Func<ulong, int, CancellationToken, Task<byte[]>>? fastRead = null)
     {
         if (maxMegabytes is < 1 or > MaxScanMegabytes)
             throw new ArgumentOutOfRangeException(nameof(maxMegabytes),
@@ -117,6 +132,55 @@ public sealed class HostRaidPointAutoLocator(ISwitchConnectionAsync connection)
         if (mainBase < 0x10000 || heapBase < 0x10000 || (heapBase & 0xFFF) != 0)
             throw new InvalidDataException("主模块或堆基址无效；已拒绝继续扫描。");
 
+        // Pointer-first path: reuse a previously type-linked owner from this
+        // very process only after rereading + validating the whole RaidPoint.
+        HostSessionAddress? cached;
+        lock (CacheGate) cached = _lastSessionAddress;
+        if (cached is not null && cached.MainBase == mainBase &&
+            cached.HeapBase == heapBase &&
+            DateTimeOffset.UtcNow - cached.ObservedAt < TimeSpan.FromMinutes(20))
+        {
+            try
+            {
+                var read = fastRead ?? connection.ReadBytesAbsoluteAsync;
+                byte[] first = await read(cached.RaidPoint,
+                    RaidPointLayout.RaidPointLength, token).ConfigureAwait(false);
+                await Task.Delay(120, token).ConfigureAwait(false);
+                byte[] second = await read(cached.RaidPoint,
+                    RaidPointLayout.RaidPointLength, token).ConfigureAwait(false);
+                if (first.AsSpan().SequenceEqual(second) &&
+                    LooksLikeRetailRaidPoint(second, out string cachedName, out _) &&
+                    cached.Owner + SysbotOnlyRaidPointInspector.EmbeddedRaidPointOffset ==
+                    cached.RaidPoint)
+                {
+                    HostOwnerVtableEvidence evidence = await ReadOwnerTypeEvidenceAsync(
+                        connection, cached.Owner, mainBase, token).ConfigureAwait(false);
+                    if (evidence is HostOwnerVtableEvidence.SerializerSlotPointsToE327FC
+                        or HostOwnerVtableEvidence.DestructorVtableTriple)
+                    {
+                        var plan = RewardAppendPlanner.Plan(second,
+                            [new RewardRow(15, 500, 0, 0)], id => id == 15, 0);
+                        string sha = Convert.ToHexString(SHA256.HashData(
+                            RaidPointLayout.GetRaidPointRewards(second)));
+                        progress?.Report(new HostRaidPointScanProgress(
+                            0, maxMegabytes, 1, 0, 1, 0, 0,
+                            "本次游戏地址缓存重新验证成功：直接读取0x3E8，无需全堆扫描"));
+                        return new HostRaidPointDiscovery(heapBase, mainBase, 0,
+                            [new HostRaidPointDiscoveryCandidate(cached.Owner, cached.RaidPoint,
+                                cachedName, evidence, plan.Accepted, plan.Reason,
+                                plan.OriginalCount, sha,
+                                "REVALIDATED_SESSION_CACHE_NOT_PROVEN_ACTIVE_ROOM")],
+                            1, 0, []);
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+            catch (Exception) { /* fall back to bounded search, never stale pointer */ }
+            ForgetCachedAddress();
+        }
+        else if (cached is not null)
+            ForgetCachedAddress();
+
         byte[] slot = await connection.ReadBytesMainAsync(
             SysbotOnlyRaidPointInspector.SerializerEntrySlotRva, 8, token).ConfigureAwait(false);
         if (slot.Length != 8 ||
@@ -129,11 +193,13 @@ public sealed class HostRaidPointAutoLocator(ISwitchConnectionAsync connection)
         // take ~20 minutes in intentional delays alone. Temporarily reduce
         // delay while using only the same proven chunk size; restore settings
         // in finally, even if cancelled or a TCP request fails.
-        using var wifiSpeedMode = ScopedWifiScanTuning.Create(connection);
+        using ScopedWifiScanTuning? wifiSpeedMode = fastRead is null
+            ? ScopedWifiScanTuning.Create(connection) : null;
         var timer = Stopwatch.StartNew();
         progress?.Report(new HostRaidPointScanProgress(
             0, maxMegabytes, 0, 0, 0, 0, 0,
-            wifiSpeedMode.Description));
+            fastRead is null ? wifiSpeedMode!.Description
+                : "已验证专用高速只读TCP通道（不会写内存）"));
         int totalBlocks = maxMegabytes * 1024 * 1024 / BlockSize;
         var found = new List<HostRaidPointDiscoveryCandidate>();
         int failedBlocks = 0;
@@ -153,7 +219,7 @@ public sealed class HostRaidPointAutoLocator(ISwitchConnectionAsync connection)
                 timeout.CancelAfter(TimeSpan.FromSeconds(12));
                 try
                 {
-                    bytes = await connection.ReadBytesAbsoluteAsync(
+                    bytes = await (fastRead ?? connection.ReadBytesAbsoluteAsync)(
                         blockAddress, BlockSize, timeout.Token).ConfigureAwait(false);
                     token.ThrowIfCancellationRequested();
                 }
@@ -194,11 +260,11 @@ public sealed class HostRaidPointAutoLocator(ISwitchConnectionAsync connection)
                 byte[] second;
                 try
                 {
-                    first = await connection.ReadBytesAbsoluteAsync(
+                    first = await (fastRead ?? connection.ReadBytesAbsoluteAsync)(
                         raidPointAddress, RaidPointLayout.RaidPointLength, token).ConfigureAwait(false);
                     if (!LooksLikeRetailRaidPoint(first, out _, out _)) continue;
                     await Task.Delay(120, token).ConfigureAwait(false);
-                    second = await connection.ReadBytesAbsoluteAsync(
+                    second = await (fastRead ?? connection.ReadBytesAbsoluteAsync)(
                         raidPointAddress, RaidPointLayout.RaidPointLength, token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
@@ -257,6 +323,15 @@ public sealed class HostRaidPointAutoLocator(ISwitchConnectionAsync connection)
             maxMegabytes, validBlocks, failedBlocks, found.Count,
             (long)(validBlocks + failedBlocks) * BlockSize, timer.ElapsedMilliseconds,
             "本轮扫描完成"));
+        if (found.Count == 1 && found[0].OwnerTypeEvidence is
+            HostOwnerVtableEvidence.SerializerSlotPointsToE327FC or
+            HostOwnerVtableEvidence.DestructorVtableTriple)
+        {
+            lock (CacheGate)
+                _lastSessionAddress = new HostSessionAddress(
+                    mainBase, heapBase, found[0].OwnerAddress,
+                    found[0].RaidPointAddress, DateTimeOffset.UtcNow);
+        }
         return new HostRaidPointDiscovery(heapBase, mainBase, maxMegabytes,
             found, validBlocks, failedBlocks, errors);
     }
