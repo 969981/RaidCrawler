@@ -12,6 +12,7 @@ public sealed class SysbotOnlyHostWindow : Form
     private readonly CheckBox _ownerMode = new();
     private readonly Button _inspect = new();
     private readonly Button _scan = new();
+    private readonly ISwitchConnectionAsync _connection;
     private readonly TextBox _results = new();
     private readonly ComboBox _phase = new();
     private readonly Dictionary<string, SysbotOnlyCandidate> _phaseRecords = new();
@@ -19,6 +20,7 @@ public sealed class SysbotOnlyHostWindow : Form
 
     public SysbotOnlyHostWindow(ISwitchConnectionAsync connection)
     {
+        _connection = connection;
         _inspector = new SysbotOnlyRaidPointInspector(connection);
         Text = "方案 A：纯 sys-botbase 房主 RaidPoint 诊断";
         ClientSize = new Size(690, 515);
@@ -63,6 +65,21 @@ public sealed class SysbotOnlyHostWindow : Form
             "S0 开房前", "S1 房主开房后", "S2 参与者加入后",
             "S3 准备开战前", "S4 开战之后（只读）"]);
         _phase.SelectedIndex = 0;
+        var monitorButton = new Button
+        {
+            Text = "自动状态监测", Location = new Point(530, 147),
+            Size = new Size(138, 28)
+        };
+        monitorButton.Click += (_, _) =>
+        {
+            if (_running)
+            {
+                Log("请等待当前扫描结束，再打开自动监测。");
+                return;
+            }
+            using var monitor = new SvRaidAutoMonitorWindow(_connection);
+            monitor.ShowDialog(this);
+        };
         _results.Multiline = true;
         _results.WordWrap = true;
         _results.ScrollBars = ScrollBars.Vertical;
@@ -70,7 +87,7 @@ public sealed class SysbotOnlyHostWindow : Form
         _results.Location = new Point(14, 191);
         _results.Size = new Size(654, 299);
         _results.Font = new Font(FontFamily.GenericMonospace, 9);
-        Controls.AddRange([information, label, _address, _ownerMode, _inspect, _scan, phaseLabel, _phase, _results]);
+        Controls.AddRange([information, label, _address, _ownerMode, _inspect, _scan, phaseLabel, _phase, monitorButton, _results]);
         FormClosed += (_, _) => _close.Cancel();
 
         Log("方案 A 仅读取当前进程的候选 RaidPoint。");
