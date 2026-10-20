@@ -10,6 +10,8 @@ public static class ScreenshotRewardPreset
 {
     public const uint Quantity = 999;
     public const uint Subject = 5;
+    public const uint EveryoneSubject = 0;
+    public static bool IsSupportedSubject(uint subject) => subject is EveryoneSubject or Subject;
     public const int Count = 20;
     public const int Bytes = Count * RaidPointLayout.RewardRowLength;
     public const int MaxOriginalRows = RaidPointLayout.RewardCapacity - Count; // 25
@@ -39,19 +41,30 @@ public static class ScreenshotRewardPreset
             new("特性膏药", 1606),        // Ability Patch
         });
 
-    public static IReadOnlyList<RewardRow> BuildRows() =>
-        Items.Select(item => new RewardRow(item.ItemId, Quantity, 0, Subject)).ToArray();
+    public static IReadOnlyList<RewardRow> BuildRows(uint subject = Subject)
+    {
+        if (!IsSupportedSubject(subject))
+            throw new ArgumentOutOfRangeException(nameof(subject), "仅允许 subject=0 或 5。");
+        return Items.Select(item => new RewardRow(item.ItemId, Quantity, 0, subject)).ToArray();
+    }
 
-    public static RewardAppendPlan Plan(ReadOnlySpan<byte> source) =>
-        RewardAppendPlanner.Plan(source, BuildRows(), id => Items.Any(item => item.ItemId == id));
+    public static RewardAppendPlan Plan(ReadOnlySpan<byte> source, uint subject = Subject)
+    {
+        if (!IsSupportedSubject(subject))
+            return new RewardAppendPlan(false, "UNSUPPORTED_SUBJECT", 0, 0, source.ToArray());
+        return RewardAppendPlanner.Plan(source, BuildRows(subject),
+            id => Items.Any(item => item.ItemId == id), subject);
+    }
 
     /// <summary>
     /// Checks EXACTLY the 20 slots in screenshot order and untouched bytes
     /// everywhere else in the 0x3e8 original. Fail closed, no partial result.
     /// </summary>
     public static string Audit(ReadOnlySpan<byte> original,
-        ReadOnlySpan<byte> candidate, int originalRows)
+        ReadOnlySpan<byte> candidate, int originalRows, uint subject = Subject)
     {
+        if (!IsSupportedSubject(subject))
+            return "UNSUPPORTED_SUBJECT";
         if (original.Length != RaidPointLayout.RaidPointLength ||
             candidate.Length != RaidPointLayout.RaidPointLength)
             return "INVALID_RAIDPOINT_LENGTH";
@@ -70,7 +83,7 @@ public static class ScreenshotRewardPreset
         {
             var item = Items[i];
             var actual = RewardRow.Read(candidate.Slice(offset + i * 16, 16));
-            if (actual != new RewardRow(item.ItemId, Quantity, 0, Subject))
+            if (actual != new RewardRow(item.ItemId, Quantity, 0, subject))
                 return $"PRESET_ROW_MISMATCH_{i}";
         }
         return "EXACT_20_ROWS_ONLY";
