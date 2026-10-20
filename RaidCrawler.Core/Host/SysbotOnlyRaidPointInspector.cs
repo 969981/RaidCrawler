@@ -262,6 +262,21 @@ public sealed class SysbotOnlyRaidPointInspector(ISwitchConnectionAsync connecti
             SerializerFingerprintLength, token).ConfigureAwait(false);
         ValidateSerializerFingerprint(code);
 
+        if (isOwnerObject)
+        {
+            ulong mainBase = await connection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
+            byte[] vtableSlot = await connection.ReadBytesMainAsync(
+                SerializerEntrySlotRva, 8, token).ConfigureAwait(false);
+            if (mainBase < 0x10000 || vtableSlot.Length != 8 ||
+                BinaryPrimitives.ReadUInt64LittleEndian(vtableSlot) != checked(mainBase + SerializerRva))
+                throw new InvalidDataException("当前虚表中的序列化函数指针不匹配，无法证实对象类型。");
+            byte[] header = await connection.ReadBytesAbsoluteAsync(
+                inputAddress, 0x30, token).ConfigureAwait(false);
+            if (!MatchesSerializerType(header, mainBase))
+                throw new InvalidDataException(
+                    "候选对象不属于 ELF 已验证的序列化类（3张虚表不匹配）。拒绝作为房主输入对象。");
+        }
+
         ulong raidPointAddress = CalculateRaidPointAddress(inputAddress, isOwnerObject);
         byte[] first = await connection.ReadBytesAbsoluteAsync(raidPointAddress,
             RaidPointLayout.RaidPointLength, token).ConfigureAwait(false);
