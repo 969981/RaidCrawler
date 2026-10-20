@@ -10,7 +10,7 @@ public class HostProbeMailboxTests
         uint count = 2, uint generation = 4)
     {
         var buf = new byte[HostProbeMailbox.HeaderLength];
-        "RCHMB02\0"u8.CopyTo(buf);
+        "RCHMB03\0"u8.CopyTo(buf);
         BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(8), HostProbeMailbox.ProtocolVersion);
         BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(12), HostProbeMailbox.MailboxLength);
         BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(0x10), enabled);
@@ -27,7 +27,7 @@ public class HostProbeMailboxTests
     public void HeaderHasStableOffsetsAndIsParsedCorrectly()
     {
         Assert.Equal(0x40, HostProbeMailbox.HeaderLength);
-        Assert.Equal(0x600, HostProbeMailbox.MailboxLength);
+        Assert.Equal(0x800, HostProbeMailbox.MailboxLength);
         Assert.Equal(0x310, HostProbeMailbox.BootstrapOffset);
         var h = HostProbeMailbox.ParseHeader(MakeHeader(1, 1, 12, 24));
         Assert.True(h.Enabled);
@@ -45,7 +45,7 @@ public class HostProbeMailboxTests
         b[0] ^= 1;
         Assert.Throws<InvalidDataException>(() => HostProbeMailbox.ParseHeader(b));
         b = MakeHeader();
-        BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(8), 3);
+        BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(8), 4);
         Assert.Throws<InvalidDataException>(() => HostProbeMailbox.ParseHeader(b));
         b = MakeHeader();
         BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(12), 0x500);
