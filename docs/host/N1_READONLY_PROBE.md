@@ -1,7 +1,16 @@
 # N1：真实房主只读捕获（研究入口与验收）
 
-> 2026-10-20；状态：**OFFLINE_ANALYZER_IMPLEMENTED / REAL_SWITCH_PROBE_PENDING**。  
+> 2026-10-20；状态：**ARM64_EXLAUNCH_BUILT / REAL_SWITCH_CAPTURE_PENDING**。
 > 不修改游戏内存、代码页、LZ4 帧、SysBot.Base，也不发送自定义网络数据。此文档不证明官方互联网模式生效。
+
+## 新进展：Switch 侧 probe 已交叉编译（但尚未实机验证）
+
+原生代码已放入 [`switch/host-probe/`](../../switch/host-probe/README.md)。基于 [exlaunch@f9f4b0d](https://github.com/shadowninja108/exlaunch/commit/f9f4b0dd07b68f97958cb9c79228bbca22ca80d5)，安装 `main+0xE32984` Inline Hook，只读复制 `x20+0x13C` 和 `x23+0x79C` 各 **720 B**；后台线程在明确 SD 启用标记存在时尝试导出数据。
+
+- [Native Actions 成功构建](https://github.com/969981/RaidCrawler/actions/runs/39368084041)（仅 ARM64 构建 + artifact，不含 Switch UAT）。
+- 原来提到的“代码不修改游戏代码页”需要严格修正：**Inline Hook 为实现观察需要安装代码插桩，但回调不写奖励、背包或网络报文。**
+- 新 CLI 用 `--reward-regions` 处理两份 720B 输出；这样不会收集完整 bootstrap 内可能包含的玩家身份和宝可梦数据。
+- 完整 Build ID 仍要用户在实机独立确认；模块当前只做 Title ID 目标构建和 12 条 opcode 匹配。SD Debug mount 的实际权限亦未经过实机验证。
 
 ## 已提交的 PC 侧只读分析模块
 
