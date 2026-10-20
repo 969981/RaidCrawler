@@ -2,7 +2,7 @@ namespace RaidCrawler.Core.Host;
 
 /// <summary>
 /// Offline fail-closed planner. This class never writes the Switch process.
-/// Scarlet/Violet donor row layout: source/ItemId/Quantity/reserved. Writes no hardware.
+/// Scarlet/Violet retail row layout: ItemId/Quantity/RareFlag/SubjectType. Writes no hardware.
 /// </summary>
 public static class RewardAppendPlanner
 {
@@ -39,7 +39,7 @@ public static class RewardAppendPlanner
             }
             if (paddingSeen)
                 return Reject("NONCONTIGUOUS_ORIGINAL_ROWS", count);
-            if (row.ItemId == 0 || row.Quantity == 0 || row.SubjectType > 5 || row.Reserved != 0)
+            if (row.ItemId == 0 || row.Quantity == 0 || row.SubjectType > 5 || row.RareFlag > 1)
                 return Reject("AMBIGUOUS_ORIGINAL_ROW", count);
             count++;
         }
@@ -56,7 +56,7 @@ public static class RewardAppendPlanner
             if (row.SubjectType != requestedSubject)
                 return Reject(requestedSubject == AllPlayersSubject
                     ? "SUBJECT_NOT_ALL_PLAYERS" : "SUBJECT_NOT_GLIMMERING_CHARM", count);
-            if (row.Reserved != 0)
+            if (row.RareFlag != 0)
                 return Reject("UNSUPPORTED_CUSTOM_RESERVED", count);
         }
 
