@@ -16,8 +16,8 @@ public static class QuickBall500AllPlayersPreset
     public static RewardRow Row => new(ItemId, Quantity, Reserved, SubjectType);
 
     /// <summary>
-    /// Full 16-byte little-endian record, NOT an item ID at row offset zero.
-    /// At a 4.0.0 RaidPoint it occupies one vacant row starting at +0xE0+16*N.
+    /// Full 16-byte little-endian record; the first u32 IS the item ID.
+    /// At a 4.0.0 RaidPoint it occupies one vacant row starting at +0xE4+16*N.
     /// </summary>
     public static byte[] GetRecordBytes()
     {
