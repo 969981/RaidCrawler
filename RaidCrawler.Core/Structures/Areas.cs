@@ -34,7 +34,7 @@ public static class Areas
     [
         "北上公路",
         "苹果之丘",
-        "Reveler's Road",
+        "祭典之路",
         "鬼山",
         "地狱谷",
         "晶光池",
