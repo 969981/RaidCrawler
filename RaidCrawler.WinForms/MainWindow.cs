@@ -1048,6 +1048,13 @@ public partial class MainWindow : Form
             IVs.Text = IVsString(Utils.ToSpeedLast(_ivs));
             toolTip.SetToolTip(IVs, IVsString(Utils.ToSpeedLast(_ivs), true));
 
+            // Ported from develop: PK9 size attributes generated for this
+            // precise raid seed. All three are raw 0–255 scalar bytes.
+            // Do NOT label HeightScalar as metres or WeightScalar as kg.
+            _heightScalarDisplay.Text = blank.HeightScalar.ToString();
+            _weightScalarDisplay.Text = blank.WeightScalar.ToString();
+            _scaleDisplay.Text = blank.Scale.ToString();
+
             PID.BackColor = raid.CheckIsShiny(encounter) ? Color.Gold : DefaultColor;
             IVs.BackColor = IVs.Text is "31/31/31/31/31/31" ? Color.YellowGreen : DefaultColor;
             return;
@@ -1754,8 +1761,9 @@ public partial class MainWindow : Form
             return;
 
         ShowExtraMoves ^= true;
-        LabelMoves.Text = ShowExtraMoves ? "追加招式：" : "招式：";
-        LabelMoves.Location = LabelMoves.Location with { X = LabelMoves.Location.X + (ShowExtraMoves ? 9 : -9) };
+        // A responsive table owns the position. Moving Location manually
+        // used to collide with neighboring fields at Windows 125%/150% DPI.
+        LabelMoves.Text = ShowExtraMoves ? "追加招式：" : "招式 1：";
 
         var length = encounter.ExtraMoves.Length < 4 ? 4 : encounter.ExtraMoves.Length;
         var extraMoves = new ushort[length];
