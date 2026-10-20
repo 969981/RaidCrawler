@@ -68,6 +68,113 @@ public sealed class SysbotOnlyRaidPointInspector(ISwitchConnectionAsync connecti
         return Encoding.ASCII.GetString(name);
     }
 
+    public const ulong SerializerVTableRva = 0x4459278;
+    public const ulong SerializerEntrySlotRva = 0x44592E0;
+    public const ulong SecondaryVTableRva = 0x4459308;
+    public const ulong TertiaryVTableRva = 0x4459358;
+    public const int SerializerVirtualSlotOffset = 0x68;
+
+    /// <summary>
+    /// Exact vtable triple written to the serializer class instance by
+    /// main+0x1E63204..+0x1E6321C, identified via ELF RELATIVE relocation.
+    /// This establishes CLASS IDENTITY only, not current-raid ownership.
+    /// </summary>
+    public static bool MatchesSerializerType(ReadOnlySpan<byte> header, ulong mainBase)
+    {
+        if (header.Length < 0x30 || mainBase < 0x10000)
+            return false;
+        static ulong Ptr(ReadOnlySpan<byte> span, int start) =>
+            BinaryPrimitives.ReadUInt64LittleEndian(span.Slice(start, 8));
+        return Ptr(header, 0) == checked(mainBase + SerializerVTableRva) &&
+               Ptr(header, 0x20) == checked(mainBase + SecondaryVTableRva) &&
+               Ptr(header, 0x28) == checked(mainBase + TertiaryVTableRva);
+    }
+
+    /// <summary>
+    /// Pure sys-botbase bounded HEAP START scan for the actual C++ serializer
+    /// object TYPE rather than arbitrary "RaidPoint_" text copies.
+    /// Does NOT prove the object is current or ever sent.
+    /// </summary>
+    public async Task<IReadOnlyList<HostTypedOwnerCandidate>> ScanSerializerObjectsAsync(
+        int maxMegabytes, CancellationToken token)
+    {
+        if (maxMegabytes is < 1 or > 8)
+            throw new ArgumentOutOfRangeException(nameof(maxMegabytes), "只允许扫描堆起始1到8MiB。");
+        string tid = (await connection.GetTitleID(token).ConfigureAwait(false)).Trim()
+            .Replace("0x", "", StringComparison.OrdinalIgnoreCase);
+        string version = (await connection.GetGameInfo("version", token).ConfigureAwait(false))
+            .Trim().TrimEnd('\0');
+        if (!tid.Equals(HostProbeMailbox.ExpectedTitleId, StringComparison.OrdinalIgnoreCase)
+            || version != "4.0.0")
+            throw new InvalidOperationException("仅可扫描已审计的《紫》4.0.0。");
+
+        ValidateSerializerFingerprint(await connection.ReadBytesMainAsync(
+            SerializerRva, SerializerFingerprintLength, token).ConfigureAwait(false));
+        ulong mainBase = await connection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
+        if (mainBase < 0x10000)
+            throw new InvalidDataException("当前游戏主模块基址异常。");
+
+        // The relocation table of Violet4.0.0.elf places serializer RVA
+        // 0xE327FC at main+0x44592E0 (= vtable + 0x68).
+        byte[] entry = await connection.ReadBytesMainAsync(
+            SerializerEntrySlotRva, 8, token).ConfigureAwait(false);
+        if (entry.Length != 8 ||
+            BinaryPrimitives.ReadUInt64LittleEndian(entry) != checked(mainBase + SerializerRva))
+            throw new InvalidDataException("主模块中对应虚函数槽不是预期的序列化函数；已停止扫描。");
+
+        ulong heap = await connection.GetHeapBaseAsync(token).ConfigureAwait(false);
+        if (heap < 0x10000 || (heap & 0xFFF) != 0)
+            throw new InvalidDataException("堆起始地址不可信。");
+
+        byte[] vtableBytes = new byte[8];
+        BinaryPrimitives.WriteUInt64LittleEndian(vtableBytes, checked(mainBase + SerializerVTableRva));
+        var results = new List<HostTypedOwnerCandidate>();
+        const int readSize = 0x4000;
+        for (int offset = 0; offset < maxMegabytes * 1024 * 1024; offset += readSize)
+        {
+            token.ThrowIfCancellationRequested();
+            ulong baseAddress = checked(heap + (ulong)offset);
+            byte[] block = await connection.ReadBytesAbsoluteAsync(
+                baseAddress, readSize, token).ConfigureAwait(false);
+            if (block.Length != readSize)
+                throw new IOException("sys-botbase 返回了不完整的堆内存数据，已终止。");
+
+            for (int i = 0; i <= block.Length - 8 && results.Count < 12; i += 8)
+            {
+                if (!block.AsSpan(i, 8).SequenceEqual(vtableBytes))
+                    continue;
+
+                ulong owner = checked(baseAddress + (ulong)i);
+                byte[] header = await connection.ReadBytesAbsoluteAsync(owner, 0x30, token)
+                    .ConfigureAwait(false);
+                if (!MatchesSerializerType(header, mainBase))
+                    continue;
+                ulong raidPoint = CalculateRaidPointAddress(owner, true);
+                byte[] data = await connection.ReadBytesAbsoluteAsync(
+                    raidPoint, RaidPointLayout.RaidPointLength, token).ConfigureAwait(false);
+                string name;
+                try { name = GetRaidPointName(data); }
+                catch (InvalidDataException) { continue; }
+                var plan = RewardAppendPlanner.Plan(data,
+                    [new RewardRow(15, 1, 0, 5)], id => id == 15);
+                if (!plan.Accepted) continue;
+
+                // Same owner must still have all 3 live vtable pointers,
+                // otherwise the scan raced with a changing/destroyed object.
+                byte[] again = await connection.ReadBytesAbsoluteAsync(owner, 0x30, token)
+                    .ConfigureAwait(false);
+                if (!MatchesSerializerType(again, mainBase))
+                    continue;
+
+                results.Add(new HostTypedOwnerCandidate(owner, raidPoint, name,
+                    plan.OriginalCount, "ELF_VTABLE_TYPE_ONLY_NOT_ACTIVE_RAID"));
+            }
+            if (results.Count >= 12) break;
+            await Task.Delay(5, token).ConfigureAwait(false);
+        }
+        return results;
+    }
+
     /// <summary>
     /// Bounded opt-in HEAP-START signature search, maximum 8 MiB.
     /// May find stale/irrelevant copies; does NOT discover a pointer chain.
@@ -190,3 +297,8 @@ public sealed record SysbotOnlyCandidate(
 /// <summary>Possible heap copy only; NOT an authenticated current host object.</summary>
 public sealed record HostRaidPointAddressCandidate(
     ulong Address, string Name, int OriginalRows, string EvidenceLevel);
+
+/// <summary>ELF-vtable-matched owner, not a verified active-room pointer.</summary>
+public sealed record HostTypedOwnerCandidate(
+    ulong OwnerAddress, ulong RaidPointAddress, string Name,
+    int OriginalRows, string EvidenceLevel);
