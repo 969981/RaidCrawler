@@ -14,6 +14,7 @@ public sealed class SysbotOnlyRewardWriteWindow : Form
     private readonly TextBox _address = new();
     private readonly NumericUpDown _quantity = new();
     private readonly ComboBox _subjectMode = new();
+    private readonly Button _loadQuick500Preset = new();
     private readonly CheckBox _confirmVersion = new();
     private readonly CheckBox _confirmUnverified = new();
     private readonly Button _prepare = new();
@@ -23,7 +24,10 @@ public sealed class SysbotOnlyRewardWriteWindow : Form
     private HostPlanAWritePermit? _permit;
     private bool _busy;
 
-    public SysbotOnlyRewardWriteWindow(ISwitchConnectionAsync connection, string? candidateAddress = null)
+    public SysbotOnlyRewardWriteWindow(
+        ISwitchConnectionAsync connection,
+        string? candidateAddress = null,
+        bool useAllPlayersQuickBall500Preset = false)
     {
         _writer = new SysbotOnlyRewardWriter(connection);
         Text = "方案 A：纯 sys-botbase 受控奖励写入（实验）";
@@ -52,6 +56,12 @@ public sealed class SysbotOnlyRewardWriteWindow : Form
             _apply.Enabled = _restore.Enabled = false;
             Say("领取对象已切换；必须重新准备内存快照。");
         };
+        // One-click offline preset selection. The dedicated launcher also
+        // opens this window with its quantity and recipient locked.
+        _loadQuick500Preset.Text = "载入先机球×500预设";
+        _loadQuick500Preset.Location = new Point(465, 68);
+        _loadQuick500Preset.Size = new Size(241, 32);
+        _loadQuick500Preset.Click += (_, _) => LoadQuick500Preset();
         var addrLabel = new Label
         {
             Text = "候选对象绝对地址：",
@@ -99,12 +109,38 @@ public sealed class SysbotOnlyRewardWriteWindow : Form
         _log.Font = new Font(FontFamily.GenericMonospace, 9);
         _log.Location = new Point(14, 301);
         _log.Size = new Size(702, 301);
-        Controls.AddRange([intro, _subjectMode, addrLabel, _address, qtyLabel, _quantity,
+        Controls.AddRange([intro, _subjectMode, _loadQuick500Preset, addrLabel, _address, qtyLabel, _quantity,
             _confirmVersion, _confirmUnverified, _prepare, _apply, _restore, _log]);
         FormClosed += (_, _) => _close.Cancel();
+        if (useAllPlayersQuickBall500Preset)
+        {
+            LoadQuick500Preset();
+            _subjectMode.Enabled = false;
+            _quantity.Enabled = false;
+            _loadQuick500Preset.Enabled = false;
+            Text = "全体玩家 · 先机球×500 — 单行奖励测试预设";
+            intro.Text = "固定测试预设：先机球 Item 15 ×500，subject=0，保留原版全部奖励。" +
+                         " 仅《紫》4.0.0 受控 RAM 实验；不保证参与者收到或保存。";
+            _prepare.Text = "1. 验证并准备预设";
+        }
         Say("这是直接内存写入实验，不是已验证的房主奖励修改功能。");
         Say("单行：道具15。晶耀护符模式1–10；全体模式额外支持×500对照实验。Reserved=0。");
         Say("使用修正的 16B [source,item,quantity,reserved] 行，起点 owner+0x58+0xE0。不安装插件。");
+    }
+
+    /// <summary>
+    /// Safe UI-only preset loader. No Switch IO occurs until user explicitly
+    /// presses Prepare and then confirms Apply.
+    /// </summary>
+    private void LoadQuick500Preset()
+    {
+        _subjectMode.SelectedIndex = 1; // subject=0
+        _quantity.Maximum = QuickBall500AllPlayersPreset.Quantity;
+        _quantity.Value = QuickBall500AllPlayersPreset.Quantity;
+        _permit = null;
+        _apply.Enabled = _restore.Enabled = false;
+        Say($"已载入 {QuickBall500AllPlayersPreset.DisplayName}：" +
+            " ItemId=15, Subject=0, Qty=500, Reserved=0；未执行 Switch 写入。");
     }
 
     private void Say(string msg)
