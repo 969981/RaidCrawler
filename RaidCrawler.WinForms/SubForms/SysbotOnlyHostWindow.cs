@@ -110,7 +110,7 @@ public sealed class SysbotOnlyHostWindow : Form
                 Log("已填写唯一虚表匹配的对象地址；请再点击只读验证。它仍可能是未使用的旧对象。");
             }
             if (candidates.Count == 0)
-                Log("堆起始1 MiB没有匹配对象，不代表当前对象不存在（可能不在该区域或短暂存活）。");
+                Log("本次堆起始1 MiB没有匹配对象：可能位于其他堆段、仅短暂存活，或活跃派生类使用其他虚表。不能据此否定方案 A。");
         }
         catch (OperationCanceledException) when (_close.IsCancellationRequested) { }
         catch (Exception ex) { Log("扫描未完成：" + ex.Message); }
