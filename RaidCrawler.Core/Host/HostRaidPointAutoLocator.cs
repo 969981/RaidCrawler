@@ -109,9 +109,9 @@ public sealed class HostRaidPointAutoLocator(ISwitchConnectionAsync connection)
         CancellationToken token,
         Func<ulong, int, CancellationToken, Task<byte[]>>? fastRead = null)
     {
-        if (maxMegabytes is < 1 or > MaxScanMegabytes)
+        if (maxMegabytes is < 0 or > MaxScanMegabytes)
             throw new ArgumentOutOfRangeException(nameof(maxMegabytes),
-                "搜索限定在堆起始处最多 64 MiB；不得任意扫描其他进程或未知内存。");
+                "0代表只复核本次游戏已知指针；扫描范围最多64MiB。");
 
         var inspector = new SysbotOnlyRaidPointInspector(connection);
         string tid = (await connection.GetTitleID(token).ConfigureAwait(false)).Trim()
@@ -187,6 +187,13 @@ public sealed class HostRaidPointAutoLocator(ISwitchConnectionAsync connection)
             BinaryPrimitives.ReadUInt64LittleEndian(slot) !=
             checked(mainBase + SysbotOnlyRaidPointInspector.SerializerRva))
             throw new InvalidDataException("主模块序列化槽指令指针不一致；已停止。");
+
+        if (maxMegabytes == 0)
+        {
+            progress?.Report(new HostRaidPointScanProgress(
+                0, 0, 0, 0, 0, 0, 0, "未找到可复核的本次进程指针缓存；尚未执行堆扫描"));
+            return new HostRaidPointDiscovery(heapBase, mainBase, 0, [], 0, 0, []);
+        }
 
         // The stock SysBot Wi-Fi client may use a 0x1C0-byte default transfer
         // and 64ms delay PER internal chunk. An 8 MiB sweep can otherwise
