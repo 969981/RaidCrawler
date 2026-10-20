@@ -14,3 +14,12 @@
 - [Benefit 奖励编辑器和主持功能说明](benefit-reward-editor.md)：操作入口、功能和 CI 状态。
 
 不包含原始游戏二进制、密钥或 Nintendo 官方在线房间修改工具。当前集成的主持模式是 PokéLDN 本地 LDN/特殊模拟器 LAN 路线。
+
+## 《紫》4.0.0 Lua VM / 奖励 P1 逆向研究（2026-10-20）
+
+- [Lua VM 主状态创建与全局引用链（P1-B 技术文档）](violet400-p1b-lua-vm-global-root-audit-20261020.md)：精确解释 `main+0x3B420`、`0x3B050`、`0x26075E0`、`0x1107AF4`、`0x1107B00` 与 `0x4759EB0`；列出已有只读探针和实机尚未完成的验证门槛。
+- [Violet4.0.0.elf ARM64 反汇编与 Lua 状态指针技术审计](violet400-elf-lua-vm-state-pointer-reverse-engineering-20261020.md)：原始 ELF 样本哈希、PT_LOAD/BSS 映射、19 条机器码、3 个 BL 调用目标、字段偏移推导、命令行复核和避免将 Lua 栈 720B 误判为 RaidPoint 奖励表。
+- [main.blua 精确 Lua 5.4 Proto/PC 绑定](violet400-exact-main-blua-reward-p1-20261020.md)：LotteryRewardItem、护符过滤、RaidResultAddItem 的目标函数标识和字节码文件偏移。
+- [P1-B ELF 校验脚本](../../tools/research/audit_violet400_lua_vm_root.py)：离线按原始 SHA/指令/BL 目标检验，不写 Switch 内存。
+
+**证据边界：** 上述均为文件级、静态或离线证据；运行中 `lua_State`、Lua A/B/C 调用、Hook 命中、原版奖励保留与额外物品入包仍须实机验证。
