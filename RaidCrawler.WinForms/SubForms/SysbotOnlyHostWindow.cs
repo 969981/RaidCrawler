@@ -186,6 +186,19 @@ public sealed class SysbotOnlyHostWindow : Form
         try
         {
             Log("先尝试本次游戏已缓存的房主候选指针；首次定位再使用独立高速TCP读通道。");
+            var direct = await _autoLocator.FindAsync(0, null, scanCts.Token);
+            if (direct.Candidates.Count == 1)
+            {
+                var cached = direct.Candidates[0];
+                _address.Text = $"0x{cached.OwnerAddress:X}";
+                _ownerMode.Checked = true;
+                Log($"无需扫描：重新验证本次游戏候选 Owner=0x{cached.OwnerAddress:X} " +
+                    $"RaidPoint=0x{cached.RaidPointAddress:X} {cached.Name}，" +
+                    $"SHA={cached.RewardsSha256}，类型={cached.OwnerTypeEvidence}。");
+                Log("这仍不证明对象属于当前房间的真实发送链；点击②只读验证。");
+                return;
+            }
+            Log("本次进程暂无可复核的候选指针；准备高速只读扫描。");
             Log("进度按KiB/百分比/速度显示；超时会自动停止，并拒绝使用不完整读取数据。");
             if (_connection is SwitchSocketAsync wifi)
             {
