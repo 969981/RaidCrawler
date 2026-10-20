@@ -37,7 +37,7 @@ class CompareCaptureTests(unittest.TestCase):
     def test_native_reward_regions_equal(self):
         source = bytearray(REGION_SIZE)
         target = bytearray(REGION_SIZE)
-        struct.pack_into("<IIII", source, 4 * 16, 15, 1, 0, 5)
+        struct.pack_into("<IIII", source, 4 * 16, 5, 15, 1, 0)
         target[:] = source
         result = compare_regions(bytes(source), bytes(target))
         self.assertTrue(result["equal"])
