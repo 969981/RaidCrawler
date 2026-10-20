@@ -6,8 +6,8 @@ namespace RaidCrawler.Core.Host;
 /// <summary>
 /// V2 fixed ABI shared with switch/host-probe/source/program/main.cpp.
 /// SysBot.Base is the only transport: there is no second network listener.
-/// Mailbox address must be obtained from the running module's [RC-N1] log.
-/// Neither connection nor client can discover module globals autonomously.
+/// Mailbox is discovered by a build-matched ASLR locator manifest.
+/// A runtime debug-log address is accepted only as a manual fallback.
 /// </summary>
 public static class HostProbeMailbox
 {
@@ -220,6 +220,13 @@ public sealed class HostProbeMailboxClient(ISwitchConnectionAsync connection)
         if (!game.Equals(HostProbeMailbox.ExpectedTitleId, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException(
                 $"此探针仅支持《紫》4.0.0（Title ID：{HostProbeMailbox.ExpectedTitleId}）。当前连接游戏：{game}。");
+        // Stock SysBot.Base supports the version query on both USB and socket.
+        // Exact version matching is mandatory before touching the injected mailbox.
+        string version = (await _connection.GetGameInfo("version", token)
+            .ConfigureAwait(false)).Trim().TrimEnd('\0');
+        if (!string.Equals(version, "4.0.0", StringComparison.Ordinal))
+            throw new InvalidOperationException(
+                $"当前游戏版本为“{version}”，而 N1/N2 Native 仅验证《紫》4.0.0。未进行内存操作。");
     }
 }
 
