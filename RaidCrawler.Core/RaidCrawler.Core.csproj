@@ -14,10 +14,16 @@
 	<PackageReference Include="FlatSharp.Runtime" Version="7.9.0" />
     <PackageReference Include="LibUsbDotNet" Version="2.2.75" />
     <PackageReference Include="PKHeX.Core" Version="26.7.7" />
+	<FlatSharpSchema Include="Schemas\*.fbs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('..\SysBot.Base\SysBot.Base.csproj')">
+    <ProjectReference Include="..\SysBot.Base\SysBot.Base.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="!Exists('..\SysBot.Base\SysBot.Base.csproj')">
 	<Reference Include="SysBot.Base">
 	  <HintPath>deps\SysBot.Base.dll</HintPath>
 	</Reference>
-	<FlatSharpSchema Include="Schemas\*.fbs" />
   </ItemGroup>
 
   <ItemGroup>

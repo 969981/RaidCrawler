@@ -192,6 +192,12 @@
     <Reference Include="PKHeX.Drawing.PokeSprite">
       <HintPath>deps\PKHeX.Drawing.PokeSprite.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('..\SysBot.Base\SysBot.Base.csproj')">
+    <ProjectReference Include="..\SysBot.Base\SysBot.Base.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="!Exists('..\SysBot.Base\SysBot.Base.csproj')">
     <Reference Include="SysBot.Base">
       <HintPath>deps\SysBot.Base.dll</HintPath>
     </Reference>
