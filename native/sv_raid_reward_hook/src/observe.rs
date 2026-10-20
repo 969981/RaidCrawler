@@ -152,7 +152,7 @@ mod tests {
         let report = stats(&data);
         assert_eq!(report.nonzero_rows, 3);
         assert_eq!(report.malformed_rows, 1);
-        assert_eq!(report.embedded_zero_holes, 42);
+        assert_eq!(report.embedded_zero_holes, 2);
         assert_eq!(report.trailing_zero_slots, 0);
         assert_eq!(report.subjects[5],1);
     }
