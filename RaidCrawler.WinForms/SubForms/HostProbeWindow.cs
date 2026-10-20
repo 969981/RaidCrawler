@@ -106,6 +106,9 @@ public sealed class HostProbeWindow : Form
             var result = await _probe.ReadCaptureAsync(a, t);
             HostCaptureComparison cmp = result.Capture.Compare();
             HostProbeResult n2 = await _probe.ReadAppendResultAsync(a, t);
+            var inspection = n2.LastResult == 20
+                ? Subject5AppendInspector.Inspect(result.Capture, n2)
+                : null;
             string field = cmp.FirstMismatchField switch
             {
                 nameof(RewardRow.SubjectType) => "奖励领取条件",
@@ -116,6 +119,7 @@ public sealed class HostProbeWindow : Form
             };
             return $"N1 原版奖励捕获次数：{result.Header.CaptureCount} " +
                    $"N2 返回码：{n2.LastResult} 追加次数：{n2.AppendedCount} 原版行数：{n2.OriginalRows}\r\n" +
+                   (inspection is null ? "" : $"无损单行追加校验：{(inspection.Valid ? "通过" : "未通过")}（{inspection.Reason}）\r\n") +
                    $"数据一致：{(cmp.Matches ? "是" : "否")} 首个差异行：{cmp.FirstMismatchRow} " +
                    $"差异字段：{field}\r\n" +
                    $"源奖励 SHA256：{cmp.SourceRowsSha256}\r\n" +
