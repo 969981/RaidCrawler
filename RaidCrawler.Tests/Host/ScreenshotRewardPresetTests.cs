@@ -118,7 +118,7 @@ public sealed class ScreenshotRewardPresetTests
             ScreenshotRewardPreset.Audit(original, changedTail, 21));
 
         byte[] changedPreset = (byte[])result.CandidateRaidPoint.Clone();
-        changedPreset[RaidPointLayout.RewardsInRaidPoint + 21 * 16] = 0; // now source/subject is first u32
+        changedPreset[RaidPointLayout.RewardsInRaidPoint + 21 * 16] = 0; // item ID is first u32
         Assert.Equal("PRESET_ROW_MISMATCH_0",
             ScreenshotRewardPreset.Audit(original, changedPreset, 21));
     }
@@ -150,13 +150,13 @@ public sealed class ScreenshotRewardPresetTests
         for (int i = 0; i < 20; i++)
         {
             var bytes = result.CandidateRaidPoint.AsSpan(offset + i * 16, 16);
-            Assert.Equal(subject,
-                System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes[..4]));
             Assert.Equal(ScreenshotIds[i],
-                System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes.Slice(4, 4)));
+                System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes[..4]));
             Assert.Equal(999u,
-                System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes.Slice(8, 4)));
+                System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes.Slice(4, 4)));
             Assert.Equal(0u,
+                System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes.Slice(8, 4)));
+            Assert.Equal(subject,
                 System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes.Slice(12, 4)));
         }
     }
@@ -181,13 +181,13 @@ public sealed class ScreenshotRewardPresetTests
     [Fact]
     public void RetailDonorLayoutPlacesSourceAt798AndItemAt79C()
     {
-        Assert.Equal(0xE0, RaidPointLayout.RewardsInRaidPoint);
-        Assert.Equal(0x798, RaidPointLayout.RewardsInBootstrap);
+        Assert.Equal(0xE4, RaidPointLayout.RewardsInRaidPoint);
+        Assert.Equal(0x79C, RaidPointLayout.RewardsInBootstrap);
         Assert.Equal(0xE4, RaidPointLayout.ItemIdInRaidPoint);
         var row = new RewardRow(1128, 1, 0, 0);
         byte[] bytes = new byte[16];
         row.Write(bytes);
-        Assert.Equal(new byte[] { 0,0,0,0, 0x68,0x04,0,0, 1,0,0,0, 0,0,0,0 }, bytes);
+        Assert.Equal(new byte[] { 0x68,0x04,0,0, 1,0,0,0, 0,0,0,0, 0,0,0,0 }, bytes);
     }
 
 }
