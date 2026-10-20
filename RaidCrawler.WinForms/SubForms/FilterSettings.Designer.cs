@@ -108,7 +108,7 @@
             SpeciesCheck.Name = "SpeciesCheck";
             SpeciesCheck.Size = new Size(65, 19);
             SpeciesCheck.TabIndex = 1;
-            SpeciesCheck.Text = "Species";
+            SpeciesCheck.Text = "宝可梦";
             SpeciesCheck.UseVisualStyleBackColor = true;
             SpeciesCheck.CheckedChanged += SpeciesCheck_CheckedChanged;
             // 
@@ -127,7 +127,7 @@
             FormCheck.Name = "FormCheck";
             FormCheck.Size = new Size(54, 19);
             FormCheck.TabIndex = 1;
-            FormCheck.Text = "Form";
+            FormCheck.Text = "形态";
             FormCheck.UseVisualStyleBackColor = true;
             FormCheck.CheckedChanged += FormCheck_CheckedChanged;
             // 
@@ -138,7 +138,7 @@
             NatureCheck.Name = "NatureCheck";
             NatureCheck.Size = new Size(62, 19);
             NatureCheck.TabIndex = 3;
-            NatureCheck.Text = "Nature";
+            NatureCheck.Text = "性格";
             NatureCheck.UseVisualStyleBackColor = true;
             NatureCheck.CheckedChanged += NatureCheck_CheckedChanged;
             // 
@@ -160,7 +160,7 @@
             StarCheck.Name = "StarCheck";
             StarCheck.Size = new Size(51, 19);
             StarCheck.TabIndex = 5;
-            StarCheck.Text = "Stars";
+            StarCheck.Text = "星级";
             StarCheck.UseVisualStyleBackColor = true;
             StarCheck.CheckedChanged += StarCheck_CheckedChanged;
             // 
@@ -181,7 +181,7 @@
             ShinyCheck.Name = "ShinyCheck";
             ShinyCheck.Size = new Size(60, 19);
             ShinyCheck.TabIndex = 6;
-            ShinyCheck.Text = "Shiny?";
+            ShinyCheck.Text = "闪光";
             ShinyCheck.UseVisualStyleBackColor = true;
             ShinyCheck.CheckedChanged += ShinyCheck_CheckedChanged;
             // 
@@ -191,7 +191,7 @@
             Add.Name = "Add";
             Add.Size = new Size(132, 23);
             Add.TabIndex = 9;
-            Add.Text = "Add Filter";
+            Add.Text = "添加筛选";
             Add.UseVisualStyleBackColor = true;
             Add.Click += Add_Filter_Click;
             // 
@@ -220,7 +220,7 @@
             PerfectIVFilterGroup.Size = new Size(270, 124);
             PerfectIVFilterGroup.TabIndex = 10;
             PerfectIVFilterGroup.TabStop = false;
-            PerfectIVFilterGroup.Text = "IV Filters";
+            PerfectIVFilterGroup.Text = "个体值筛选";
             // 
             // SpeComp
             // 
@@ -356,7 +356,7 @@
             Spe.Name = "Spe";
             Spe.Size = new Size(30, 33);
             Spe.TabIndex = 5;
-            Spe.Text = "Spe";
+            Spe.Text = "速度";
             Spe.TextAlign = ContentAlignment.MiddleCenter;
             Spe.UseVisualStyleBackColor = true;
             Spe.CheckedChanged += Spe_CheckedChanged;
@@ -369,7 +369,7 @@
             SpD.Name = "SpD";
             SpD.Size = new Size(32, 33);
             SpD.TabIndex = 4;
-            SpD.Text = "SpD";
+            SpD.Text = "特防";
             SpD.TextAlign = ContentAlignment.MiddleCenter;
             SpD.UseVisualStyleBackColor = true;
             SpD.CheckedChanged += SpD_CheckedChanged;
@@ -382,7 +382,7 @@
             SpA.Name = "SpA";
             SpA.Size = new Size(32, 33);
             SpA.TabIndex = 3;
-            SpA.Text = "SpA";
+            SpA.Text = "特攻";
             SpA.TextAlign = ContentAlignment.MiddleCenter;
             SpA.UseVisualStyleBackColor = true;
             SpA.CheckedChanged += SpA_CheckedChanged;
@@ -395,7 +395,7 @@
             Def.Name = "Def";
             Def.Size = new Size(29, 33);
             Def.TabIndex = 2;
-            Def.Text = "Def";
+            Def.Text = "防御";
             Def.TextAlign = ContentAlignment.MiddleCenter;
             Def.UseVisualStyleBackColor = true;
             Def.CheckedChanged += Def_CheckedChanged;
@@ -408,7 +408,7 @@
             Atk.Name = "Atk";
             Atk.Size = new Size(29, 33);
             Atk.TabIndex = 1;
-            Atk.Text = "Atk";
+            Atk.Text = "攻击";
             Atk.TextAlign = ContentAlignment.MiddleCenter;
             Atk.UseVisualStyleBackColor = true;
             Atk.CheckedChanged += Atk_CheckedChanged;
@@ -433,7 +433,7 @@
             TeraCheck.Name = "TeraCheck";
             TeraCheck.Size = new Size(74, 19);
             TeraCheck.TabIndex = 18;
-            TeraCheck.Text = "Tera Type";
+            TeraCheck.Text = "太晶属性";
             TeraCheck.UseVisualStyleBackColor = true;
             TeraCheck.CheckedChanged += TeraCheck_CheckedChanged;
             // 
@@ -476,7 +476,7 @@
             label1.Name = "label1";
             label1.Size = new Size(39, 15);
             label1.TabIndex = 22;
-            label1.Text = "Name";
+            label1.Text = "筛选名称";
             // 
             // Remove
             // 
@@ -484,7 +484,7 @@
             Remove.Name = "Remove";
             Remove.Size = new Size(132, 23);
             Remove.TabIndex = 23;
-            Remove.Text = "Remove Filter";
+            Remove.Text = "删除筛选";
             Remove.UseVisualStyleBackColor = true;
             Remove.Click += Remove_Click;
             // 
@@ -518,7 +518,7 @@
             CheckRewards.Name = "CheckRewards";
             CheckRewards.Size = new Size(70, 19);
             CheckRewards.TabIndex = 26;
-            CheckRewards.Text = "Rewards";
+            CheckRewards.Text = "奖励道具";
             CheckRewards.UseVisualStyleBackColor = true;
             CheckRewards.CheckedChanged += CheckRewards_CheckedChanged;
             // 
@@ -538,7 +538,7 @@
             label2.Name = "label2";
             label2.Size = new Size(82, 15);
             label2.TabIndex = 29;
-            label2.Text = "Reward Count";
+            label2.Text = "奖励数量";
             // 
             // RewardsCount
             // 
@@ -566,7 +566,7 @@
             GenderCheck.Name = "GenderCheck";
             GenderCheck.Size = new Size(64, 19);
             GenderCheck.TabIndex = 33;
-            GenderCheck.Text = "Gender";
+            GenderCheck.Text = "性别";
             GenderCheck.UseVisualStyleBackColor = true;
             GenderCheck.CheckedChanged += GenderCheck_CheckedChanged;
             // 
@@ -576,7 +576,7 @@
             Gender.AutoCompleteSource = AutoCompleteSource.ListItems;
             Gender.Enabled = false;
             Gender.FormattingEnabled = true;
-            Gender.Items.AddRange(new object[] { "Male", "Female", "Genderless" });
+            Gender.Items.AddRange(new object[] { "雄性", "雌性", "无性别" });
             Gender.Location = new Point(104, 198);
             Gender.Name = "Gender";
             Gender.Size = new Size(178, 23);
@@ -589,7 +589,7 @@
             LabelBatchFilters.Name = "LabelBatchFilters";
             LabelBatchFilters.Size = new Size(71, 15);
             LabelBatchFilters.TabIndex = 34;
-            LabelBatchFilters.Text = "Batch Filters";
+            LabelBatchFilters.Text = "批量筛选";
             // 
             // BatchFilters
             // 
@@ -607,8 +607,8 @@
             SquareCheck.Name = "SquareCheck";
             SquareCheck.Size = new Size(69, 19);
             SquareCheck.TabIndex = 36;
-            SquareCheck.Text = "XOR = 0";
-            Tooltip.SetToolTip(SquareCheck, "If checked, only stop on \"Square\" shinies.\r\nThere is no display difference for these in SV, but they will appear\r\nas Square shiny in SwSh or any future game that supports them.");
+            SquareCheck.Text = "方块闪（XOR = 0）";
+            Tooltip.SetToolTip(SquareCheck, "只匹配方块闪光（XOR = 0）。朱／紫中与星星闪光的视觉效果没有区别。");
             SquareCheck.UseVisualStyleBackColor = true;
             // 
             // ECCheck
@@ -662,7 +662,7 @@
             MinimizeBox = false;
             Name = "FilterSettings";
             StartPosition = FormStartPosition.CenterParent;
-            Text = "FilterSettings";
+            Text = "筛选设置";
             FormClosing += FilterSettings_FormClosing;
             ((System.ComponentModel.ISupportInitialize)Form).EndInit();
             PerfectIVFilterGroup.ResumeLayout(false);
