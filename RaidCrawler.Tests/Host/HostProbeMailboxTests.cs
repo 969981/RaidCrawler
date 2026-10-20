@@ -67,7 +67,7 @@ public class HostProbeMailboxTests
     public void CompareUsesOnlyTheTwoNativeRewardArrays()
     {
         byte[] bytes = new byte[HostProbeMailbox.RegionLength * 2];
-        new RewardRow(0, 1128, 1, 0).Write(bytes.AsSpan(0, 16));
+        new RewardRow(1128, 1, 0, 0).Write(bytes.AsSpan(0, 16));
         Array.Copy(bytes, 0, bytes, HostProbeMailbox.RegionLength, HostProbeMailbox.RegionLength);
         var cap = HostProbeMailbox.ParseCapture(bytes);
         Assert.True(cap.Compare().Matches);
@@ -75,7 +75,7 @@ public class HostProbeMailboxTests
         var mismatch = cap.Compare();
         Assert.False(mismatch.Matches);
         Assert.Equal(0, mismatch.FirstMismatchRow);
-        Assert.Equal("Marker", mismatch.FirstMismatchField);
+        Assert.Equal("ItemId", mismatch.FirstMismatchField);
     }
 
     [Fact]
