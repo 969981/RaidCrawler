@@ -14,6 +14,7 @@ public sealed class HostProbeWindow : Form
     private readonly TextBox _address;
     private readonly TextBox _log;
     private readonly Button _statusButton;
+    private readonly Button _autoButton;
     private readonly Button _startButton;
     private readonly Button _stopButton;
     private readonly Button _captureButton;
@@ -30,7 +31,7 @@ public sealed class HostProbeWindow : Form
         StartPosition = FormStartPosition.CenterParent;
 
         var intro = new Label {
-            Text = "仅支持《紫》4.0.0；请填入当前原生模块日志中的 [RC-N1] mailbox=0x... 地址。",
+            Text = "仅支持《紫》4.0.0。可自动定位邮箱；需在程序目录放置与 Native 对应的 mailbox-locator.json。",
             Location = new Point(14, 14), Size = new Size(625, 38),
         };
         _address = new TextBox {
@@ -39,6 +40,7 @@ public sealed class HostProbeWindow : Form
             MaxLength = 18,
         };
         _statusButton = MakeButton("读取状态", 414, 54, 108);
+        _autoButton = MakeButton("自动定位", 526, 54, 112);
         _startButton = MakeButton("开始捕获", 14, 96, 142);
         _stopButton = MakeButton("停止捕获", 170, 96, 142);
         _captureButton = MakeButton("读取并比较", 326, 96, 196);
@@ -47,8 +49,29 @@ public sealed class HostProbeWindow : Form
             Multiline = true, ScrollBars = ScrollBars.Both, ReadOnly = true,
             WordWrap = false, Font = new Font(FontFamily.GenericMonospace, 9),
         };
-        Controls.AddRange([intro, _address, _statusButton,
+        Controls.AddRange([intro, _address, _statusButton, _autoButton,
             _startButton, _stopButton, _captureButton, _log]);
+
+        _autoButton.Click += async (_, _) =>
+        {
+            if (_busy) return;
+            _busy = true;
+            try
+            {
+                string filename = Path.Combine(AppContext.BaseDirectory, "mailbox-locator.json");
+                string json = await File.ReadAllTextAsync(filename, _closing.Token);
+                var locator = HostProbeLocator.ParseManifest(json);
+                var found = await _probe.DiscoverAsync(locator, _closing.Token);
+                if (!IsDisposed)
+                {
+                    _address.Text = $"0x{found.Address:X}";
+                    Append($"已自动定位当前进程邮箱：0x{found.Address:X}；{Describe(found.Status)}");
+                }
+            }
+            catch (OperationCanceledException) when (_closing.IsCancellationRequested) { }
+            catch (Exception ex) { if (!IsDisposed) Append($"自动定位失败：{ex.Message}"); }
+            finally { _busy = false; }
+        };
 
         _statusButton.Click += async (_, _) => await Run(async (a, t) =>
         {
@@ -103,7 +126,7 @@ public sealed class HostProbeWindow : Form
         if (_busy) return;
         _busy = true;
         _address.Enabled = false;
-        _statusButton.Enabled = _startButton.Enabled =
+        _autoButton.Enabled = _statusButton.Enabled = _startButton.Enabled =
             _stopButton.Enabled = _captureButton.Enabled = false;
         try
         {
@@ -120,7 +143,7 @@ public sealed class HostProbeWindow : Form
             _busy = false;
             if (!IsDisposed) {
                 _address.Enabled = true;
-                _statusButton.Enabled = _startButton.Enabled =
+                _autoButton.Enabled = _statusButton.Enabled = _startButton.Enabled =
                     _stopButton.Enabled = _captureButton.Enabled = true;
             }
         }
