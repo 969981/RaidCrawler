@@ -29,3 +29,5 @@
 - [P1-B2 实机竞态日志与基础奖励表浏览](violet400-p1b2-reward-table-diagnostics-20261020.md)：详细记录用户 10:53 实机证据，按字段诊断 CallInfo/栈变化、有限只读重试，以及固定/随机 Base 奖励表与 20×999 本机模板的来源区分；不等同已抓取 Lua A/B/C 奖励。
 
 - [真实 Switch 房主联机晶耀护符奖励追加实施方案](violet400-retail-host-charm-append-implementation-plan-20261020.md)：将 PokéLDN 正版参与方 x500 实验、0x2F 时序、RaidPoint+0xE4 格式与当前 native 整表覆盖代码对应，优先实机房主 outbound 0x2F 只读验证、保留原版后 Subject=5 追加、两台零售 Switch 验收，强调 45 总行限制与官方互联网模式未验证。
+
+- [P1/N0-N1 真实 Switch 房主 0x2F 奖励序列化只读捕获](violet400-n0-n1-native-observer-implementation-20261020.md)：Skyline Native 探针、真实原版/输出各45行、异步 JSONL、Windows 逐槽导入、成功构建证据及实机命中/发奖尚未验证的边界。
