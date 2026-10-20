@@ -16,7 +16,7 @@ class CompareCaptureTests(unittest.TestCase):
 
     def test_equal_reward_region(self):
         source, plain = self.make_pair()
-        struct.pack_into("<IIII", source, SOURCE_REWARDS, 5, 1128, 3, 0)
+        struct.pack_into("<IIII", source, SOURCE_REWARDS, 1128, 3, 0, 5)
         plain[BOOTSTRAP_REWARDS:BOOTSTRAP_REWARDS+720] = source[SOURCE_REWARDS:SOURCE_REWARDS+720]
         plain[0] = 123
         report = compare(bytes(source), bytes(plain))
@@ -26,18 +26,18 @@ class CompareCaptureTests(unittest.TestCase):
 
     def test_report_exact_first_field_mismatch(self):
         source, plain = self.make_pair()
-        struct.pack_into("<IIII", source, SOURCE_REWARDS + 7*16, 5, 15, 1, 0)
-        struct.pack_into("<IIII", plain, BOOTSTRAP_REWARDS + 7*16, 0, 15, 1, 0)
+        struct.pack_into("<IIII", source, SOURCE_REWARDS + 7*16, 15, 1, 0, 5)
+        struct.pack_into("<IIII", plain, BOOTSTRAP_REWARDS + 7*16, 15, 1, 0, 0)
         report = compare(bytes(source), bytes(plain))
         self.assertFalse(report["equal"])
         self.assertEqual(7, report["first_mismatch_row"])
-        self.assertEqual("marker", report["first_mismatch_field"])
-        self.assertEqual(7*16, report["first_mismatch_byte"])
+        self.assertEqual("subject_type", report["first_mismatch_field"])
+        self.assertEqual(7*16+12, report["first_mismatch_byte"])
 
     def test_native_reward_regions_equal(self):
         source = bytearray(REGION_SIZE)
         target = bytearray(REGION_SIZE)
-        struct.pack_into("<IIII", source, 4 * 16, 5, 15, 1, 0)
+        struct.pack_into("<IIII", source, 4 * 16, 15, 1, 0, 5)
         target[:] = source
         result = compare_regions(bytes(source), bytes(target))
         self.assertTrue(result["equal"])
@@ -46,8 +46,8 @@ class CompareCaptureTests(unittest.TestCase):
     def test_native_reward_regions_first_mismatch(self):
         source = bytearray(REGION_SIZE)
         target = bytearray(REGION_SIZE)
-        struct.pack_into("<IIII", source, 44 * 16, 5, 15, 10, 0)
-        struct.pack_into("<IIII", target, 44 * 16, 5, 15, 11, 0)
+        struct.pack_into("<IIII", source, 44 * 16, 15, 10, 0, 5)
+        struct.pack_into("<IIII", target, 44 * 16, 15, 11, 0, 5)
         result = compare_regions(bytes(source), bytes(target))
         self.assertFalse(result["equal"])
         self.assertEqual(44, result["first_mismatch_row"])
