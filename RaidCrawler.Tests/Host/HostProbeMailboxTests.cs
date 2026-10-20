@@ -77,7 +77,7 @@ public class HostProbeMailboxTests
         var mismatch = cap.Compare();
         Assert.False(mismatch.Matches);
         Assert.Equal(0, mismatch.FirstMismatchRow);
-        Assert.Equal("ItemId", mismatch.FirstMismatchField);
+        Assert.Equal("SubjectType", mismatch.FirstMismatchField);
     }
 
     [Fact]
