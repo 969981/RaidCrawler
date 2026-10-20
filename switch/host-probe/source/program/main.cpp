@@ -220,7 +220,7 @@ extern "C" void exl_main(void*, void*) {
     // The compile-time PROGRAM_ID and all 12 instruction guards limit the
     // target. Real Build ID MUST also be independently checked on console.
     if (!rcprobe::HasExpectedFingerprint()) {
-        svcOutputDebugString("[RC-N1] 4.0.0 fingerprint mismatch, hook not installed.", 56);
+        rcprobe::Debug("[RC-N1] 4.0.0 fingerprint mismatch, hook not installed.");
         return;
     }
     exl::hook::Initialize();
@@ -228,12 +228,12 @@ extern "C" void exl_main(void*, void*) {
             &rcprobe::g_worker, rcprobe::Worker, nullptr,
             rcprobe::g_threadStack, sizeof(rcprobe::g_threadStack),
             nn::os::DefaultThreadPriority + 2, nn::os::IdealCoreUseDefault) != 0) {
-        svcOutputDebugString("[RC-N1] Worker init failed; hook not installed.", 47);
+        rcprobe::Debug("[RC-N1] Worker init failed; hook not installed.");
         return;
     }
     nn::os::StartThread(&rcprobe::g_worker);
     RaidBootstrapReadOnly::InstallAtOffset(rcprobe::kHookRva);
-    svcOutputDebugString("[RC-N1] Instrumentation active; rewards are never altered.", 60);
+    rcprobe::Debug("[RC-N1] Instrumentation active; rewards are never altered.");
 }
 
 extern "C" NORETURN void exl_exception_entry() {
