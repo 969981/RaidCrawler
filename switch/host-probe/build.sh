@@ -72,7 +72,7 @@ sha256sum "${OUT}/subsdk9" "${OUT}/main.npdm" "${OUT}/mailbox-locator.json" > "$
 cat > "${OUT}/INSTALL_NOT_AUTOMATIC.txt" <<EOF
 Experimental research-only probe. Not deployed automatically.
 Violet Title ID: ${TITLE_ID}
-Game version: 4.0.0 (12 opcode fingerprints, actual Build ID MUST be checked on console)
+Game version: 4.0.0 (17 opcode fingerprints, including E32984 itself; actual Build ID MUST be checked on console)
 Build ID expected: 709bfd66115298640155fcc4979dba151c7cc79a
 Atmosphere target: atmosphere/contents/${TITLE_ID}/exefs/subsdk9
 Companion NPDM: follow exlaunch's installation guidance; do not replace stock
