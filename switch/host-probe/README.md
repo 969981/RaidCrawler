@@ -10,7 +10,7 @@
 
 ## 下载同一版本的文件
 
-从 [host CI](https://github.com/969981/RaidCrawler/actions/workflows/host.yml) 下载同一 **成功提交** 的 Windows 包，包含程序及 `mailbox-locator.json`。Native 探针如有单独打包，从 [host-native-probe CI](https://github.com/969981/RaidCrawler/actions/workflows/host-native-probe.yml) 获取；必须匹配正确的源码提交和 `mailbox-locator.json` 编译指纹。不要将不同提交的 Native 与定位清单混用。
+需要下载 **两个不同的 Actions 附件**：从 [Windows host CI](https://github.com/969981/RaidCrawler/actions/workflows/host.yml) 的最新成功任务下载 `RaidCrawler-host-sysbot-only`（主要是 RaidCrawler.exe 及运行依赖）；从 [Native 探针 CI](https://github.com/969981/RaidCrawler/actions/workflows/host-native-probe.yml) 的成功任务下载 `RaidCrawler-host-N1-Violet400-UNVERIFIED`（包含 `subsdk9`、`main.npdm`、`mailbox-locator.json`、校验文件）。**Windows 附件不会自动包含 Native 定位清单。** 将 Native 附件中的 `mailbox-locator.json` 手动放到 Windows EXE 同一目录，并让它始终与该附件的 `subsdk9` 成对使用。Windows 与 Native 的协议都必须是 v3；旧的 v2 附件不可混用。
 
 ```text
 Windows 电脑：
