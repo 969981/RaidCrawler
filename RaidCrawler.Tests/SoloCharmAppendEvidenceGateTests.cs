@@ -61,6 +61,8 @@ public sealed class SoloCharmAppendEvidenceGateTests
             Check(Sample(b: [Original[0], Original[1], Original[3]])));
         Assert.Equal(SoloCharmAppendEvidenceGate.Finding.FilterToSettlementMismatch,
             Check(Sample(c: [Original[0], Original[1], Extra])));
+        Assert.Equal(SoloCharmAppendEvidenceGate.Finding.BonusMissingAtSettlement,
+            Check(Sample(c: [Original[0], Original[1], Original[3]])));
     }
 
     [Fact]
