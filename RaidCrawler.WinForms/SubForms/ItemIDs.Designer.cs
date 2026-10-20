@@ -62,7 +62,7 @@
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(274, 35);
             this.button1.TabIndex = 0;
-            this.button1.Text = "Confirm";
+            this.button1.Text = "确定";
             this.button1.UseVisualStyleBackColor = true;
             // 
             // CheckAbilityPatch
@@ -72,7 +72,7 @@
             this.CheckAbilityPatch.Name = "CheckAbilityPatch";
             this.CheckAbilityPatch.Size = new System.Drawing.Size(93, 19);
             this.CheckAbilityPatch.TabIndex = 1;
-            this.CheckAbilityPatch.Text = "Ability Patch";
+            this.CheckAbilityPatch.Text = "特性膏药";
             this.CheckAbilityPatch.UseVisualStyleBackColor = true;
             // 
             // PicPatch
@@ -122,7 +122,7 @@
             this.CheckSweet.Name = "CheckSweet";
             this.CheckSweet.Size = new System.Drawing.Size(92, 19);
             this.CheckSweet.TabIndex = 6;
-            this.CheckSweet.Text = "Sweet Herba";
+            this.CheckSweet.Text = "甜味秘传调味料";
             this.CheckSweet.UseVisualStyleBackColor = true;
             // 
             // CheckSour
@@ -132,7 +132,7 @@
             this.CheckSour.Name = "CheckSour";
             this.CheckSour.Size = new System.Drawing.Size(85, 19);
             this.CheckSour.TabIndex = 7;
-            this.CheckSour.Text = "Sour Herba";
+            this.CheckSour.Text = "酸味秘传调味料";
             this.CheckSour.UseVisualStyleBackColor = true;
             // 
             // CheckSpicy
@@ -142,7 +142,7 @@
             this.CheckSpicy.Name = "CheckSpicy";
             this.CheckSpicy.Size = new System.Drawing.Size(89, 19);
             this.CheckSpicy.TabIndex = 8;
-            this.CheckSpicy.Text = "Spicy Herba";
+            this.CheckSpicy.Text = "辣味秘传调味料";
             this.CheckSpicy.UseVisualStyleBackColor = true;
             // 
             // CheckBottleCap
@@ -152,7 +152,7 @@
             this.CheckBottleCap.Name = "CheckBottleCap";
             this.CheckBottleCap.Size = new System.Drawing.Size(81, 19);
             this.CheckBottleCap.TabIndex = 16;
-            this.CheckBottleCap.Text = "Bottle Cap";
+            this.CheckBottleCap.Text = "银色王冠";
             this.CheckBottleCap.UseVisualStyleBackColor = true;
             // 
             // CheckBitter
@@ -162,7 +162,7 @@
             this.CheckBitter.Name = "CheckBitter";
             this.CheckBitter.Size = new System.Drawing.Size(89, 19);
             this.CheckBitter.TabIndex = 15;
-            this.CheckBitter.Text = "Bitter Herba";
+            this.CheckBitter.Text = "苦味秘传调味料";
             this.CheckBitter.UseVisualStyleBackColor = true;
             // 
             // CheckSalty
@@ -172,7 +172,7 @@
             this.CheckSalty.Name = "CheckSalty";
             this.CheckSalty.Size = new System.Drawing.Size(86, 19);
             this.CheckSalty.TabIndex = 14;
-            this.CheckSalty.Text = "Salty Herba";
+            this.CheckSalty.Text = "咸味秘传调味料";
             this.CheckSalty.UseVisualStyleBackColor = true;
             // 
             // PicCap
@@ -222,7 +222,7 @@
             this.CheckAbilityCapsule.Name = "CheckAbilityCapsule";
             this.CheckAbilityCapsule.Size = new System.Drawing.Size(105, 19);
             this.CheckAbilityCapsule.TabIndex = 9;
-            this.CheckAbilityCapsule.Text = "Ability Capsule";
+            this.CheckAbilityCapsule.Text = "特性胶囊";
             this.CheckAbilityCapsule.UseVisualStyleBackColor = true;
             // 
             // ItemIDs
@@ -249,7 +249,7 @@
             this.Controls.Add(this.button1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.Name = "ItemIDs";
-            this.Text = "ItemIDs";
+            this.Text = "选择奖励道具";
             ((System.ComponentModel.ISupportInitialize)(this.PicPatch)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.PicSweet)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.PicSour)).EndInit();
