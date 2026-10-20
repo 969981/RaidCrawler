@@ -71,10 +71,10 @@ public sealed class HostProbeWindow : Form
             HostCaptureComparison cmp = result.Capture.Compare();
             string field = cmp.FirstMismatchField switch
             {
-                nameof(RewardRow.Marker) => "奖励条件标记",
+                nameof(RewardRow.SubjectType) => "奖励领取条件",
                 nameof(RewardRow.ItemId) => "道具 ID",
                 nameof(RewardRow.Quantity) => "数量",
-                nameof(RewardRow.Reserved) => "保留字段",
+                nameof(RewardRow.RareFlag) => "稀有标志",
                 _ => "无",
             };
             return $"N1 原版奖励捕获次数：{result.Header.CaptureCount} " +
