@@ -56,7 +56,14 @@ NPDM="${WORK}/deploy/main.npdm"
 }
 cp "${NSO}" "${OUT}/subsdk9"
 cp "${NPDM}" "${OUT}/main.npdm"
-sha256sum "${OUT}/subsdk9" "${OUT}/main.npdm" > "${OUT}/SHA256SUMS.txt"
+# Address discovery depends on exact symbols from the SAME compiled binary.
+# If the map cannot be generated, fail the build rather than guessing offsets.
+test -f "${WORK}/exlaunch.elf" || { echo "Missing unstripped exlaunch.elf" >&2; exit 1; }
+python3 "${ROOT}/gen_mailbox_manifest.py" \
+  --elf "${WORK}/exlaunch.elf" \
+  --out "${OUT}/mailbox-locator.json" \
+  --nm "${DEVKITPRO}/devkitA64/bin/aarch64-none-elf-nm"
+sha256sum "${OUT}/subsdk9" "${OUT}/main.npdm" "${OUT}/mailbox-locator.json" > "${OUT}/SHA256SUMS.txt"
 cat > "${OUT}/INSTALL_NOT_AUTOMATIC.txt" <<EOF
 Experimental research-only probe. Not deployed automatically.
 Violet Title ID: ${TITLE_ID}
@@ -66,7 +73,7 @@ Atmosphere target: atmosphere/contents/${TITLE_ID}/exefs/subsdk9
 Companion NPDM: follow exlaunch's installation guidance; do not replace stock
 main.npdm without checking intended loader compatibility.
 Control: C# Host Probe window via the existing sys-botbase absolute read/write connection.
-Mailbox: locate runtime [RC-N1] mailbox=0x... debug log address after starting game.
+Mailbox: place mailbox-locator.json beside RaidCrawler EXE for automated ASLR discovery; manual debug log address remains fallback.
 Protocol: RC protocol v1, header 0x40, mailbox 0x600, enable at +0x10.
 Default: disabled, no SD files, no second TCP listener.
 No game reward/network/save writes. Gameplay code IS instrumented.
