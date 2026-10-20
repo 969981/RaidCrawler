@@ -11,6 +11,7 @@ namespace RaidCrawler.WinForms.SubForms;
 public sealed class HostProbeWindow : Form
 {
     private readonly HostProbeMailboxClient _probe;
+    private readonly HostBatchMailboxClient _batch;
     private readonly TextBox _address;
     private readonly TextBox _log;
     private readonly Button _statusButton;
@@ -21,14 +22,16 @@ public sealed class HostProbeWindow : Form
     private readonly Button _previewButton;
     private readonly Button _applyButton;
     private readonly NumericUpDown _quantity;
+    private readonly Button _batchPreviewButton;
     private readonly CancellationTokenSource _closing = new();
     private bool _busy;
 
     public HostProbeWindow(ISwitchConnectionAsync connection)
     {
         _probe = new HostProbeMailboxClient(connection);
+        _batch = new HostBatchMailboxClient(connection);
         Text = "RaidCrawler 房主 Bootstrap 发送副本（4.0.0）";
-        ClientSize = new Size(660, 558);
+        ClientSize = new Size(660, 600);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterParent;
@@ -83,14 +86,28 @@ public sealed class HostProbeWindow : Form
                    $"结果 {plan.Reason}。只按捕获的720B计算，不验证背包合法性、" +
                    "当前Native多行能力或任何网络实际到账。";
         });
+        _batchPreviewButton = MakeButton("Native只读预览：已保存的1–28条奖励", 14, 225, 420);
         _log = new TextBox {
-            Location = new Point(14, 226), Size = new Size(625, 308),
+            Location = new Point(14, 269), Size = new Size(625, 305),
             Multiline = true, ScrollBars = ScrollBars.Both, ReadOnly = true,
             WordWrap = false, Font = new Font(FontFamily.GenericMonospace, 9),
         };
         Controls.AddRange([intro, _address, _statusButton, _autoButton,
             _startButton, _stopButton, _captureButton, qtyLabel, _quantity,
-            _previewButton, _applyButton, rewardSettingsButton, capacityButton, _log]);
+            _previewButton, _applyButton, rewardSettingsButton, capacityButton,
+            _batchPreviewButton, _log]);
+
+        _batchPreviewButton.Click += async (_, _) => await Run(async (address, token) =>
+        {
+            string filename = HostRewardPresetWindow.PresetPath;
+            HostRewardPresetProfile profile = File.Exists(filename)
+                ? HostRewardPreset.FromJson(await File.ReadAllTextAsync(filename, token))
+                : HostRewardPreset.CreateDefault();
+            var queued = await _batch.QueueAsync(address, profile, apply: false, token);
+            return $"已配置 Native v3 只读预览：{queued.Rows.Length} 条奖励，" +
+                $"请求编号={queued.Nonce:X16}。请使用真实房主开启下一局团体战，" +
+                "然后点击读取并比较。不会执行奖励写入。";
+        });
 
         _autoButton.Click += async (_, _) =>
         {
@@ -130,9 +147,9 @@ public sealed class HostProbeWindow : Form
         });
         _captureButton.Click += async (_, _) => await Run(async (a, t) =>
         {
-            var result = await _probe.ReadConsistentReportAsync(a, t);
+            var result = await _batch.ReadConsistentAsync(a, t);
             HostCaptureComparison cmp = result.Capture.Compare();
-            HostProbeResult n2 = result.N2;
+            HostProbeResult n2 = result.Legacy;
             var inspection = n2.LastResult == 20
                 ? Subject5AppendInspector.Inspect(result.Capture, n2)
                 : null;
@@ -154,6 +171,13 @@ public sealed class HostProbeWindow : Form
                 14 => "源数据与发送前明文不一致",
                 15 => "当前原生模块不允许修改奖励",
                 20 => "只在本机输出明文追加一行（非到账证明）",
+                30 => "Native批量奖励只读预览通过",
+                31 => "当前空槽不足，整份批量奖励拒绝",
+                32 => "批量奖励包含不符合规则的配置",
+                33 => "批量请求校验失败",
+                34 => "重复批量请求已拒绝",
+                35 => "Native构建禁用批量写入",
+                40 => "Native报告批量明文写入，仍未验证接收端",
                 _ => "等待首次 Native 结果",
             };
             return $"N1 原版奖励捕获次数：{result.Header.CaptureCount} " +
@@ -161,6 +185,8 @@ public sealed class HostProbeWindow : Form
                    (inspection is null ? "" : $"无损单行追加校验：{(inspection.Valid ? "通过" : "未通过")}（{inspection.Reason}）\r\n") +
                    $"发送副本差异：{(cmp.Matches ? "与源数据完全相同" : inspection?.Valid == true ? "仅有经校验的 subject=5 追加行" : "存在未核验的差异")} 首个差异行：{cmp.FirstMismatchRow} " +
                    $"差异字段：{field}\r\n" +
+                   $"批量请求：{result.Batch.RequestedRows} 条；处理：{result.Batch.AppliedRows} 条；" +
+                   $"请求编号={result.Batch.RequestNonce:X16}；结果编号={result.Batch.ResultNonce:X16}\r\n" +
                    $"源奖励 SHA256：{cmp.SourceRowsSha256}\r\n" +
                    $"发送前奖励 SHA256：{cmp.BootstrapRowsSha256}\r\n" +
                    "注意：这里只能证明两份捕获数据一致，不能证明参与者已收到奖励。";
@@ -184,7 +210,8 @@ public sealed class HostProbeWindow : Form
             });
         };
         FormClosed += (_, _) => _closing.Cancel();
-        Append("发送副本 Hook 默认只读；堆扫描不再是主路径。仅手动特殊 Native 构建允许受控单行追加。");
+        Append("发送副本 Hook v3 默认只读。现支持对已保存的最多28条奖励配置进行原生只读预览；" +
+               "不代表可从公开CI构建发放这些道具。");
     }
 
     private static Button MakeButton(string label, int x, int y, int width) =>
@@ -204,7 +231,7 @@ public sealed class HostProbeWindow : Form
         _address.Enabled = false;
         _autoButton.Enabled = _statusButton.Enabled = _startButton.Enabled =
             _stopButton.Enabled = _captureButton.Enabled = _previewButton.Enabled =
-            _applyButton.Enabled = false;
+            _applyButton.Enabled = _batchPreviewButton.Enabled = false;
         try
         {
             ulong address = HostProbeMailbox.ParseAddress(_address.Text);
@@ -222,7 +249,7 @@ public sealed class HostProbeWindow : Form
                 _address.Enabled = true;
                 _autoButton.Enabled = _statusButton.Enabled = _startButton.Enabled =
                     _stopButton.Enabled = _captureButton.Enabled = _previewButton.Enabled =
-                    _applyButton.Enabled = true;
+                    _applyButton.Enabled = _batchPreviewButton.Enabled = true;
             }
         }
     }
