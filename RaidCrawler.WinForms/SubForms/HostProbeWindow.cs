@@ -23,25 +23,25 @@ public sealed class HostProbeWindow : Form
     public HostProbeWindow(ISwitchConnectionAsync connection)
     {
         _probe = new HostProbeMailboxClient(connection);
-        Text = "RaidCrawler Host Probe (N1 / read-only)";
+        Text = "RaidCrawler 房主探针（N1／只读）";
         ClientSize = new Size(660, 440);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterParent;
 
         var intro = new Label {
-            Text = "Violet 4.0.0 only. Paste [RC-N1] mailbox=0x... from the active native module log.",
+            Text = "仅支持《紫》4.0.0；请填入当前原生模块日志中的 [RC-N1] mailbox=0x... 地址。",
             Location = new Point(14, 14), Size = new Size(625, 38),
         };
         _address = new TextBox {
             Location = new Point(14, 54), Size = new Size(390, 26),
-            PlaceholderText = "0x... (runtime absolute mailbox address)",
+            PlaceholderText = "0x...（本次游戏进程的邮箱绝对地址）",
             MaxLength = 18,
         };
-        _statusButton = MakeButton("Read status", 414, 54, 108);
-        _startButton = MakeButton("Start capture", 14, 96, 142);
-        _stopButton = MakeButton("Stop capture", 170, 96, 142);
-        _captureButton = MakeButton("Read / compare", 326, 96, 196);
+        _statusButton = MakeButton("读取状态", 414, 54, 108);
+        _startButton = MakeButton("开始捕获", 14, 96, 142);
+        _stopButton = MakeButton("停止捕获", 170, 96, 142);
+        _captureButton = MakeButton("读取并比较", 326, 96, 196);
         _log = new TextBox {
             Location = new Point(14, 148), Size = new Size(625, 269),
             Multiline = true, ScrollBars = ScrollBars.Both, ReadOnly = true,
@@ -53,40 +53,39 @@ public sealed class HostProbeWindow : Form
         _statusButton.Click += async (_, _) => await Run(async (a, t) =>
         {
             HostProbeHeader h = await _probe.ReadStatusAsync(a, t);
-            return $"status={Describe(h)}";
+            return $"当前状态：{Describe(h)}";
         });
         _startButton.Click += async (_, _) => await Run(async (a, t) =>
         {
             HostProbeHeader h = await _probe.SetEnabledAsync(a, true, t);
-            return $"Started. {Describe(h)}";
+            return $"已开始捕获：{Describe(h)}";
         });
         _stopButton.Click += async (_, _) => await Run(async (a, t) =>
         {
             HostProbeHeader h = await _probe.SetEnabledAsync(a, false, t);
-            return $"Stopped. {Describe(h)}";
+            return $"已停止捕获：{Describe(h)}";
         });
         _captureButton.Click += async (_, _) => await Run(async (a, t) =>
         {
             var result = await _probe.ReadCaptureAsync(a, t);
             HostCaptureComparison cmp = result.Capture.Compare();
-            return $"N1 DATA: count={result.Header.CaptureCount} " +
-                   $"matches={cmp.Matches} firstRow={cmp.FirstMismatchRow} " +
-                   $"field={cmp.FirstMismatchField ?? "-"}\r\n" +
+            return $"N1 原版奖励捕获次数：{result.Header.CaptureCount} " +
+                   $"数据一致：{cmp.Matches} 首个差异行：{cmp.FirstMismatchRow} " +
+                   $"差异字段：{cmp.FirstMismatchField ?? "-"}\r\n" +
                    $"Source SHA256:    {cmp.SourceRowsSha256}\r\n" +
                    $"Bootstrap SHA256: {cmp.BootstrapRowsSha256}\r\n" +
-                   "This proves ONLY two captured arrays agree, not actual receiver delivery.";
+                   "注意：这里只能证明两份捕获数据一致，不能证明参与者已收到奖励。";
         });
         FormClosed += (_, _) => _closing.Cancel();
-        Append("The mailbox starts disabled. This window can only read snapshots " +
-               "and set the capture-enable bit; it cannot append rewards.");
+        Append("探针默认禁用。此窗口只能读取快照和启停捕获，不能追加或修改游戏奖励。");
     }
 
     private static Button MakeButton(string label, int x, int y, int width) =>
         new() { Text = label, Location = new Point(x, y), Size = new Size(width, 30) };
 
     private static string Describe(HostProbeHeader h) =>
-        $"hook={h.Status} enabled={h.Enabled} captures={h.CaptureCount} " +
-        $"dropped={h.DroppedCount} generation={h.Generation} tick={h.Tick}";
+        $"Hook状态={h.Status} 已启用={h.Enabled} 捕获次数={h.CaptureCount} " +
+        $"丢弃次数={h.DroppedCount} 版本序号={h.Generation} 时间刻度={h.Tick}";
 
     private void Append(string text) =>
         _log.AppendText($"{DateTime.Now:HH:mm:ss} {text}{Environment.NewLine}");
@@ -106,7 +105,7 @@ public sealed class HostProbeWindow : Form
         }
         catch (OperationCanceledException) when (_closing.IsCancellationRequested) { }
         catch (Exception ex) {
-            if (!IsDisposed) Append($"ERROR: {ex.Message}");
+            if (!IsDisposed) Append($"错误：{ex.Message}");
         }
         finally
         {
