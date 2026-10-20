@@ -4,7 +4,7 @@ using SysBot.Base;
 namespace RaidCrawler.Core.Host;
 
 /// <summary>
-/// V2 fixed ABI shared with switch/host-probe/source/program/main.cpp.
+/// V3 ABI extends V2 with 28-row batch configuration from +0x600.
 /// SysBot.Base is the only transport: there is no second network listener.
 /// Mailbox is discovered by a build-matched ASLR locator manifest.
 /// A runtime debug-log address is accepted only as a manual fallback.
@@ -12,9 +12,9 @@ namespace RaidCrawler.Core.Host;
 public static class HostProbeMailbox
 {
     public const string ExpectedTitleId = "01008F6008C5E000";
-    public const int ProtocolVersion = 2;
+    public const int ProtocolVersion = 3;
     public const int HeaderLength = 0x40;
-    public const int MailboxLength = 0x600;
+    public const int MailboxLength = 0x800;
     public const int SourceOffset = 0x40;
     public const int BootstrapOffset = 0x310;
     public const int RegionLength = 720;
@@ -22,7 +22,18 @@ public static class HostProbeMailbox
     public const int RequestModeOffset = 0x5E0;
     public const int RequestFieldsOffset = 0x5E4;
     public const int RequestResultOffset = 0x5F4;
-    private static ReadOnlySpan<byte> Magic => "RCHMB02\0"u8;
+    public const int BatchNonceOffset = 0x600;
+    public const int BatchCountOffset = 0x608;
+    public const int BatchChecksumOffset = 0x60C;
+    public const int BatchAppliedRowsOffset = 0x610;
+    public const int BatchResultNonceOffset = 0x618;
+    public const int BatchRowsOffset = 0x620;
+    public const int MaxBatchRows = 28;
+    public const int BatchTableBytes = 28 * 16;
+    public const int BatchPreviewMode = 3;
+    public const int BatchApplyMode = 4;
+    public const uint BatchProtocolCapability = 2;
+    private static ReadOnlySpan<byte> Magic => "RCHMB03\0"u8;
 
     public static HostProbeHeader ParseHeader(ReadOnlySpan<byte> bytes)
     {
