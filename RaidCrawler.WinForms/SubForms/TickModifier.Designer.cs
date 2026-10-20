@@ -51,7 +51,7 @@
             L_Tick.Name = "L_Tick";
             L_Tick.Size = new Size(31, 15);
             L_Tick.TabIndex = 44;
-            L_Tick.Text = "Tick:";
+            L_Tick.Text = "时间刻度：";
             L_Tick.TextAlign = ContentAlignment.MiddleRight;
             // 
             // B_Read
@@ -60,7 +60,7 @@
             B_Read.Name = "B_Read";
             B_Read.Size = new Size(96, 27);
             B_Read.TabIndex = 130;
-            B_Read.Text = "Read";
+            B_Read.Text = "读取";
             B_Read.UseVisualStyleBackColor = true;
             B_Read.Click += B_Read_Click;
             // 
@@ -70,7 +70,7 @@
             B_Write.Name = "B_Write";
             B_Write.Size = new Size(96, 27);
             B_Write.TabIndex = 131;
-            B_Write.Text = "Write";
+            B_Write.Text = "写入";
             B_Write.UseVisualStyleBackColor = true;
             B_Write.Click += B_Write_Click;
             // 
@@ -80,7 +80,7 @@
             B_NTP.Name = "B_NTP";
             B_NTP.Size = new Size(200, 27);
             B_NTP.TabIndex = 132;
-            B_NTP.Text = "Reset Time (NTP)";
+            B_NTP.Text = "NTP 校时";
             B_NTP.UseVisualStyleBackColor = true;
             B_NTP.Click += B_NTP_Click;
             // 
@@ -99,7 +99,7 @@
             Name = "TickModifier";
             ShowIcon = false;
             SizeGripStyle = SizeGripStyle.Hide;
-            Text = "TickModifier";
+            Text = "时间工具";
             ResumeLayout(false);
             PerformLayout();
         }
