@@ -14,12 +14,12 @@ from pathlib import Path
 
 RAIDPOINT_SIZE = 0x3E8
 BOOTSTRAP_SIZE = 0xAA0
-SOURCE_REWARDS = 0xE4
-BOOTSTRAP_REWARDS = 0x6B8 + 0xE4
+SOURCE_REWARDS = 0xE0
+BOOTSTRAP_REWARDS = 0x6B8 + 0xE0
 ROW_BYTES = 16
 ROW_COUNT = 45
 REGION_SIZE = ROW_BYTES * ROW_COUNT
-FIELDS = ("item_id", "quantity", "rare_type", "subject_type")
+FIELDS = ("marker", "item_id", "quantity", "reserved")
 
 
 def compare_regions(source_rows: bytes, bootstrap_rows: bytes) -> dict:
