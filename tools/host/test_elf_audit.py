@@ -16,8 +16,14 @@ class AuditScriptTests(unittest.TestCase):
         actual = {int(a, 16): int(b, 16) for a, b in
                   re.findall(r"\{(0x[0-9A-Fa-f]+),(0x[0-9A-Fa-f]+)\}", block)}
         self.assertEqual(FINGERPRINT, actual)
-        self.assertEqual(12, len(actual))
+        self.assertEqual(17, len(actual))
         self.assertEqual(HOOK_RVA, 0xE32984)
+        self.assertEqual(0xAA1503E8, actual[HOOK_RVA],
+                         "The original MOV at the exact hook site must be fingerprinted")
+        self.assertEqual(0xAA1703E1, actual[0xE32990],
+                         "Outgoing Bootstrap x1 must come from x23")
+        self.assertEqual(0x2A1603E2, actual[0xE32994],
+                         "Outgoing Bootstrap length w2 must come from w22")
 
     def test_exact_version_identity(self):
         self.assertEqual(40, len(EXPECTED_BUILD_ID))
