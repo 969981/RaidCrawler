@@ -1,3 +1,5 @@
+> **2026-10-20：高速只读定位 / 指针优先**：新的 [FastSysbotReadChannel](RaidCrawler.Core/Host/FastSysbotReadChannel.cs) 使用现有 sys-botbase TCP 6000，在独立连接中正确拼接分段回包，并通过 448B/4KiB/16KiB 与标准读回的**逐字节校验**后才启用高速块读取。房主研究工具将**优先复查本次游戏中已验证过的候选地址**，没有才启动高速只读搜索；先机球×500 实验窗口的“自动定位”也复用同一策略。**并未找到跨重启的静态当前房主指针：`main+0x4718260` 是备用清零缓冲，不是当前房主的 RaidPoint**。首次定位仍可能需要搜索；命中只代表结构/虚表候选，不证明本局发送或奖励到账。[详细技术记录](docs/host/FAST_TCP_AND_POINTER_FIRST.md)。
+
 > **2026-10-20 更新：UI 间距 + 全体奖励实验**。主界面“设备连接”已合并 Wi-Fi／USB 的互斥行，连接按钮上移；右侧“太晶坑详情”标题栏压缩。纯 sys-botbase 奖励窗口现在支持 **subject=0 全体玩家候选**与**subject=5 晶耀护符候选**；可做先机球×500 单行对照或20种×999预设。**重要格式勘误**：完整奖励行为 `[subject/source,item_id,quantity,reserved]`，行起点 `RaidPoint+0xE0`，道具ID才是 `+0xE4`。详见 [PokéLDN对照与静态/实机界限](docs/host/POKELDN_SUBJECT0_RETAIL_LAYOUT_TEST.md)。目前仅代码和离线测试，尚未证明真实房主同步发包与参与者到账。
 
 > **新增：截图奖励预设（2026-10-20）**：纯 C# + 现有 sys-botbase 的方案 A 已加入用户截图指定的 **20 种道具 ×999，Subject=5**，在 **纯sys-botbase → 截图奖励20种×999（实验）** 操作。只追加空奖励行，要求原版奖励≤25条，否则拒绝；无需 Switch Native 插件。**预设写入仅验证候选内存，真实房主发送对象/参与者实际到账与晶耀护符筛选仍未实机证明**。详细名单和使用方式见 [20×999 截图预设技术文档](docs/host/SCREENSHOT_20X999_PRESET.md)。
