@@ -1698,9 +1698,10 @@ public partial class MainWindow : Form
                     $"Charm append profile saved ({profile.Items.Count}/20, revision {profile.Revision}, enabled={profile.Enabled}); no Switch write."));
             }
         }
-        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is ArgumentException or IOException or
+            UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException)
         {
-            MessageBox.Show(this, ex.Message, BenefitLanguage.T("全局奖励模板", "Global reward profile"),
+            MessageBox.Show(this, ex.Message, BenefitLanguage.T("晶耀护符追加档案", "Charm append profile"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
