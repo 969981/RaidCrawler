@@ -164,56 +164,52 @@ public sealed class SysbotOnlyHostWindow : Form
     private async Task ScanAsync()
     {
         if (_running) return;
-        if (MessageBox.Show(this,
-            "仅用现有 sys-botbase 扫描堆前 1 MiB，查找具有 ELF 三张虚表指针的房主序列化类实例。" +
-            "找到相符的对象也不能证明该对象属于当前房间。请在非开战时操作，是否继续？",
-            "方案 A：只读扫描确认", MessageBoxButtons.YesNo,
-            MessageBoxIcon.Information) != DialogResult.Yes)
-            return;
         _running = true;
-        _inspect.Enabled = false;
-        _scan.Enabled = false;
+        _inspect.Enabled = _scan.Enabled = false;
         try
         {
-            var candidates = await _inspector.ScanSerializerObjectsAsync(1, _close.Token);
-            Log($"只读类型扫描结束，发现 {candidates.Count} 个虚表和RaidPoint同时匹配的候选对象。");
-            foreach (var result in candidates)
-                Log($"  对象0x{result.OwnerAddress:X} RaidPoint0x{result.RaidPointAddress:X} / {result.Name} / 原奖励行{result.OriginalRows}：只确认对象类型，不证明正在发包。");
-            if (candidates.Count == 1)
+            Log("只读搜索中：根据 PokéLDN 的完整 RaidPoint 结构查找，不再只依靠析构期虚表。");
+            foreach (int sizeMiB in new[] { 8, 32, 64 })
             {
-                _address.Text = $"0x{candidates[0].OwnerAddress:X}";
-                _ownerMode.Checked = true;
-                Log("已填写唯一虚表匹配的对象地址；请再点击只读验证。它仍可能是未使用的旧对象。");
-            }
-            if (candidates.Count > 1)
-                Log("发现多个候选，请勿随意选择。需要结合当前房间状态和变化日志确认对象归属。");
-            if (candidates.Count == 0)
-            {
-                Log("堆起始1 MiB没有匹配。可能不在该区域，或活跃对象使用其他虚表。");
-                if (MessageBox.Show(this,
-                    "1 MiB 未发现候选。是否扩展到堆起始 8 MiB 继续只读扫描？" +
-                    "这可能花费较长时间，仍无法保证发现真实房主对象。",
-                    "扩大候选搜索范围（只读）",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                var progress = new Progress<HostRaidPointScanProgress>(p =>
                 {
-                    Log("用户确认扩大到8 MiB：继续只读扫描，不执行内存写入。");
-                    var expanded = await _inspector.ScanSerializerObjectsAsync(8, _close.Token);
-                    Log($"8 MiB 只读扫描结束：{expanded.Count} 个类型匹配候选。");
-                    foreach (var entry in expanded)
-                        Log($"  对象 0x{entry.OwnerAddress:X} / RaidPoint 0x{entry.RaidPointAddress:X} / {entry.Name}（仅类型候选）");
-                    if (expanded.Count == 1)
+                    if (p.CompletedMegabytes % 4 == 0)
+                        Log($"进度 {p.CompletedMegabytes}/{p.TotalMegabytes}MiB，" +
+                            $"候选 {p.Candidates}，不可读块 {p.FailedBlocks}");
+                });
+                var result = await _autoLocator.FindAsync(sizeMiB, progress, _close.Token);
+                Log($"扫描 {sizeMiB}MiB 完成：结构候选 {result.Candidates.Count}，" +
+                    $"可读块 {result.ReadableBlocks}，不可读块 {result.FailedBlocks}");
+                foreach (var candidate in result.Candidates)
+                    Log($"候选 Owner=0x{candidate.OwnerAddress:X} " +
+                        $"RaidPoint=0x{candidate.RaidPointAddress:X} {candidate.Name} " +
+                        $"虚表证据={candidate.OwnerTypeEvidence} " +
+                        $"奖励可追加={candidate.OfflineAppendEligible}：{candidate.AppendPlanReason}");
+                if (result.Candidates.Count > 0)
+                {
+                    var strong = result.Candidates.Where(c =>
+                        c.OwnerTypeEvidence is
+                            HostOwnerVtableEvidence.SerializerSlotPointsToE327FC or
+                            HostOwnerVtableEvidence.DestructorVtableTriple).ToArray();
+                    if (result.Candidates.Count == 1 && strong.Length == 1)
                     {
-                        _address.Text = $"0x{expanded[0].OwnerAddress:X}";
+                        _address.Text = $"0x{strong[0].OwnerAddress:X}";
                         _ownerMode.Checked = true;
-                        Log("唯一候选已自动填写；点击②再次只读校验，但不代表本局发送对象。");
+                        Log("已填入唯一类型匹配候选。仍需②验证、跨房间比对；不代表已证明当前发包对象。");
                     }
-                    if (expanded.Count == 0)
-                        Log("堆前8 MiB仍未命中。不要编造地址或尝试奖励写入；请保留日志供进一步研究。");
+                    else
+                        Log("无唯一高可信度候选，不自动选择写入目标；请保留日志供下一步分析。");
+                    break;
                 }
+                if (sizeMiB == 64 ||
+                    MessageBox.Show(this, "未发现完整结构，扩大只读扫描范围？",
+                        "继续查找", MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Question) != DialogResult.Yes)
+                    break;
             }
         }
         catch (OperationCanceledException) when (_close.IsCancellationRequested) { }
-        catch (Exception ex) { Log("扫描未完成：" + ex.Message); }
+        catch (Exception ex) { Log("结构扫描失败：" + ex.Message); }
         finally
         {
             _running = false;
