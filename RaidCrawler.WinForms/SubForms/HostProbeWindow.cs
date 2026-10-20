@@ -132,7 +132,7 @@ public sealed class HostProbeWindow : Form
             return $"N1 原版奖励捕获次数：{result.Header.CaptureCount} " +
                    $"N2 返回码：{n2.LastResult}（{resultLabel}）；追加次数：{n2.AppendedCount}；原版行数：{n2.OriginalRows}\r\n" +
                    (inspection is null ? "" : $"无损单行追加校验：{(inspection.Valid ? "通过" : "未通过")}（{inspection.Reason}）\r\n") +
-                   $"源/发送副本逐字节相同：{(cmp.Matches ? "是" : "否")} 首个差异行：{cmp.FirstMismatchRow} " +
+                   $"发送副本差异：{(cmp.Matches ? "与源数据完全相同" : inspection?.Valid == true ? "仅有经校验的 subject=5 追加行" : "存在未核验的差异")} 首个差异行：{cmp.FirstMismatchRow} " +
                    $"差异字段：{field}\r\n" +
                    $"源奖励 SHA256：{cmp.SourceRowsSha256}\r\n" +
                    $"发送前奖励 SHA256：{cmp.BootstrapRowsSha256}\r\n" +
