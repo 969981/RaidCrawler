@@ -1,0 +1,47 @@
+name: Native raid N0 N1 portable observer tests
+on:
+  push:
+    branches: [benefit]
+    paths:
+      - "native/sv_raid_reward_hook/src/observe.rs"
+      - "native/sv_raid_reward_hook/src/lib.rs"
+      - "native/sv_raid_reward_hook/src/format.rs"
+      - ".github/workflows/native-raid-observer-offline-tests.yml"
+  pull_request:
+    paths:
+      - "native/sv_raid_reward_hook/src/observe.rs"
+      - "native/sv_raid_reward_hook/src/lib.rs"
+      - "native/sv_raid_reward_hook/src/format.rs"
+      - ".github/workflows/native-raid-observer-offline-tests.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  portable-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check built-in Rust compiler
+        run: rustc --version
+      - name: Compile and test the actual N0/N1 row parser and JSONL serializer
+        run: |
+          rustc --edition=2021 --test native/sv_raid_reward_hook/src/observe.rs -o "$RUNNER_TEMP/native-observe-tests"
+          "$RUNNER_TEMP/native-observe-tests" --nocapture
+      - name: Keep legacy offline format tests passing (NOT a runtime hook)
+        run: |
+          rustc --edition=2021 --test native/sv_raid_reward_hook/src/format.rs -o "$RUNNER_TEMP/native-format-tests"
+          "$RUNNER_TEMP/native-format-tests" --nocapture
+      - name: Enforce this phase is observer-only (no native write path)
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('native/sv_raid_reward_hook/src/lib.rs').read_text()
+          assert 'MODE observe-only forced' in s
+          assert 'LEGACY_APPLY_REJECTED' in s
+          assert 'raid_bootstrap_after_copy' in s
+          assert 'snapshot_json' in s
+          assert 'format::patch_bootstrap(' not in s
+          assert 'from_raw_parts_mut(' not in s
+          print('N0/N1 observer-only source guards passed')
+          PY
