@@ -41,7 +41,7 @@ public class NotificationHandler(IWebhookConfig config)
             {
                 new
                 {
-                    title = caption != "" ? caption : "RaidCrawler Error",
+                    title = caption != "" ? caption : "RaidCrawler 错误",
                     description = error,
                     color = 0xf7262a,
                 },
@@ -64,7 +64,7 @@ public class NotificationHandler(IWebhookConfig config)
         {
             username = "RaidCrawler",
             avatar_url = "https://www.serebii.net/scarletviolet/ribbons/mightiestmark.png",
-            content = "Switch Screenshot",
+            content = "Switch 截图",
         };
 
         var basic_info = new StringContent(JsonSerializer.Serialize(info), Encoding.UTF8, "application/json");
@@ -76,7 +76,7 @@ public class NotificationHandler(IWebhookConfig config)
 
     private object GenerateWebhook(ITeraRaid encounter, Raid raid, RaidFilter filter, string time, IReadOnlyList<(int, int, int)> rewardsList, string hexColor, string spriteName)
     {
-        var strings = GameInfo.GetStrings("en");
+        var strings = GameInfo.GetStrings("zh-Hans");
         var param = encounter.GetParam();
         var blank = new PK9 { Species = encounter.Species, Form = encounter.Form };
 
@@ -104,7 +104,7 @@ public class NotificationHandler(IWebhookConfig config)
         ];
         var movestr = string.Concat(moves.Where(z => z != 0).Select(z => $"{strings.Move[z]}ㅤ\n")).Trim();
         var extramoves = string.Concat(encounter.ExtraMoves.Where(z => z != 0).Select(z => $"{strings.Move[z]}ㅤ\n")).Trim();
-        var area = $"{Areas.GetArea((int)(raid.Area - 1), raid.MapParent)}" + (config.ToggleDen ? $" [Den {raid.Den}]ㅤ" : "ㅤ");
+        var area = $"{Areas.GetArea((int)(raid.Area - 1), raid.MapParent)}" + (config.ToggleDen ? $" [坑位 {raid.Den}]ㅤ" : "ㅤ");
         var rewards = GetRewards(rewardsList);
         var SuccessWebHook = new
         {
@@ -126,38 +126,38 @@ public class NotificationHandler(IWebhookConfig config)
                     {
                         new
                         {
-                            name = "Difficultyㅤㅤㅤㅤㅤㅤ",
+                            name = "星级ㅤㅤㅤㅤㅤㅤ",
                             value = difficulty,
                             inline = true,
                         },
                         new
                         {
-                            name = "Natureㅤㅤㅤ",
+                            name = "性格ㅤㅤㅤ",
                             value = nature,
                             inline = true,
                         },
                         new
                         {
-                            name = "Ability",
+                            name = "特性",
                             value = ability,
                             inline = true,
                         },
                         new
                         {
-                            name = "IVs",
+                            name = "个体值",
                             value = ivs,
                             inline = true,
                         },
                         new
                         {
-                            name = "Moves",
+                            name = "招式",
                             value = movestr,
                             inline = true,
                         },
                         new
                         {
-                            name = "Extra Moves",
-                            value = extramoves.Length == 0 ? "None" : extramoves,
+                            name = "追加招式",
+                            value = extramoves.Length == 0 ? "无" : extramoves,
                             inline = true,
                         },
                         new
@@ -174,13 +174,13 @@ public class NotificationHandler(IWebhookConfig config)
                         },
                         new
                         {
-                            name = "Filter Name",
+                            name = "筛选名称",
                             value = filter.Name,
                             inline = true,
                         },
                         new
                         {
-                            name = rewards != "" ? "Rewards" : "",
+                            name = rewards != "" ? "奖励" : "",
                             value = rewards,
                             inline = false,
                         },
@@ -243,14 +243,14 @@ public class NotificationHandler(IWebhookConfig config)
         }
 
         bool emoji = config.EnableEmoji;
-        s += (abilitycapsule <= 0) ? "" : (emoji ? $"`{abilitycapsule}`{config.Emoji["Ability Capsule"]} " : $"`{abilitycapsule}` Ability Capsule  ");
-        s += (bottlecap <= 0)      ? "" : (emoji ? $"`{bottlecap}`{config.Emoji["Bottle Cap"]} "           : $"`{bottlecap}` Bottle Cap  ");
-        s += (abilitypatch <= 0)   ? "" : (emoji ? $"`{abilitypatch}`{config.Emoji["Ability Patch"]} "     : $"`{abilitypatch}` Ability Patch  ");
-        s += (sweetherba <= 0)     ? "" : (emoji ? $"`{sweetherba}`{config.Emoji["Sweet Herba"]} "         : $"`{sweetherba}` Sweet Herba  ");
-        s += (saltyherba <= 0)     ? "" : (emoji ? $"`{saltyherba}`{config.Emoji["Salty Herba"]} "         : $"`{saltyherba}` Salty Herba  ");
-        s += (sourherba <= 0)      ? "" : (emoji ? $"`{sourherba}`{config.Emoji["Sour Herba"]} "           : $"`{sourherba}` Sour Herba  ");
-        s += (bitterherba <= 0)    ? "" : (emoji ? $"`{bitterherba}`{config.Emoji["Bitter Herba"]} "       : $"`{bitterherba}` Bitter Herba  ");
-        s += (spicyherba <= 0)     ? "" : (emoji ? $"`{spicyherba}`{config.Emoji["Spicy Herba"]} "         : $"`{spicyherba}` Spicy Herba  ");
+        s += (abilitycapsule <= 0) ? "" : (emoji ? $"`{abilitycapsule}`{config.Emoji["Ability Capsule"]} " : $"`{abilitycapsule}` 特性胶囊  ");
+        s += (bottlecap <= 0)      ? "" : (emoji ? $"`{bottlecap}`{config.Emoji["Bottle Cap"]} "           : $"`{bottlecap}` 银色王冠  ");
+        s += (abilitypatch <= 0)   ? "" : (emoji ? $"`{abilitypatch}`{config.Emoji["Ability Patch"]} "     : $"`{abilitypatch}` 特性膏药  ");
+        s += (sweetherba <= 0)     ? "" : (emoji ? $"`{sweetherba}`{config.Emoji["Sweet Herba"]} "         : $"`{sweetherba}` 甜味秘传调味料  ");
+        s += (saltyherba <= 0)     ? "" : (emoji ? $"`{saltyherba}`{config.Emoji["Salty Herba"]} "         : $"`{saltyherba}` 咸味秘传调味料  ");
+        s += (sourherba <= 0)      ? "" : (emoji ? $"`{sourherba}`{config.Emoji["Sour Herba"]} "           : $"`{sourherba}` 酸味秘传调味料  ");
+        s += (bitterherba <= 0)    ? "" : (emoji ? $"`{bitterherba}`{config.Emoji["Bitter Herba"]} "       : $"`{bitterherba}` 苦味秘传调味料  ");
+        s += (spicyherba <= 0)     ? "" : (emoji ? $"`{spicyherba}`{config.Emoji["Spicy Herba"]} "         : $"`{spicyherba}` 辣味秘传调味料  ");
         return s;
     }
 
@@ -321,8 +321,8 @@ public class NotificationHandler(IWebhookConfig config)
 
         bool emoji = config.EnableEmoji;
         if (square)
-            return $"{(emoji ? config.Emoji["Square Shiny"] : "Square shiny")}";
-        return $"{(emoji ? config.Emoji["Shiny"] : "Shiny")}";
+            return $"{(emoji ? config.Emoji["Square Shiny"] : "方块闪光")}";
+        return $"{(emoji ? config.Emoji["Shiny"] : "闪光")}";
     }
 
     private static int[] ToSpeedLast(ReadOnlySpan<int> ivs)
