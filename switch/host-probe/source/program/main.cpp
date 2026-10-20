@@ -12,12 +12,12 @@
 namespace rcprobe {
 constexpr uintptr_t HookRva = 0xE32984; // after original serializer memcpy
 constexpr size_t RowBytes = 45 * 16;     // 720, aligned from actual donor
-constexpr size_t SourceRows = 0x58 + 0xE0; // x20 + 0x138
-constexpr size_t WireRows = 0x6B8 + 0xE0;  // x23 + 0x798
+constexpr size_t SourceRows = 0x58 + 0xE4; // x20 + 0x13c
+constexpr size_t WireRows = 0x6B8 + 0xE4;  // x23 + 0x79c
 constexpr uint32_t ProtocolVersion = 1;
 constexpr uint32_t MailboxBytes = 0x600;
-static_assert(SourceRows == 0x138 && WireRows == 0x798);
-static_assert(0x798 + RowBytes == 0xA68);
+static_assert(SourceRows == 0x13c && WireRows == 0x79c);
+static_assert(0x79c + RowBytes == 0xA6c);
 
 struct Mailbox {
     char magic[8] = {'R','C','H','M','B','0','1','\0'}; // +0x00
