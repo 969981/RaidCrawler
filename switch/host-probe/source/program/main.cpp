@@ -1,6 +1,6 @@
 // RaidCrawler host N1/N2; game data read-only by default.
 // N2 optional write path is compile-time gated, and NOT present in default Windows artifact.
-// Source-first row convention corrected from PokéLDN, not validated on retail as a Native Hook.
+// Current retail row convention: [item, quantity, rare, subject] at +0xE4.
 // Only audited Violet 4.0.0. Hook installation does patch executable code.
 #include "lib.hpp"
 #include <nn/os.hpp>
@@ -13,12 +13,12 @@
 namespace rcprobe {
 constexpr uintptr_t HookRva = 0xE32984;
 constexpr size_t RowBytes = 45 * 16;
-constexpr size_t SourceRows = 0x58 + 0xE0; // complete row0 at x20 + 0x138
-constexpr size_t WireRows = 0x6B8 + 0xE0; // complete row0 at x23 + 0x798
+constexpr size_t SourceRows = 0x58 + 0xE4; // row0 at x20 + 0x13C
+constexpr size_t WireRows = 0x6B8 + 0xE4; // row0 at x23 + 0x79C
 constexpr uint32_t ProtocolVersion = 2;
 constexpr uint32_t MailboxBytes = 0x600;
-static_assert(SourceRows == 0x138 && WireRows == 0x798);
-static_assert(0x798 + RowBytes == 0xa68);
+static_assert(SourceRows == 0x13C && WireRows == 0x79C);
+static_assert(0x79C + RowBytes == 0xA6C);
 
 struct Mailbox {
     char magic[8] = {'R','C','H','M','B','0','2','\0'};
@@ -89,7 +89,7 @@ static uint32_t EvaluateAndMaybeAppend(uint8_t* outgoing, uint32_t mode) {
         std::memcpy(row, g_mailbox.source + i*16, sizeof(row));
         bool empty = row[0] == 0 && row[1] == 0 && row[2] == 0 && row[3] == 0;
         if (empty) { paddingSeen = true; continue; }
-        if (paddingSeen || row[0] > 5 || row[1] == 0 || row[2] == 0 || row[3] != 0)
+        if (paddingSeen || row[0] == 0 || row[1] == 0 || row[2] > 1 || row[3] > 5)
             return 12;
         used++;
     }
@@ -108,8 +108,8 @@ static uint32_t EvaluateAndMaybeAppend(uint8_t* outgoing, uint32_t mode) {
     if (mode != 2) return 13;
 
 #if defined(RC_N2_ENABLE_WRITE) && RC_N2_ENABLE_WRITE == 1
-    uint32_t extra[4] = {subject, item, quantity, rare};
-    // Outgoing plaintext ONLY: x23+0x798, before original compression; source-first rows.
+    uint32_t extra[4] = {item, quantity, rare, subject};
+    // Outgoing plaintext ONLY: x23+0x79C, before original compression.
     // Never modify the source RaidPoint, existing reward rows, or LZ4 bytes.
     std::memcpy(outgoing + used*16, extra, sizeof(extra));
     std::memcpy(g_mailbox.bootstrap + used*16, extra, sizeof(extra));
@@ -134,8 +134,14 @@ static void Capture(exl::hook::InlineCtx* ctx) {
         g_mailbox.tick = static_cast<uint64_t>(nn::os::GetSystemTick().GetInt64Value());
         std::memcpy(g_mailbox.source, reinterpret_cast<const void*>(in + SourceRows), RowBytes);
         std::memcpy(g_mailbox.bootstrap, reinterpret_cast<const void*>(out + WireRows), RowBytes);
+        // Whole RaidPoint already copied by original memcpy; reject a stale or partial copy.
+        bool entirePointMatches = std::memcmp(
+            reinterpret_cast<const void*>(in + 0x58),
+            reinterpret_cast<const void*>(out + 0x6B8), 0x3E8) == 0;
         uint32_t mode = g_mailbox.requestMode.load(std::memory_order_acquire);
-        uint32_t result = EvaluateAndMaybeAppend(reinterpret_cast<uint8_t*>(out + WireRows), mode);
+        uint32_t result = entirePointMatches
+            ? EvaluateAndMaybeAppend(reinterpret_cast<uint8_t*>(out + WireRows), mode)
+            : 14;
         // A write request is ALWAYS one-shot, including rejects and version/
         // capacity mismatches: never let an old request affect a future raid.
         if (mode == 2)
