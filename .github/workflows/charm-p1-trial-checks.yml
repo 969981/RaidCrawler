@@ -7,6 +7,8 @@ on:
       - "tools/research/test_prepare_violet400_charm_trial.py"
       - "tools/research/verify_violet400_lua_reward_prototypes.py"
       - "tools/research/test_verify_violet400_lua_reward_prototypes.py"
+      - "tools/research/audit_violet400_lua_vm_root.py"
+      - "tools/research/test_audit_violet400_lua_vm_root.py"
       - ".github/workflows/charm-p1-trial-checks.yml"
   pull_request:
     paths:
@@ -14,6 +16,8 @@ on:
       - "tools/research/test_prepare_violet400_charm_trial.py"
       - "tools/research/verify_violet400_lua_reward_prototypes.py"
       - "tools/research/test_verify_violet400_lua_reward_prototypes.py"
+      - "tools/research/audit_violet400_lua_vm_root.py"
+      - "tools/research/test_audit_violet400_lua_vm_root.py"
       - ".github/workflows/charm-p1-trial-checks.yml"
   workflow_dispatch:
 permissions:
@@ -31,6 +35,7 @@ jobs:
         run: |
           python -m unittest discover -s tools/research -p "test_prepare_violet400_charm_trial.py" -v
           python -m unittest discover -s tools/research -p "test_verify_violet400_lua_reward_prototypes.py" -v
+          python -m unittest discover -s tools/research -p "test_audit_violet400_lua_vm_root.py" -v
       - name: Stage one row and assert no runtime hook is claimed
         run: |
           python tools/research/prepare_violet400_charm_trial.py --out-dir "$RUNNER_TEMP/charm-p1"
