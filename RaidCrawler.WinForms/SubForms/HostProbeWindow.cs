@@ -69,11 +69,19 @@ public sealed class HostProbeWindow : Form
         {
             var result = await _probe.ReadCaptureAsync(a, t);
             HostCaptureComparison cmp = result.Capture.Compare();
+            string field = cmp.FirstMismatchField switch
+            {
+                nameof(RewardRow.Marker) => "奖励条件标记",
+                nameof(RewardRow.ItemId) => "道具 ID",
+                nameof(RewardRow.Quantity) => "数量",
+                nameof(RewardRow.Reserved) => "保留字段",
+                _ => "无",
+            };
             return $"N1 原版奖励捕获次数：{result.Header.CaptureCount} " +
-                   $"数据一致：{cmp.Matches} 首个差异行：{cmp.FirstMismatchRow} " +
-                   $"差异字段：{cmp.FirstMismatchField ?? "-"}\r\n" +
-                   $"Source SHA256:    {cmp.SourceRowsSha256}\r\n" +
-                   $"Bootstrap SHA256: {cmp.BootstrapRowsSha256}\r\n" +
+                   $"数据一致：{(cmp.Matches ? "是" : "否")} 首个差异行：{cmp.FirstMismatchRow} " +
+                   $"差异字段：{field}\r\n" +
+                   $"源奖励 SHA256：{cmp.SourceRowsSha256}\r\n" +
+                   $"发送前奖励 SHA256：{cmp.BootstrapRowsSha256}\r\n" +
                    "注意：这里只能证明两份捕获数据一致，不能证明参与者已收到奖励。";
         });
         FormClosed += (_, _) => _closing.Cancel();
@@ -84,7 +92,7 @@ public sealed class HostProbeWindow : Form
         new() { Text = label, Location = new Point(x, y), Size = new Size(width, 30) };
 
     private static string Describe(HostProbeHeader h) =>
-        $"Hook状态={h.Status} 已启用={h.Enabled} 捕获次数={h.CaptureCount} " +
+        $"Hook状态={h.Status} 已启用={(h.Enabled ? "是" : "否")} 捕获次数={h.CaptureCount} " +
         $"丢弃次数={h.DroppedCount} 版本序号={h.Generation} 时间刻度={h.Tick}";
 
     private void Append(string text) =>
