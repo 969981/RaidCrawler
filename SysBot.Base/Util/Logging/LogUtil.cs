@@ -28,7 +28,8 @@ public static class LogUtil
     // Key: Connection IP/USB identifier, Value: List of buffered log entries
     private static readonly ConcurrentDictionary<string, List<BufferedLogEntry>> LogBuffer = new();
 
-    private static readonly string WorkingDirectory = Path.GetDirectoryName(Environment.ProcessPath)!;
+    private static readonly string WorkingDirectory = AppContext.BaseDirectory;
+    private static string LogDirectory = Path.Combine(WorkingDirectory, "logs");
 
     private record BufferedLogEntry(LogLevel Level, string Message, DateTime Timestamp);
 
@@ -37,21 +38,31 @@ public static class LogUtil
         if (!LogConfig.LoggingEnabled)
             return;
 
+        try
+        {
+            Directory.CreateDirectory(LogDirectory);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // The current directory and application directory may be read-only (for example,
+            // when launched from a shortcut or installed under Program Files).
+            LogDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "RaidCrawler",
+                "logs");
+            Directory.CreateDirectory(LogDirectory);
+        }
+
         var config = new LoggingConfiguration();
-        Directory.CreateDirectory("logs");
 
         // Master log file (all bots combined) - only if enabled
         if (LogConfig.EnableMasterLog)
         {
             var masterLogFile = new FileTarget("masterlog")
             {
-                FileName = Path.Combine(WorkingDirectory, "logs", "SysBotLog.txt"),
-                ConcurrentWrites = true,
-
+                FileName = Path.Combine(LogDirectory, "SysBotLog.txt"),
                 ArchiveEvery = FileArchivePeriod.Day,
-                ArchiveNumbering = ArchiveNumberingMode.Date,
-                ArchiveFileName = Path.Combine(WorkingDirectory, "logs", "SysBotLog.{#}.txt"),
-                ArchiveDateFormat = "yyyy-MM-dd",
+                ArchiveSuffixFormat = ".{1:yyyy-MM-dd}_{0:00}",
                 ArchiveAboveSize = LogConfig.MaxLogFileSize,
                 MaxArchiveFiles = LogConfig.MaxArchiveFiles,
                 Encoding = Encoding.Unicode,
@@ -80,7 +91,7 @@ public static class LogUtil
         {
             // Sanitize bot name for file system
             var safeBotName = SanitizeBotName(botName);
-            var botLogDir = Path.Combine(WorkingDirectory, "logs", safeBotName);
+            var botLogDir = Path.Combine(LogDirectory, safeBotName);
             Directory.CreateDirectory(botLogDir);
 
             // Create a unique logger name to avoid conflicts
@@ -97,12 +108,8 @@ public static class LogUtil
             var botLogTarget = new FileTarget($"botlog_{safeBotName}")
             {
                 FileName = Path.Combine(botLogDir, fileName),
-                ConcurrentWrites = true,
-
                 ArchiveEvery = FileArchivePeriod.Day,
-                ArchiveNumbering = ArchiveNumberingMode.Date,
-                ArchiveFileName = Path.Combine(botLogDir, "SysBotLog.{#}.txt"),
-                ArchiveDateFormat = "yyyy-MM-dd",
+                ArchiveSuffixFormat = ".{1:yyyy-MM-dd}_{0:00}",
                 ArchiveAboveSize = LogConfig.MaxLogFileSize,
                 MaxArchiveFiles = LogConfig.MaxArchiveFiles,
                 Encoding = Encoding.Unicode,
@@ -332,7 +339,7 @@ public static class LogUtil
     public static string GetBotLogPath(string identity)
     {
         var safeBotName = SanitizeBotName(identity);
-        var botLogDir = Path.Combine(WorkingDirectory, "logs", safeBotName);
+        var botLogDir = Path.Combine(LogDirectory, safeBotName);
         var fileName = LogConfig.IncludeTimestampInFilename
             ? $"SysBotLog_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.txt"
             : "SysBotLog.txt";
