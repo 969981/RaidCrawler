@@ -1,4 +1,4 @@
-> **已被新审计修订：2026-10-20** 此文档含历史研究描述；关于奖励行真实 ABI、自动发现内存邮箱、Subject=5 试验，**统一以 [Violet ELF + donor 重新验证与 N1/N2 最新记录](ELF_REVALIDATION_N1_N2.md) 为准**。旧文档中的 `RaidPoint+0xE0`、`Marker/Item/Quantity/Reserved`、SD 导出和 v1 邮箱均已过时，禁止据此修改游戏内存。
+> **2026-10-20 新版主路径：** [Bootstrap 发送副本重构](BOOTSTRAP_SEND_COPY_REFACTOR.md)。当前 `host` 代码以 `RaidPoint+0xE4` 为第一条完整奖励行，字段为 `[ItemId, Quantity, RareFlag, SubjectType]`；`+0xE0` 不再作为写入依据。历史章节与先前的自相矛盾修订保留供追溯，**不代表目前代码 ABI**。默认只读。\n\n> **已被新审计修订：2026-10-20** 此文档含历史研究描述；关于奖励行真实 ABI、自动发现内存邮箱、Subject=5 试验，**统一以 [Violet ELF + donor 重新验证与 N1/N2 最新记录](ELF_REVALIDATION_N1_N2.md) 为准**。旧文档中的 `RaidPoint+0xE0`、`Marker/Item/Quantity/Reserved`、SD 导出和 v1 邮箱均已过时，禁止据此修改游戏内存。
 
 > **2026-10-20 重要修订：** 用 Decryptu/pokeldn@8b2c19c 的真实 donor LZ4 明文重新核对：奖励行从 RaidPoint+0xE0 开始；行字段顺序为 marker/item/quantity/reserved；+0xE4 是首行 item 字段。原先版本曾误把 +0xE4 作为整行起点，相关测试和探针现已修正。遇到 marker=5,item=0 的特殊元数据必须保守拒绝，不能直接把其后的空字节视为追加空间。参考 [差异分析](POKELDN_VS_RETAIL_PACKET_PIPELINE.md)。
 
