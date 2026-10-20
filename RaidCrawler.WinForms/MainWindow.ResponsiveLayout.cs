@@ -146,18 +146,45 @@ public partial class MainWindow
         root.Controls.Add(_responsiveSidebar, 0, 0);
         root.Controls.Add(_responsiveDetails, 1, 0);
 
-        // Connection: both WiFi and USB fields remain in the layout.
-        // Existing protocol-switch logic continues to control visibility.
-        var connect = Rows([Px(106), 0], 3, Px(34));
-        Put(connect, LabelSwitchIP, 0, 0);
-        Put(connect, InputSwitchIP, 1, 0);
-        Put(connect, USB_Port_label, 0, 1);
-        Put(connect, USB_Port_TB, 1, 1);
-        var connectionButtons = Rows([0, 0], 1, Px(34));
+        // Single adaptive endpoint row: WiFi and USB are mutually exclusive.
+        // The former three-row panel left a full blank USB row in WiFi mode.
+        var endpointHost = new Panel
+        {
+            Dock = DockStyle.Fill,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty,
+            BackColor = Color.White,
+        };
+        var wifiEndpoint = Rows([Px(105), 0], 1, Px(35));
+        var usbEndpoint = Rows([Px(105), 0], 1, Px(35));
+        Put(wifiEndpoint, LabelSwitchIP, 0, 0);
+        Put(wifiEndpoint, InputSwitchIP, 1, 0);
+        Put(usbEndpoint, USB_Port_label, 0, 0);
+        Put(usbEndpoint, USB_Port_TB, 1, 0);
+        wifiEndpoint.Dock = DockStyle.Fill;
+        usbEndpoint.Dock = DockStyle.Fill;
+        endpointHost.Controls.Add(wifiEndpoint);
+        endpointHost.Controls.Add(usbEndpoint);
+
+        void UpdateEndpointVisibility()
+        {
+            bool isUSB = Config.Protocol == SwitchProtocol.USB;
+            wifiEndpoint.Visible = !isUSB;
+            usbEndpoint.Visible = isUSB;
+            if (isUSB) usbEndpoint.BringToFront();
+            else wifiEndpoint.BringToFront();
+        }
+        InputSwitchIP.VisibleChanged += (_, _) => UpdateEndpointVisibility();
+        USB_Port_TB.VisibleChanged += (_, _) => UpdateEndpointVisibility();
+
+        var connect = Rows([0], 2, Px(39));
+        Put(connect, endpointHost, 0, 0);
+        var connectionButtons = Rows([0, 0], 1, Px(39));
         Put(connectionButtons, ButtonConnect, 0, 0);
         Put(connectionButtons, ButtonDisconnect, 1, 0);
-        Put(connect, connectionButtons, 0, 2, 2);
-        AddSidebar(Section("设备连接", 144, connect));
+        Put(connect, connectionButtons, 0, 1);
+        AddSidebar(Section("设备连接", 114, connect));
+        UpdateEndpointVisibility();
 
         var browse = Rows([0], 2, Px(36));
         LabelLoadedRaids.Font = new Font(Font, FontStyle.Bold);
@@ -223,15 +250,15 @@ public partial class MainWindow
         var titlePanel = new Panel { Dock = DockStyle.Fill };
         var headline = new Label
         {
-            Text = "太晶坑详情", Dock = DockStyle.Top, Height = Px(36),
-            Font = new Font("Microsoft YaHei UI", 15F, FontStyle.Bold),
+            Text = "太晶坑详情", Dock = DockStyle.Top, Height = Px(29),
+            Font = new Font("Microsoft YaHei UI", 13F, FontStyle.Bold),
             ForeColor = UiText,
             TextAlign = ContentAlignment.MiddleLeft,
         };
         var subtitle = new Label
         {
-            Text = "连接 Switch 并读取坑位后查看详细信息",
-            Dock = DockStyle.Bottom, Height = Px(22),
+            Text = "连接设备 · 读取太晶坑后显示信息",
+            Dock = DockStyle.Bottom, Height = Px(20),
             Font = new Font("Microsoft YaHei UI", 9F),
             ForeColor = UiMuted,
             TextAlign = ContentAlignment.MiddleLeft,
@@ -244,7 +271,7 @@ public partial class MainWindow
         Put(header, GemIcon, 2, 0);
         Put(header, Sprite, 3, 0);
         Sprite.SizeMode = PictureBoxSizeMode.Zoom;
-        AddDetails(Section("当前坑位", 111, header));
+        AddDetails(Section("当前坑位", 88, header));
 
         // Each half-width field is a self-contained label + value grid:
         // even at narrow widths/high DPI labels can never overlap the textbox.
