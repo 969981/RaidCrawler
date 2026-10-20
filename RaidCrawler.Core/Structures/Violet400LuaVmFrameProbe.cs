@@ -30,7 +30,9 @@ public static class Violet400LuaVmFrameProbe
         bool SnapshotStable,
         string RuntimeCallHit = "NOT_OBSERVED",
         string PrototypeIdentity = "NOT_VERIFIED",
-        string AbcRewards = "NOT_CAPTURED")
+        string AbcRewards = "NOT_CAPTURED",
+        IReadOnlyList<string>? ChangedFields = null,
+        int ReadAttempts = 1)
     {
         public bool ReadOnly => true;
         public bool ClosureIdentityVerified => false;
@@ -120,10 +122,19 @@ public static class Violet400LuaVmFrameProbe
         byte[] second = await readAbsolute(state, HeaderBytes, token);
         if (second.Length != HeaderBytes)
             return Fail("STATE_HEADER_RECHECK_SHORT_READ", root.Status, true, true, active);
-        // Stable structural identity only. Lua top may move during execution.
-        foreach (int field in new[] { 0x18, 0x20, 0x28, 0x30, 0x40, 0x60, 0x68 })
-            if (Q(first, field) != Q(second, field))
-                return Fail("STATE_FIELDS_CHANGED_DURING_READ", root.Status, true, true, active);
+        // Record FIELD NAMES only, never the volatile pointer values.
+        // A moving ci or tbclist is often normal VM activity and differs from
+        // structural corruption. This remains a non-atomic, rejected snapshot.
+        (string Name, int Offset)[] fields = [
+            ("global_State", 0x18), ("CallInfo", 0x20), ("stack_last", 0x28),
+            ("stack_base", 0x30), ("tbclist", 0x40), ("base_ci.func", 0x60),
+            ("base_ci.top", 0x68),
+        ];
+        string[] changed = fields.Where(f => Q(first, f.Offset) != Q(second, f.Offset))
+            .Select(f => f.Name).ToArray();
+        if (changed.Length != 0)
+            return Fail("STATE_FIELDS_CHANGED_DURING_READ", root.Status, true, true, active)
+                with { ChangedFields = changed };
 
         // Recheck pointer chain without reinterpreting/storing a stale L.
         ulong reference2 = Q(await Exact(readMain, Violet400LuaVmRootProbe.GlobalReferenceSlotRva, token), 0);
@@ -137,6 +148,33 @@ public static class Violet400LuaVmFrameProbe
                 ? "ACTIVE_CALLINFO_SAMPLED_NO_EXECUTION_ATTESTATION"
                 : "MAIN_STATE_LAYOUT_MATCH_BASE_CI_IDLE",
             root.Status, true, true, active, luaClosureTag, functionSlot, true);
+    }
+
+    /// <summary>
+    /// Explicit user-triggered limited retries for a concurrent Lua VM.
+    /// No claim of an atomic snapshot: an unchanged sequence is only a
+    /// short-lived structural observation. No retries on invalid layouts.
+    /// </summary>
+    public static async Task<Observation> ProbeWithRetryAsync(
+        Func<ulong, int, CancellationToken, Task<byte[]>> readMain,
+        Func<ulong, int, CancellationToken, Task<byte[]>> readAbsolute,
+        CancellationToken token,
+        int maxAttempts = 3)
+    {
+        if (maxAttempts is < 1 or > 3)
+            throw new ArgumentOutOfRangeException(nameof(maxAttempts));
+        Observation? prior = null;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            token.ThrowIfCancellationRequested();
+            var current = await ProbeAsync(readMain, readAbsolute, token);
+            prior = current with { ReadAttempts = attempt };
+            if (current.Status != "STATE_FIELDS_CHANGED_DURING_READ")
+                return prior;
+            if (attempt < maxAttempts)
+                await Task.Delay(40, token);
+        }
+        return prior!;
     }
 
     private static async Task<byte[]> Exact(
