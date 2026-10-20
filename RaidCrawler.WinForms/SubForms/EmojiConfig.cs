@@ -16,8 +16,8 @@ public partial class EmojiConfig : Form
     private static DataTable EmojiLoad(Dictionary<string, string> emoji)
     {
         DataTable dt = new();
-        dt.Columns.Add("Emoji", typeof(string));
-        dt.Columns.Add("Emoji Value", typeof(string));
+        dt.Columns.Add("表情名称", typeof(string));
+        dt.Columns.Add("表情代码", typeof(string));
         emoji.ToList().ForEach(kvp => dt.Rows.Add(kvp.Key, kvp.Value));
         dt.Columns[0].ReadOnly = true;
         return dt;
