@@ -168,6 +168,26 @@ public sealed class HostProbeMailboxClient(ISwitchConnectionAsync connection)
         throw new IOException("捕获数据在读取期间发生变化，请在团体战加载完成后重试。");
     }
 
+    /// <summary>
+    /// Pairs Native reward arrays with the SAME capture generation's N2
+    /// result, preventing misleading "verified" reports across two raids.
+    /// </summary>
+    public async Task<(HostProbeHeader Header, HostProbeCapture Capture, HostProbeResult N2)>
+        ReadConsistentReportAsync(ulong address, CancellationToken token)
+    {
+        for (int attempt = 0; attempt < 4; attempt++)
+        {
+            var capture = await ReadCaptureAsync(address, token).ConfigureAwait(false);
+            var report = await ReadAppendResultAsync(address, token).ConfigureAwait(false);
+            var after = await ReadStatusAsync(address, token).ConfigureAwait(false);
+            if (capture.Header.CaptureCount == after.CaptureCount &&
+                capture.Header.Generation == after.Generation &&
+                (after.Generation & 1) == 0)
+                return (after, capture.Capture, report);
+        }
+        throw new IOException("同一场团体战的捕获数据与追加状态不一致，请重新读取。");
+    }
+
     public async Task<HostProbeResult> ReadAppendResultAsync(ulong address, CancellationToken token)
     {
         await ReadStatusAsync(address, token).ConfigureAwait(false);
