@@ -1,3 +1,5 @@
+> **新增：截图奖励预设（2026-10-20）**：纯 C# + 现有 sys-botbase 的方案 A 已加入用户截图指定的 **20 种道具 ×999，Subject=5**，在 **纯sys-botbase → 截图奖励20种×999（实验）** 操作。只追加空奖励行，要求原版奖励≤25条，否则拒绝；无需 Switch Native 插件。**预设写入仅验证候选内存，真实房主发送对象/参与者实际到账与晶耀护符筛选仍未实机证明**。详细名单和使用方式见 [20×999 截图预设技术文档](docs/host/SCREENSHOT_20X999_PRESET.md)。
+
 > **方案 A 实验写入（2026-10-20）**：Windows `host` 分支已集成纯 C# + 标准 sys-botbase 的**受控单行奖励 RAM 写入**。主界面 **纯sys-botbase → 受控奖励写入（实验）**。只允许已确认的《紫》4.0.0 测试机、明确地址的候选对象、先机球×1–10 `Subject=5`；写前/写后验证，支持符合条件时尝试恢复。**当前没证明候选对象实际参与发包，也没有参与者到账的实机证据**。参见 [Hexbyt3 4.0.0 与 Plan A 实验报告](docs/host/PLAN_A_4_0_0_RAM_WRITE_EXPERIMENT.md)。默认构建仍**不包含 Switch Native 插件**。
 
 > **纯 sys-botbase 方案 A（无需 Switch 额外插件）**：默认 Windows 构建现只发布 `RaidCrawler-host-sysbot-only`，不会携带 `subsdk9` 或 `main.npdm`。C# 主窗口的“纯sys-botbase”用于只读调查真实房主 RaidPoint；尚未证实稳定当前对象指针，**没有开放实机奖励修改**。使用方法与 GO/NO-GO 见 [方案 A 技术说明](docs/host/PLAN_A_SYSBOT_ONLY.md)。Native 探针是另一个可选研究分支，用户无需安装。
