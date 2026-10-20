@@ -52,7 +52,7 @@
             this.Controls.Add(this.EmojiGrid);
             this.Name = "EmojiConfig";
             this.ShowIcon = false;
-            this.Text = "EmojiConfig";
+            this.Text = "表情配置";
             ((System.ComponentModel.ISupportInitialize)(this.EmojiGrid)).EndInit();
             this.ResumeLayout(false);
 
