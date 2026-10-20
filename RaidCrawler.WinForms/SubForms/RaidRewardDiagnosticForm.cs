@@ -59,10 +59,9 @@ public sealed partial class RaidRewardDiagnosticForm : Form
         var header = new Label
         {
             Dock = DockStyle.Fill,
-            Text = "RaidCrawler / 《紫》4.0.0  ·  现有 sys-botbase" +
+            Text = "RaidCrawler / 《紫》4.0.0  ·  晶耀护符追加配置（仅保存到本机）" +
                 Environment.NewLine +
-                "自动检测开房、团战、回到地图，并保存 JSONL。" +
-                " Hook 命中与实际领奖仍需另外验证。",
+                "原版奖励保留；追加运行时接入未实现。旧网络覆盖实验已移至高级工具并默认锁定。",
             ForeColor = Color.DarkRed, AutoEllipsis = true,
             TextAlign = ContentAlignment.MiddleLeft,
         };
@@ -117,17 +116,17 @@ public sealed partial class RaidRewardDiagnosticForm : Form
             subjects=slots.Where(s => s is not null).GroupBy(s => s!.Subject)
                 .ToDictionary(g=>g.Key.ToString(),g=>g.Count()),
         });
-        Append("scope", "奖励配置保存在全局档案，但当前 Hook 点是 LDN 0x2F Battle Bootstrap 序列化；单人离线坑及其他玩法未证明经过该函数。",
+        Append("scope", "当前是独立的晶耀追加配置预览；旧 Hook 是 LDN 0x2F 出站整表覆盖，默认锁定且绝非追加模式。单人实机追加未实现。",
             new { profileScope="global", nativeHookCoverage="LDN-bootstrap-serializer",
                   verifiedSolo=false, verifiedOfficialInternet=false,
                   actualBattleSeed=(uint?)null, targetDen=(int?)null });
-        int charmOnly = slots.Count(x => x?.Subject == 5);
-        int subjectAll = slots.Count(x => x?.Subject == 0);
-        if (configured > 0 && charmOnly == configured)
-            Append("eligibility-warning",
-                $"当前 {configured} 条奖励全部为 Subject=5（晶耀护符资格）；如果本机不具备晶耀护符，接收方会过滤这些行。请先使用 Subject=0 的单行小额奖励做 LDN 对照测试。",
-                new { subject5=charmOnly, subject0=subjectAll,
-                      charmOwnershipVerified=false, noReceiptDoesNotProveNoHook=true });
+        Append("charm-assumption",
+            "晶耀护符资格：用户已经确认持有物品 2481，本轮不再将缺少护符作为失败原因。追加奖励运行时未实现，当前无 A/B/C 实机捕获。",
+            new { subject5 = slots.Count(x => x?.Subject == 5),
+                  charmOwnershipUserConfirmed = true,
+                  onConsoleRechecked = false,
+                  runtimeAppend = "NOT_IMPLEMENTED",
+                  legacyOverwriteIsAppend = false });
         Append("hook-status", "自动监控会读取 Hook 状态，但不会自动安装或启用。");
         Append("log", "诊断日志：" + trace.Path);
 
