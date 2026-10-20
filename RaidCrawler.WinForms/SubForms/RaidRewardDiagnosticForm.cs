@@ -80,6 +80,7 @@ public sealed partial class RaidRewardDiagnosticForm : Form
         ConfigureRemoteHookControls(toolbar, advancedActions, slots);
         // Routine diagnostic actions no longer occupy the everyday toolbar.
         advancedActions.Controls.Add(inspect);
+        ConfigureLuaVmRootProbe(advancedActions);
         advancedActions.Controls.Add(testWrite);
 
         var openFolder = new Button { Text = "打开日志目录", AutoSize = true };
