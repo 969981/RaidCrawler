@@ -153,7 +153,7 @@ namespace RaidCrawler.WinForms.SubForms
             FocusWindow.Name = "FocusWindow";
             FocusWindow.Size = new Size(123, 19);
             FocusWindow.TabIndex = 1;
-            FocusWindow.Text = "Focus RaidCrawler";
+            FocusWindow.Text = "聚焦 RaidCrawler 窗口";
             FocusWindow.UseVisualStyleBackColor = true;
             // 
             // EnableAlert
@@ -163,7 +163,7 @@ namespace RaidCrawler.WinForms.SubForms
             EnableAlert.Name = "EnableAlert";
             EnableAlert.Size = new Size(293, 19);
             EnableAlert.TabIndex = 2;
-            EnableAlert.Text = "Show an alert window with the following message:";
+            EnableAlert.Text = "找到目标时显示提示窗口：";
             EnableAlert.UseVisualStyleBackColor = true;
             EnableAlert.CheckedChanged += EnableAlert_CheckedChanged;
             // 
@@ -174,7 +174,7 @@ namespace RaidCrawler.WinForms.SubForms
             PlayTone.Name = "PlayTone";
             PlayTone.Size = new Size(84, 19);
             PlayTone.TabIndex = 0;
-            PlayTone.Text = "Play a tone";
+            PlayTone.Text = "播放提示音";
             PlayTone.UseVisualStyleBackColor = true;
             // 
             // LabelMatchFound
@@ -185,7 +185,7 @@ namespace RaidCrawler.WinForms.SubForms
             LabelMatchFound.Name = "LabelMatchFound";
             LabelMatchFound.Size = new Size(137, 15);
             LabelMatchFound.TabIndex = 3;
-            LabelMatchFound.Text = "When a match is found:";
+            LabelMatchFound.Text = "找到匹配目标时：";
             // 
             // AlertMessage
             // 
@@ -202,7 +202,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_AdvanceDate.Name = "L_AdvanceDate";
             L_AdvanceDate.Size = new Size(233, 15);
             L_AdvanceDate.TabIndex = 6;
-            L_AdvanceDate.Text = "Advance Date Options (all timings in ms):";
+            L_AdvanceDate.Text = "日期推进设置（单位：毫秒）";
             // 
             // L_BaseDelay
             // 
@@ -211,7 +211,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_BaseDelay.Name = "L_BaseDelay";
             L_BaseDelay.Size = new Size(196, 15);
             L_BaseDelay.TabIndex = 8;
-            L_BaseDelay.Text = "Base delay to be added to all inputs:";
+            L_BaseDelay.Text = "所有操作额外等待：";
             // 
             // SystemDDownPresses
             // 
@@ -229,7 +229,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_DdownInput.Name = "L_DdownInput";
             L_DdownInput.Size = new Size(228, 15);
             L_DdownInput.TabIndex = 11;
-            L_DdownInput.Text = "DDOWN inputs to get to \"Date and Time\":";
+            L_DdownInput.Text = "进入日期与时间所需的向下次数：";
             // 
             // NavigateToSettings
             // 
@@ -265,7 +265,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_OpenHOME.Name = "L_OpenHOME";
             L_OpenHOME.Size = new Size(140, 15);
             L_OpenHOME.TabIndex = 19;
-            L_OpenHOME.Text = "Open Home Menu delay:";
+            L_OpenHOME.Text = "打开 HOME 菜单等待：";
             // 
             // L_NavigateSettings
             // 
@@ -274,7 +274,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_NavigateSettings.Name = "L_NavigateSettings";
             L_NavigateSettings.Size = new Size(146, 15);
             L_NavigateSettings.TabIndex = 20;
-            L_NavigateSettings.Text = "Navigate to settings delay:";
+            L_NavigateSettings.Text = "进入系统设置等待：";
             // 
             // L_OpenSettingsDelay
             // 
@@ -283,7 +283,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_OpenSettingsDelay.Name = "L_OpenSettingsDelay";
             L_OpenSettingsDelay.Size = new Size(114, 15);
             L_OpenSettingsDelay.TabIndex = 21;
-            L_OpenSettingsDelay.Text = "Open settings delay:";
+            L_OpenSettingsDelay.Text = "打开设置等待：";
             // 
             // L_ScrollSystem
             // 
@@ -292,7 +292,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_ScrollSystem.Name = "L_ScrollSystem";
             L_ScrollSystem.Size = new Size(187, 15);
             L_ScrollSystem.TabIndex = 23;
-            L_ScrollSystem.Text = "Time to hold to scroll to \"System\":";
+            L_ScrollSystem.Text = "滚动到“主机”选项的时间：";
             // 
             // Hold
             // 
@@ -310,7 +310,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_SubmenuDelay.Name = "L_SubmenuDelay";
             L_SubmenuDelay.Size = new Size(123, 15);
             L_SubmenuDelay.TabIndex = 25;
-            L_SubmenuDelay.Text = "Open submenu delay:";
+            L_SubmenuDelay.Text = "打开子菜单等待：";
             // 
             // Submenu
             // 
@@ -328,7 +328,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_DateChangeDelay.Name = "L_DateChangeDelay";
             L_DateChangeDelay.Size = new Size(138, 15);
             L_DateChangeDelay.TabIndex = 27;
-            L_DateChangeDelay.Text = "Open date change delay:";
+            L_DateChangeDelay.Text = "修改日期等待：";
             // 
             // DateChange
             // 
@@ -346,7 +346,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_ReturnHomeDelay.Name = "L_ReturnHomeDelay";
             L_ReturnHomeDelay.Size = new Size(160, 15);
             L_ReturnHomeDelay.TabIndex = 29;
-            L_ReturnHomeDelay.Text = "Return to Home Menu delay:";
+            L_ReturnHomeDelay.Text = "返回 HOME 菜单等待：";
             // 
             // ReturnHome
             // 
@@ -364,7 +364,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_ReOpenGameDelay.Name = "L_ReOpenGameDelay";
             L_ReOpenGameDelay.Size = new Size(119, 15);
             L_ReOpenGameDelay.TabIndex = 31;
-            L_ReOpenGameDelay.Text = "Re-open game delay:";
+            L_ReOpenGameDelay.Text = "重新进入游戏等待：";
             // 
             // ReturnGame
             // 
@@ -382,7 +382,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_DaysToSkip.Name = "L_DaysToSkip";
             L_DaysToSkip.Size = new Size(179, 15);
             L_DaysToSkip.TabIndex = 33;
-            L_DaysToSkip.Text = "Number of days/months to skip:";
+            L_DaysToSkip.Text = "每次跳过的天数/月数：";
             // 
             // DaysToSkip
             // 
@@ -399,7 +399,7 @@ namespace RaidCrawler.WinForms.SubForms
             UseTouch.Name = "UseTouch";
             UseTouch.Size = new Size(267, 19);
             UseTouch.TabIndex = 36;
-            UseTouch.Text = "Use touch screen inputs (faster, experimental)";
+            UseTouch.Text = "使用触屏操作（更快，实验性）";
             UseTouch.UseVisualStyleBackColor = true;
             // 
             // DiscordWebhook
@@ -416,7 +416,7 @@ namespace RaidCrawler.WinForms.SubForms
             EnableDiscordNotifications.Name = "EnableDiscordNotifications";
             EnableDiscordNotifications.Size = new Size(303, 19);
             EnableDiscordNotifications.TabIndex = 38;
-            EnableDiscordNotifications.Text = "Send alerts to Discord webhooks (comma separated)";
+            EnableDiscordNotifications.Text = "向 Discord Webhook 发送通知（逗号分隔）";
             EnableDiscordNotifications.UseVisualStyleBackColor = true;
             EnableDiscordNotifications.Click += EnableDiscordNotifications_Click;
             // 
@@ -428,7 +428,7 @@ namespace RaidCrawler.WinForms.SubForms
             label13.Name = "label13";
             label13.Size = new Size(84, 15);
             label13.TabIndex = 39;
-            label13.Text = "Experimental:";
+            label13.Text = "实验功能：";
             // 
             // ExperimentalView
             // 
@@ -437,7 +437,7 @@ namespace RaidCrawler.WinForms.SubForms
             ExperimentalView.Name = "ExperimentalView";
             ExperimentalView.Size = new Size(189, 19);
             ExperimentalView.TabIndex = 40;
-            ExperimentalView.Text = "Toggle Streamer Tera Raid View";
+            ExperimentalView.Text = "启用直播太晶坑展示界面";
             ExperimentalView.UseVisualStyleBackColor = true;
             ExperimentalView.Click += StreamerView_Clicked;
             // 
@@ -473,7 +473,7 @@ namespace RaidCrawler.WinForms.SubForms
             tabGeneral.Padding = new Padding(3);
             tabGeneral.Size = new Size(372, 640);
             tabGeneral.TabIndex = 5;
-            tabGeneral.Text = "General";
+            tabGeneral.Text = "常规";
             tabGeneral.UseVisualStyleBackColor = true;
             // 
             // LocationGroup
@@ -486,7 +486,7 @@ namespace RaidCrawler.WinForms.SubForms
             LocationGroup.Size = new Size(200, 93);
             LocationGroup.TabIndex = 115;
             LocationGroup.TabStop = false;
-            LocationGroup.Text = "Scan Locations";
+            LocationGroup.Text = "扫描区域";
             // 
             // KitakamiScanCheck
             // 
@@ -497,7 +497,7 @@ namespace RaidCrawler.WinForms.SubForms
             KitakamiScanCheck.Name = "KitakamiScanCheck";
             KitakamiScanCheck.Size = new Size(72, 19);
             KitakamiScanCheck.TabIndex = 113;
-            KitakamiScanCheck.Text = "Kitakami";
+            KitakamiScanCheck.Text = "北上乡";
             KitakamiScanCheck.UseVisualStyleBackColor = true;
             // 
             // PaldeaScanCheck
@@ -509,7 +509,7 @@ namespace RaidCrawler.WinForms.SubForms
             PaldeaScanCheck.Name = "PaldeaScanCheck";
             PaldeaScanCheck.Size = new Size(61, 19);
             PaldeaScanCheck.TabIndex = 112;
-            PaldeaScanCheck.Text = "Paldea";
+            PaldeaScanCheck.Text = "帕底亚";
             PaldeaScanCheck.UseVisualStyleBackColor = true;
             // 
             // Protocol_dropdown
@@ -531,7 +531,7 @@ namespace RaidCrawler.WinForms.SubForms
             Protocol_label.Name = "Protocol_label";
             Protocol_label.Size = new Size(120, 15);
             Protocol_label.TabIndex = 110;
-            Protocol_label.Text = "Connection Protocol:";
+            Protocol_label.Text = "连接协议：";
             // 
             // label23
             // 
@@ -541,7 +541,7 @@ namespace RaidCrawler.WinForms.SubForms
             label23.Name = "label23";
             label23.Size = new Size(118, 15);
             label23.TabIndex = 109;
-            label23.Text = "Application Settings";
+            label23.Text = "应用程序设置";
             // 
             // LabelEventProgress
             // 
@@ -550,7 +550,7 @@ namespace RaidCrawler.WinForms.SubForms
             LabelEventProgress.Name = "LabelEventProgress";
             LabelEventProgress.Size = new Size(117, 15);
             LabelEventProgress.TabIndex = 108;
-            LabelEventProgress.Text = "Event Progress Level:";
+            LabelEventProgress.Text = "活动进度等级：";
             // 
             // EventProgress
             // 
@@ -569,7 +569,7 @@ namespace RaidCrawler.WinForms.SubForms
             LabelGame.Name = "LabelGame";
             LabelGame.Size = new Size(41, 15);
             LabelGame.TabIndex = 106;
-            LabelGame.Text = "Game:";
+            LabelGame.Text = "游戏版本：";
             // 
             // Game
             // 
@@ -589,7 +589,7 @@ namespace RaidCrawler.WinForms.SubForms
             LabelStoryProgress.Name = "LabelStoryProgress";
             LabelStoryProgress.Size = new Size(115, 15);
             LabelStoryProgress.TabIndex = 104;
-            LabelStoryProgress.Text = "Story Progress Level:";
+            LabelStoryProgress.Text = "剧情进度等级：";
             // 
             // StoryProgress
             // 
@@ -615,7 +615,7 @@ namespace RaidCrawler.WinForms.SubForms
             tabMatch.Padding = new Padding(3);
             tabMatch.Size = new Size(372, 640);
             tabMatch.TabIndex = 0;
-            tabMatch.Text = "Match";
+            tabMatch.Text = "匹配通知";
             tabMatch.UseVisualStyleBackColor = true;
             // 
             // tabAdvanceDate
@@ -665,7 +665,7 @@ namespace RaidCrawler.WinForms.SubForms
             tabAdvanceDate.Padding = new Padding(3);
             tabAdvanceDate.Size = new Size(372, 640);
             tabAdvanceDate.TabIndex = 1;
-            tabAdvanceDate.Text = "Advance Date";
+            tabAdvanceDate.Text = "日期推进";
             tabAdvanceDate.UseVisualStyleBackColor = true;
             // 
             // ZyroMethod
@@ -675,7 +675,7 @@ namespace RaidCrawler.WinForms.SubForms
             ZyroMethod.Name = "ZyroMethod";
             ZyroMethod.Size = new Size(332, 19);
             ZyroMethod.TabIndex = 53;
-            ZyroMethod.Text = "Use Zyro's usb-botbase fork methods (approx. 4-5x faster)";
+            ZyroMethod.Text = "使用 Zyro 版 usb-botbase 加速（约 4–5 倍）";
             ZyroMethod.UseVisualStyleBackColor = true;
             // 
             // UseMapTrick
@@ -685,7 +685,7 @@ namespace RaidCrawler.WinForms.SubForms
             UseMapTrick.Name = "UseMapTrick";
             UseMapTrick.Size = new Size(164, 19);
             UseMapTrick.TabIndex = 52;
-            UseMapTrick.Text = "Use Map Trick to avoid lag";
+            UseMapTrick.Text = "使用地图技巧减少卡顿";
             UseMapTrick.UseVisualStyleBackColor = true;
             // 
             // ExtraOverworldWait
@@ -703,7 +703,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_ExtraOverworldWait.Name = "L_ExtraOverworldWait";
             L_ExtraOverworldWait.Size = new Size(218, 15);
             L_ExtraOverworldWait.TabIndex = 50;
-            L_ExtraOverworldWait.Text = "Extra time to wait for Overworld to load:";
+            L_ExtraOverworldWait.Text = "进入野外额外等待：";
             L_ExtraOverworldWait.UseMnemonic = false;
             // 
             // RelaunchDelay
@@ -721,7 +721,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_RelaunchDelay.Name = "L_RelaunchDelay";
             L_RelaunchDelay.Size = new Size(198, 15);
             L_RelaunchDelay.TabIndex = 48;
-            L_RelaunchDelay.Text = "Extra time to wait to relaunch game:";
+            L_RelaunchDelay.Text = "重启游戏额外等待：";
             // 
             // SystemReset
             // 
@@ -740,7 +740,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_SystemReset.Name = "L_SystemReset";
             L_SystemReset.Size = new Size(203, 15);
             L_SystemReset.TabIndex = 46;
-            L_SystemReset.Text = "Relaunch game after this many skips:";
+            L_SystemReset.Text = "跳过指定次数后重启游戏：";
             // 
             // UseSetStick
             // 
@@ -749,7 +749,7 @@ namespace RaidCrawler.WinForms.SubForms
             UseSetStick.Name = "UseSetStick";
             UseSetStick.Size = new Size(222, 19);
             UseSetStick.TabIndex = 45;
-            UseSetStick.Text = "Use SetStick instead of PressAndHold";
+            UseSetStick.Text = "使用 SetStick 替代按住按键";
             UseSetStick.UseVisualStyleBackColor = true;
             UseSetStick.CheckedChanged += UseSetStick_CheckedChanged;
             // 
@@ -760,7 +760,7 @@ namespace RaidCrawler.WinForms.SubForms
             DodgeSystemUpdate.Name = "DodgeSystemUpdate";
             DodgeSystemUpdate.Size = new Size(184, 19);
             DodgeSystemUpdate.TabIndex = 44;
-            DodgeSystemUpdate.Text = "Dodge system update prompt";
+            DodgeSystemUpdate.Text = "避开系统更新提示";
             DodgeSystemUpdate.UseVisualStyleBackColor = true;
             // 
             // SaveGameDelay
@@ -777,7 +777,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_SaveGame.Name = "L_SaveGame";
             L_SaveGame.Size = new Size(186, 15);
             L_SaveGame.TabIndex = 42;
-            L_SaveGame.Text = "Time to wait for the game to save:";
+            L_SaveGame.Text = "等待游戏保存的时间：";
             // 
             // SaveGame
             // 
@@ -786,7 +786,7 @@ namespace RaidCrawler.WinForms.SubForms
             SaveGame.Name = "SaveGame";
             SaveGame.Size = new Size(164, 19);
             SaveGame.TabIndex = 41;
-            SaveGame.Text = "Save game on filter match";
+            SaveGame.Text = "匹配后保存游戏";
             SaveGame.UseVisualStyleBackColor = true;
             SaveGame.CheckedChanged += SaveGame_CheckedChanged;
             // 
@@ -797,7 +797,7 @@ namespace RaidCrawler.WinForms.SubForms
             L_OvershootHold.Name = "L_OvershootHold";
             L_OvershootHold.Size = new Size(236, 15);
             L_OvershootHold.TabIndex = 40;
-            L_OvershootHold.Text = "Time to hold to overshoot \"Date and Time\":";
+            L_OvershootHold.Text = "越过“日期与时间”的按住时长：";
             // 
             // SystemOvershoot
             // 
@@ -815,7 +815,7 @@ namespace RaidCrawler.WinForms.SubForms
             UseOvershoot.Name = "UseOvershoot";
             UseOvershoot.Size = new Size(355, 19);
             UseOvershoot.TabIndex = 38;
-            UseOvershoot.Text = "Use overshoot instead of DDOWN inputs (faster, experimental)";
+            UseOvershoot.Text = "使用越位操作替代向下按键（更快，实验性）";
             UseOvershoot.UseVisualStyleBackColor = true;
             UseOvershoot.CheckedChanged += UseOvershoot_CheckedChanged;
             // 
@@ -846,7 +846,7 @@ namespace RaidCrawler.WinForms.SubForms
             tabWebhook.Name = "tabWebhook";
             tabWebhook.Size = new Size(372, 640);
             tabWebhook.TabIndex = 3;
-            tabWebhook.Text = "Webhook";
+            tabWebhook.Text = "Webhook 通知";
             tabWebhook.UseVisualStyleBackColor = true;
             // 
             // EmojiConfig
@@ -855,7 +855,7 @@ namespace RaidCrawler.WinForms.SubForms
             EmojiConfig.Name = "EmojiConfig";
             EmojiConfig.Size = new Size(100, 23);
             EmojiConfig.TabIndex = 46;
-            EmojiConfig.Text = "Emoji Config";
+            EmojiConfig.Text = "表情配置";
             EmojiConfig.UseVisualStyleBackColor = true;
             EmojiConfig.Click += EmojiConfig_Click;
             // 
@@ -866,7 +866,7 @@ namespace RaidCrawler.WinForms.SubForms
             labelWebhooks.Name = "labelWebhooks";
             labelWebhooks.Size = new Size(85, 15);
             labelWebhooks.TabIndex = 44;
-            labelWebhooks.Text = "Webhooks are ";
+            labelWebhooks.Text = "Webhook 状态：";
             // 
             // label21
             // 
@@ -876,7 +876,7 @@ namespace RaidCrawler.WinForms.SubForms
             label21.Name = "label21";
             label21.Size = new Size(100, 15);
             label21.TabIndex = 43;
-            label21.Text = "General Settings";
+            label21.Text = "通知常规设置";
             // 
             // DiscordMessageContent
             // 
@@ -892,7 +892,7 @@ namespace RaidCrawler.WinForms.SubForms
             label14.Name = "label14";
             label14.Size = new Size(285, 15);
             label14.TabIndex = 41;
-            label14.Text = "Message Content (ping with <@numerical_user_id>)";
+            label14.Text = "通知正文（可用 <@用户数字ID> 提及）";
             // 
             // btnTestWebHook
             // 
@@ -900,7 +900,7 @@ namespace RaidCrawler.WinForms.SubForms
             btnTestWebHook.Name = "btnTestWebHook";
             btnTestWebHook.Size = new Size(104, 23);
             btnTestWebHook.TabIndex = 22;
-            btnTestWebHook.Text = "Test Webhook";
+            btnTestWebHook.Text = "测试 Webhook";
             btnTestWebHook.UseVisualStyleBackColor = true;
             btnTestWebHook.Click += BtnTestWebHook_Click;
             // 
@@ -913,7 +913,7 @@ namespace RaidCrawler.WinForms.SubForms
             denToggle.Name = "denToggle";
             denToggle.Size = new Size(79, 19);
             denToggle.TabIndex = 21;
-            denToggle.Text = "Show Den";
+            denToggle.Text = "显示坑位编号";
             denToggle.UseVisualStyleBackColor = true;
             // 
             // LocationSettings_label
@@ -924,12 +924,12 @@ namespace RaidCrawler.WinForms.SubForms
             LocationSettings_label.Name = "LocationSettings_label";
             LocationSettings_label.Size = new Size(103, 15);
             LocationSettings_label.TabIndex = 20;
-            LocationSettings_label.Text = "Location Settings";
+            LocationSettings_label.Text = "位置设置";
             // 
             // IVstyle
             // 
             IVstyle.FormattingEnabled = true;
-            IVstyle.Items.AddRange(new object[] { "Emoji", "Highlighted Numerical", "Numerical" });
+            IVstyle.Items.AddRange(new object[] { "表情", "高亮数字", "数字" });
             IVstyle.Location = new Point(8, 196);
             IVstyle.Name = "IVstyle";
             IVstyle.Size = new Size(121, 23);
@@ -942,7 +942,7 @@ namespace RaidCrawler.WinForms.SubForms
             IVverbose.Name = "IVverbose";
             IVverbose.Size = new Size(85, 19);
             IVverbose.TabIndex = 5;
-            IVverbose.Text = "Verbose IVs";
+            IVverbose.Text = "显示详细个体值";
             IVverbose.UseVisualStyleBackColor = true;
             // 
             // label19
@@ -953,7 +953,7 @@ namespace RaidCrawler.WinForms.SubForms
             label19.Name = "label19";
             label19.Size = new Size(48, 15);
             label19.TabIndex = 2;
-            label19.Text = "IV style";
+            label19.Text = "个体值显示方式";
             // 
             // label18
             // 
@@ -963,7 +963,7 @@ namespace RaidCrawler.WinForms.SubForms
             label18.Name = "label18";
             label18.Size = new Size(68, 15);
             label18.TabIndex = 1;
-            label18.Text = "IV Settings";
+            label18.Text = "个体值设置";
             // 
             // EnableEmoji
             // 
@@ -974,7 +974,7 @@ namespace RaidCrawler.WinForms.SubForms
             EnableEmoji.Name = "EnableEmoji";
             EnableEmoji.Size = new Size(94, 19);
             EnableEmoji.TabIndex = 0;
-            EnableEmoji.Text = "Enable Emoji";
+            EnableEmoji.Text = "启用表情";
             EnableEmoji.UseVisualStyleBackColor = true;
             // 
             // tabExperimental
@@ -988,7 +988,7 @@ namespace RaidCrawler.WinForms.SubForms
             tabExperimental.Padding = new Padding(3);
             tabExperimental.Size = new Size(372, 640);
             tabExperimental.TabIndex = 2;
-            tabExperimental.Text = "Experimental";
+            tabExperimental.Text = "实验性";
             tabExperimental.UseVisualStyleBackColor = true;
             // 
             // InstanceName
@@ -1005,7 +1005,7 @@ namespace RaidCrawler.WinForms.SubForms
             label17.Name = "label17";
             label17.Size = new Size(89, 15);
             label17.TabIndex = 41;
-            label17.Text = "Instance Name:";
+            label17.Text = "实例名称：";
             // 
             // tabAbout
             // 
@@ -1018,7 +1018,7 @@ namespace RaidCrawler.WinForms.SubForms
             tabAbout.Padding = new Padding(3);
             tabAbout.Size = new Size(372, 640);
             tabAbout.TabIndex = 4;
-            tabAbout.Text = "About";
+            tabAbout.Text = "关于";
             tabAbout.UseVisualStyleBackColor = true;
             // 
             // linkLabel1
@@ -1071,7 +1071,7 @@ namespace RaidCrawler.WinForms.SubForms
             BlueberryScanCheck.Name = "BlueberryScanCheck";
             BlueberryScanCheck.Size = new Size(76, 19);
             BlueberryScanCheck.TabIndex = 114;
-            BlueberryScanCheck.Text = "Blueberry";
+            BlueberryScanCheck.Text = "蓝莓学园";
             BlueberryScanCheck.UseVisualStyleBackColor = true;
             // 
             // ConfigWindow
@@ -1084,7 +1084,7 @@ namespace RaidCrawler.WinForms.SubForms
             MaximizeBox = false;
             Name = "ConfigWindow";
             StartPosition = FormStartPosition.CenterParent;
-            Text = "RaidCrawler Settings";
+            Text = "RaidCrawler 设置";
             FormClosing += Config_Closing;
             ((System.ComponentModel.ISupportInitialize)SystemDDownPresses).EndInit();
             ((System.ComponentModel.ISupportInitialize)NavigateToSettings).EndInit();
