@@ -1,3 +1,5 @@
+> **最新下载选项：纯 sys-botbase**。仅需已有 sys-botbase；不需要往 Switch 安装 `subsdk9`、`main.npdm` 或额外插件。主界面“纯sys-botbase”当前为只读研究窗口，支持限定堆范围候选搜索，尚未提供已验证的房主奖励写入。见 [方案 A](../host/PLAN_A_SYSBOT_ONLY.md)。
+
 # RaidCrawler host 简体中文界面说明
 
 此分支的 Windows 客户端已进行简体中文汉化。**只修改用户可见的窗体文案和游戏资料语言，不更改 SysBot.Base 连接协议、太晶坑计算流程、配置文件格式、筛选序列化字段和 GitHub 上游主分支。**
@@ -14,7 +16,7 @@
 
 ## 下载和使用
 
-从 [`host` 分支 Windows CI](https://github.com/969981/RaidCrawler/actions/workflows/host.yml) 中打开**最新成功**的构建，下载 `RaidCrawler-host-experimental` Artifact，解压后运行其中的 WinForms 程序。该产物来自 `host` 分支，**不是 upstream/main 的正式 Release**。未安装 Windows .NET 桌面运行环境时需自行安装适用版本。
+从 [`host` 分支 Windows CI](https://github.com/969981/RaidCrawler/actions/workflows/host.yml) 中打开**最新成功**的构建，下载 `RaidCrawler-host-sysbot-only` Artifact，解压后运行其中的 WinForms 程序。该产物来自 `host` 分支，**不是 upstream/main 的正式 Release**。未安装 Windows .NET 桌面运行环境时需自行安装适用版本。
 
 原有 `config.json` 和 `filters.json` 可以继续使用：配置中的 Game 值仍是 `Scarlet` / `Violet`，界面只是用 owner-draw 显示「朱 / 紫」；性别、宝可梦、性格和太晶属性下拉框均保留原始枚举/索引，避免旧筛选器失效。
 
