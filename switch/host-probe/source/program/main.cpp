@@ -113,7 +113,6 @@ static uint32_t EvaluateAndMaybeAppend(uint8_t* outgoing, uint32_t mode) {
     std::memcpy(outgoing + used*16, extra, sizeof(extra));
     std::memcpy(g_mailbox.bootstrap + used*16, extra, sizeof(extra));
     g_mailbox.appendedCount.fetch_add(1, std::memory_order_relaxed);
-    g_mailbox.requestMode.store(0, std::memory_order_release);
     return 20;
 #else
     return 15;
@@ -136,6 +135,10 @@ static void Capture(exl::hook::InlineCtx* ctx) {
         std::memcpy(g_mailbox.bootstrap, reinterpret_cast<const void*>(out + WireRows), RowBytes);
         uint32_t mode = g_mailbox.requestMode.load(std::memory_order_acquire);
         uint32_t result = EvaluateAndMaybeAppend(reinterpret_cast<uint8_t*>(out + WireRows), mode);
+        // A write request is ALWAYS one-shot, including rejects and version/
+        // capacity mismatches: never let an old request affect a future raid.
+        if (mode == 2)
+            g_mailbox.requestMode.store(0, std::memory_order_release);
         g_mailbox.lastResult.store(result, std::memory_order_relaxed);
         g_mailbox.count.fetch_add(1, std::memory_order_relaxed);
         g_mailbox.generation.fetch_add(1, std::memory_order_release);
