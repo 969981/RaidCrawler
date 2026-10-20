@@ -113,7 +113,7 @@ public sealed class HostRewardPresetWindow : Form
                 : HostRewardPreset.CreateDefault();
             Populate(profile);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
         {
             Populate(HostRewardPreset.CreateDefault());
             MessageBox.Show(this, "配置读取失败，已加载未保存的默认25种：\n" + ex.Message,
@@ -157,7 +157,7 @@ public sealed class HostRewardPresetWindow : Form
         var values = _grid.Rows[at].Cells.Cast<DataGridViewCell>()
             .Select(cell => cell.Value).ToArray();
         _grid.Rows.RemoveAt(at);
-        int index = _grid.Rows.Insert(target, values);
+        _grid.Rows.Insert(target, values);
         _grid.CurrentCell = _grid.Rows[target].Cells[0];
     }
 
