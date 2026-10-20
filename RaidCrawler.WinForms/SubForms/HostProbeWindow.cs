@@ -103,9 +103,9 @@ public sealed class HostProbeWindow : Form
         });
         _captureButton.Click += async (_, _) => await Run(async (a, t) =>
         {
-            var result = await _probe.ReadCaptureAsync(a, t);
+            var result = await _probe.ReadConsistentReportAsync(a, t);
             HostCaptureComparison cmp = result.Capture.Compare();
-            HostProbeResult n2 = await _probe.ReadAppendResultAsync(a, t);
+            HostProbeResult n2 = result.N2;
             var inspection = n2.LastResult == 20
                 ? Subject5AppendInspector.Inspect(result.Capture, n2)
                 : null;
@@ -117,8 +117,20 @@ public sealed class HostProbeWindow : Form
                 nameof(RewardRow.RareFlag) => "稀有标志",
                 _ => "无",
             };
+            string resultLabel = n2.LastResult switch
+            {
+                1 => "原版源数据与发送前明文一致",
+                10 => "N2 预览通过（未修改游戏）",
+                11 => "奖励区容量已满",
+                12 => "原始奖励布局不符合安全要求",
+                13 => "追加请求参数错误",
+                14 => "源数据与发送前明文不一致",
+                15 => "当前原生模块不允许修改奖励",
+                20 => "只在本机输出明文追加一行（非到账证明）",
+                _ => "等待首次 Native 结果",
+            };
             return $"N1 原版奖励捕获次数：{result.Header.CaptureCount} " +
-                   $"N2 返回码：{n2.LastResult} 追加次数：{n2.AppendedCount} 原版行数：{n2.OriginalRows}\r\n" +
+                   $"N2 返回码：{n2.LastResult}（{resultLabel}）；追加次数：{n2.AppendedCount}；原版行数：{n2.OriginalRows}\r\n" +
                    (inspection is null ? "" : $"无损单行追加校验：{(inspection.Valid ? "通过" : "未通过")}（{inspection.Reason}）\r\n") +
                    $"数据一致：{(cmp.Matches ? "是" : "否")} 首个差异行：{cmp.FirstMismatchRow} " +
                    $"差异字段：{field}\r\n" +
