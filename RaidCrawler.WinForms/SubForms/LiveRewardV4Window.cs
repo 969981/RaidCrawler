@@ -133,7 +133,7 @@ public sealed class LiveRewardV4Window : Form
         string tid = (await _connection.GetTitleID(_closing.Token))
             .Trim().Replace("0x", "", StringComparison.OrdinalIgnoreCase);
         string version = (await _connection.GetGameInfo("version", _closing.Token))
-            .Trim().TrimEnd('\\0');
+            .Trim().TrimEnd((char)0);
         if (!tid.Equals(MailboxV4Locator.VioletTitleId, StringComparison.OrdinalIgnoreCase) ||
             version != MailboxV4Locator.VioletVersion)
         {
