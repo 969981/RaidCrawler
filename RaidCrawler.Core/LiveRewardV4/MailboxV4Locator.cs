@@ -74,7 +74,12 @@ public static class MailboxV4Locator
 
     public static ulong AddressFromCallback(ulong callback, long delta)
     {
-        long address = checked((long)callback + delta);
+        long address;
+        try { address = checked(checked((long)callback) + delta); }
+        catch (OverflowException ex)
+        {
+            throw new InvalidDataException("V4_BAD_MAILBOX_ADDRESS", ex);
+        }
         if (address < 0x10000 || (address & 7L) != 0 ||
             (ulong)address > ulong.MaxValue - MailboxV4.MailboxLength)
             throw new InvalidDataException("V4_BAD_MAILBOX_ADDRESS");
