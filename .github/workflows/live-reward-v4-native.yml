@@ -1,0 +1,51 @@
+name: SV Raid V4 N1 subsdk9 (read-only research)
+
+on:
+  push:
+    branches: [feature/sv-raid-mailbox-v4]
+    paths:
+      - 'switch/live-reward-v4/**'
+      - '.github/workflows/live-reward-v4-native.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  readonly-subSDK9:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    container:
+      image: devkitpro/devkita64:20260219
+    steps:
+      - name: Checkout new branch
+        uses: actions/checkout@v4
+      - name: Verify toolchain and independent contract
+        run: |
+          test -f /opt/devkitpro/libnx/switch_rules
+          test -x /opt/devkitpro/devkitA64/bin/aarch64-none-elf-g++
+          python3 switch/live-reward-v4/tests/test_manifest.py
+      - name: Compile strictly read-only Native subsdk9
+        run: bash switch/live-reward-v4/build.sh
+      - name: Prove manifest binds to built NSO
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          out = Path("switch/live-reward-v4/out")
+          m = json.loads((out / "mailbox-v4-locator.json").read_text())
+          assert m["read_only"] is True
+          assert m["native_write_capability"] is False
+          assert m["subsdk9_sha256"] == hashlib.sha256((out / "subsdk9").read_bytes()).hexdigest()
+          assert m["schema"] == "raidcrawler.live-reward.mailbox-locator.v4"
+          assert (out / "main.npdm").stat().st_size > 0
+          PY
+      - name: Upload read-only NSO as UNVERIFIED research artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RaidCrawler-V4-N1-Violet400-READONLY-UNVERIFIED
+          path: switch/live-reward-v4/out/
+          retention-days: 7
+          if-no-files-found: error
