@@ -1,0 +1,36 @@
+name: SV Raid Mailbox V4 (read-only foundation)
+
+on:
+  push:
+    branches: [feature/sv-raid-mailbox-v4]
+  pull_request:
+    branches: [feature/sv-raid-mailbox-v4]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-wire-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile host-portable native observer (NO subsdk9 deployment)
+        run: g++ -std=c++17 -Wall -Wextra -Werror -pthread -O2 switch/live-reward-v4/tests/abi_smoke.cpp -o /tmp/mailbox-v4-abi
+      - name: Verify native ABI, checksum and read-only observer
+        run: /tmp/mailbox-v4-abi
+
+  windows-v4-codec-tests:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Restore solution
+        run: dotnet restore RaidCrawler.slnx
+      - name: Build solution
+        run: dotnet build RaidCrawler.slnx -c Release --no-restore
+      - name: Run V4-only tests
+        run: dotnet test RaidCrawler.Tests/RaidCrawler.Tests.csproj -c Release --no-build --filter "FullyQualifiedName~RaidCrawler.Tests.LiveRewardV4."
