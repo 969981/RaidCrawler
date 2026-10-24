@@ -120,6 +120,28 @@ public partial class MainWindow : Form
         Webhook = new(Config);
         InitializeComponent();
 
+        // V4 research console is isolated from existing RaidCrawler features.
+        // No game memory is changed unless the operator explicitly publishes
+        // a profile to the dedicated verified Native read-only mailbox.
+        var v4Button = new Button
+        {
+            Name = "ButtonV4Readonly", Text = "V4 只读",
+            Location = new Point(216, 302), Size = new Size(75, 23),
+            TabIndex = 131, UseVisualStyleBackColor = true
+        };
+        v4Button.Click += (_, _) =>
+        {
+            if (ConnectionWrapper is not { Connected: true })
+            {
+                MessageBox.Show(this, "请先连接 Switch，再打开 V4 只读热配置。",
+                    "V4 N1", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            using var tool = new LiveRewardV4Window(ConnectionWrapper.Connection);
+            tool.ShowDialog(this);
+        };
+        Controls.Add(v4Button);
+
         btnOpenMap.Enabled = false;
         Rewards.Enabled = false;
         SendScreenshot.Enabled = false;
