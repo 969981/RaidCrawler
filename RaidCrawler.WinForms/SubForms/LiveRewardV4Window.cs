@@ -74,12 +74,17 @@ public sealed class LiveRewardV4Window : Form
             string path = Path.Combine(AppContext.BaseDirectory, "mailbox-v4-locator.json");
             var manifest = MailboxV4Locator.ParseManifest(
                 await File.ReadAllTextAsync(path, _closing.Token));
+            // Verifies the LOCAL artifact pair, not the installed module.
+            // Runtime game/version/hook/header are checked independently below.
+            await MailboxV4ArtifactVerifier.VerifyLocalPairAsync(
+                manifest, Path.Combine(AppContext.BaseDirectory, "subsdk9"), _closing.Token);
             var result = await MailboxV4Locator.DiscoverAsync(
                 _connection, manifest, _closing.Token);
             _address = result.Address;
             return $"已定位 N1 邮箱：0x{_address:X}；只读能力={result.Header.Capabilities}。";
         });
         AddButton("发布只读配置", 178, 471, 150, async () => {
+            await EnsureCurrentGameAsync();
             RequireMailbox();
             _rows.EndEdit();
             var selected = new List<RewardRowV4>();
@@ -97,6 +102,7 @@ public sealed class LiveRewardV4Window : Form
             return $"配置已发布 Revision={receipt.Revision}，等待 Native 下次只读观察。不会修改奖励。";
         });
         AddButton("读取 Native 观察", 342, 471, 170, async () => {
+            await EnsureCurrentGameAsync();
             RequireMailbox();
             var report = await _observer.ReadAsync(_address, _closing.Token);
             return $"调用记录={report.CaptureSerial}，上下文状态={report.ContextResult}，" +
@@ -106,6 +112,7 @@ public sealed class LiveRewardV4Window : Form
                 "以上均不是联网实际到账证明。";
         });
         AddButton("刷新状态", 527, 471, 125, async () => {
+            await EnsureCurrentGameAsync();
             RequireMailbox();
             var h = await _mailbox.ReadHeaderAsync(_address, _closing.Token);
             return $"N1 Ready={h.Status == 1}，Slot={h.ActiveSlot}，" +
@@ -119,6 +126,20 @@ public sealed class LiveRewardV4Window : Form
         _log.Font = new Font(FontFamily.GenericMonospace, 9);
         Controls.AddRange([notice, policy, _enabled, _rows, _state, _log]);
         FormClosed += (_, _) => _closing.Cancel();
+    }
+
+    private async Task EnsureCurrentGameAsync()
+    {
+        string tid = (await _connection.GetTitleID(_closing.Token))
+            .Trim().Replace("0x", "", StringComparison.OrdinalIgnoreCase);
+        string version = (await _connection.GetGameInfo("version", _closing.Token))
+            .Trim().TrimEnd('\\0');
+        if (!tid.Equals(MailboxV4Locator.VioletTitleId, StringComparison.OrdinalIgnoreCase) ||
+            version != MailboxV4Locator.VioletVersion)
+        {
+            _address = 0; // Stale pointer must never survive game switching.
+            throw new InvalidOperationException("当前进程不是《紫》4.0.0；已清除旧邮箱地址，请重新自动定位。");
+        }
     }
 
     private void RequireMailbox()
