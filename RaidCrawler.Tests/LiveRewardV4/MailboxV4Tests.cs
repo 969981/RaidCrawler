@@ -39,6 +39,15 @@ public sealed class MailboxV4Tests
     }
 
     [Fact]
+    public void GoldenVectorMatchesPortableNativeObserver()
+    {
+        // Must match switch/live-reward-v4/tests/abi_smoke.cpp exactly.
+        byte[] slot = MailboxV4.Serialize(
+            RewardConfigV4.DefaultWithRows([RewardConfigV4.DefaultRow(492)]), 1);
+        Assert.Equal(0x3FD71947u, MailboxV4.ReadU32(slot, 0x18));
+    }
+
+    [Fact]
     public void CorruptPacketAndReservedFieldsFailClosed()
     {
         var profile = RewardConfigV4.DefaultWithRows([RewardConfigV4.DefaultRow(492)]);
