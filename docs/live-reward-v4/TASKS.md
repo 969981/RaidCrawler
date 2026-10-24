@@ -7,17 +7,26 @@
 | 任务 | 状态 | 交付文件/验收 |
 |---|---|---|
 | T00 新分支从 main 创建 | 已提交 | 基线 main 6beb6601e95f |
-| T01 独立 V4 ABI 及 PC Codec | 代码已提交，等待 CI | MailboxV4.cs；45×16B、0x800 内存布局、默认 x999 |
-| T02 sys-botbase 配置传输 | 代码已提交，等待 CI | MailboxV4Client.cs；只写专用 Mailbox；写前检查、读回 |
-| T03 Native 只读 ABI / Observe | 代码已提交，等待 CI | raid_mailbox_v4.hpp；只读，不更改游戏奖励 |
-| T04 离线与跨语言合约测试 | 代码已提交，等待 CI | C# xUnit / C++ g++ 测试，含确定性校验向量 |
-| T05 .NET / GCC CI | 已提交，等待执行检查 | live-reward-v4.yml |
+| T01 独立 V4 ABI 及 PC Codec | **代码完成；Windows CI 通过** | MailboxV4.cs；45×16B、0x800 内存布局、默认 x999 |
+| T02 sys-botbase 配置传输 | **代码完成；Windows CI 通过，实机待验证** | MailboxV4Client.cs；只写专用 Mailbox；写前检查、读回 |
+| T03 Native 只读 ABI / Observe | **代码完成；Native ABI CI 通过** | raid_mailbox_v4.hpp；只读，不更改游戏奖励 |
+| T04 离线与跨语言合约测试 | **离线测试通过** | C# xUnit / C++ g++ 测试，含确定性校验向量 |
+| T05 .NET / GCC CI | **通过；Windows 工具与只读 NSO 均有构建附件** | live-reward-v4.yml |
 | T06 subsdk9 最小只读装载 | **代码与 Native CI 构建通过，待实机** | 只读 NSO、配套 manifest、游戏内 V4 Mailbox 初始化 |
 | T07 ELF 实机只读 Hook | **静态 Hook 代码已提交，实机未验收** | 游戏版本指纹、Hook 命中、X20/X23 两端奖励比较 |
-| T08 PC V4 面板、热提交状态 | **代码已提交，待 Windows CI / 实机** | 从主界面进入、编辑行、查看 Published/Observed、关闭配置 |
+| T08 PC V4 面板、热提交状态 | **已集成并通过 Windows CI；真机待验证** | 从主界面进入、编辑行、查看 Published/Observed、关闭配置 |
 | T09 长时间运行和 A/B 热切换 | 未开始 | 游戏运行中多次提交配置、跨场景检测序号，没有拆包损坏 |
 | T10 奖励写入可行性验证 | **独立阶段，默认关闭** | 需先审查目标客户端规则与本地多人测试条件 |
 | T11 正式奖励引擎及多模式 | 暂不进入 | 不由本次 v4 只读提交隐含授权 |
+
+## 当前 N1 状态与文档
+
+- **已完成（CI 验证）**：C# Mailbox V4、双缓冲配置客户端、只读 Native Observer、exlaunch N1 Hook 源码、固定构建的 subsdk9、编译产物配对 JSON、PC 自动定位器、WinForms V4 只读入口、Windows 与 Native 自动化测试及 Actions Artifact。
+- **已完成（静态设计与文档）**：ELF / 17 条 Opcode 审计与使用说明、故障排查、状态解释、文件配对和回退流程。
+- **尚未完成（实机）**：真实 Switch 上验证 N1 Hook 加载与房主序列化命中、A→B 多场切换、无线断联恢复以及长时间运行。
+- **当前不存在**：实际修改掉落奖励的 Native 写入逻辑、在线到账验证、正式版本发布。
+- 详细技术文档：[TECHNICAL_ARCHITECTURE.md](TECHNICAL_ARCHITECTURE.md)。
+- 详细使用手册：[USER_GUIDE.md](USER_GUIDE.md)。
 
 ## 第二阶段：subsdk9 纯观察器（依赖 T01..T05 通过）
 
