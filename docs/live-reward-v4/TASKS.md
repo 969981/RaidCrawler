@@ -12,9 +12,9 @@
 | T03 Native 只读 ABI / Observe | 代码已提交，等待 CI | raid_mailbox_v4.hpp；只读，不更改游戏奖励 |
 | T04 离线与跨语言合约测试 | 代码已提交，等待 CI | C# xUnit / C++ g++ 测试，含确定性校验向量 |
 | T05 .NET / GCC CI | 已提交，等待执行检查 | live-reward-v4.yml |
-| T06 subsdk9 最小只读装载 | 未开始 | 只读 NSO、配套 manifest、游戏内 V4 Mailbox 初始化 |
-| T07 ELF 实机只读 Hook | 未开始 | 游戏版本指纹、Hook 命中、X20/X23 两端奖励比较 |
-| T08 PC V4 面板、热提交状态 | 未开始 | 从主界面进入、编辑行、查看 Published/Observed、关闭配置 |
+| T06 subsdk9 最小只读装载 | **代码与 Native CI 构建通过，待实机** | 只读 NSO、配套 manifest、游戏内 V4 Mailbox 初始化 |
+| T07 ELF 实机只读 Hook | **静态 Hook 代码已提交，实机未验收** | 游戏版本指纹、Hook 命中、X20/X23 两端奖励比较 |
+| T08 PC V4 面板、热提交状态 | **代码已提交，待 Windows CI / 实机** | 从主界面进入、编辑行、查看 Published/Observed、关闭配置 |
 | T09 长时间运行和 A/B 热切换 | 未开始 | 游戏运行中多次提交配置、跨场景检测序号，没有拆包损坏 |
 | T10 奖励写入可行性验证 | **独立阶段，默认关闭** | 需先审查目标客户端规则与本地多人测试条件 |
 | T11 正式奖励引擎及多模式 | 暂不进入 | 不由本次 v4 只读提交隐含授权 |
@@ -68,4 +68,4 @@ Linux：
 g++ -std=c++17 -Wall -Wextra -Werror -pthread -O2 switch/live-reward-v4/tests/abi_smoke.cpp -o /tmp/mailbox-v4-abi
 /tmp/mailbox-v4-abi
 
-新分支设计文档：README.md。合并 main 需要另行决定，本任务**不合并**。
+N1 构建与手工验证见 N1_READONLY_IMPLEMENTATION.md；总体协议见 README.md。合并 main 需要另行决定，本任务**不合并**。
