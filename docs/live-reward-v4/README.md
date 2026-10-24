@@ -1,8 +1,8 @@
 # SV Raid Live Reward — Mailbox V4 （独立新分支）
 
 > 新分支 feature/sv-raid-mailbox-v4，来自 RaidCrawler/main @ 6beb6601e95fcd220807eb2bb9b0698dc20d2226。
-> 当前交付：独立 C# Mailbox 编解码 + sys-botbase 专用邮箱写入客户端 + C++ 只读观察器 + C#/C++ 离线测试 + CI。
-> **没有游戏奖励写入、没有 subsdk9 可部署文件、没有实机验证；这不是现成的线上发奖 MOD。**
+> 当前交付：V4 编解码、sys-botbase 配置客户端、C++ N1 只读 Hook、匹配 manifest 的 subsdk9 构建、自动定位、WinForms 控制台与 CI；真实 Switch 实机仍待验证。
+> **没有游戏奖励写入、没有实机验证；本分支已生成供研究的只读 subsdk9 构建，但不是线上发奖 MOD。**
 
 ## 一、目标和明确的不做事项
 
@@ -79,4 +79,4 @@ Linux native：g++ -std=c++17 -Wall -Wextra -Werror -pthread -O2 switch/live-rew
 
 仓库 CI 工作流对新分支自动检查。构建测试不能替代 Switch 真机验证；本期不生成、发布、上传或自动安装 mod。
 
-下一阶段详细任务见 TASKS.md。
+N1 构建和操作详见 [N1_READONLY_IMPLEMENTATION.md](N1_READONLY_IMPLEMENTATION.md)。剩余任务见 [TASKS.md](TASKS.md)。
