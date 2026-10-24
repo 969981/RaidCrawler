@@ -38,3 +38,13 @@ jobs:
         run: dotnet build RaidCrawler.slnx -c Release --no-restore
       - name: Run V4-only tests
         run: dotnet test RaidCrawler.Tests/RaidCrawler.Tests.csproj -c Release --no-build --filter "FullyQualifiedName~RaidCrawler.Tests.LiveRewardV4."
+      - name: Publish V4 read-only PC application (no Native included)
+        run: dotnet publish RaidCrawler.WinForms/RaidCrawler.WinForms.csproj -c Release -r win-x64 --self-contained false
+      - name: Upload Windows N1 research tool
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RaidCrawler-V4-N1-PC-READONLY-UNVERIFIED
+          path: RaidCrawler.WinForms/bin/x64/Release/net10.0-windows/win-x64/publish/
+          if-no-files-found: error
+          retention-days: 7
