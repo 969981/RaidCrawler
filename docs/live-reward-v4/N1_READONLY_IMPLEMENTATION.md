@@ -86,6 +86,18 @@ PC 执行“自动定位 N1”会校验 NSO0 头和本地 SHA-256。**该校验�
 
 本阶段默认不启动任何后台轮询或自动发布：由操作者手动点发布，点击“读取 Native 观察”获得结果。失去连接或改变游戏后，应重新“自动定位 N1”。
 
+## 4.2 用本地 ELF 独立核对真实 4.0.0 指令
+
+如果你手边已经有自己提取的 Violet4.0.0.elf，可以在 PC 本地执行以下只读审计（不会将 ELF 上传到 GitHub，仓库不包含游戏二进制）：
+
+    python3 switch/live-reward-v4/tests/audit_violet400_elf.py --elf /path/to/Violet4.0.0.elf
+
+工具将先严格校验整份 ELF 的 SHA-256：
+
+    d17403eaa9d844db82f647fd2f1518806b10c0518d53602fc0ac1766298fdba0
+
+然后核对 main+0xE327FC~main+0xE329B0 的 17 条指定原生 ARM64 指令，其中 memcpy 在 main+0xE32980，Hook 入口原始 MOV 在 main+0xE32984。**这一步仅证明本地提供的 ELF 符合静态研究版本，无法替代 Switch 运行时 Build ID 与 Hook 命中验证。**
+
 ## 5. 已知风险和限制
 
 - Hook 有能力拦截代码执行，**但本次 N1 不包含游戏数据写入**。不能把它误称“无 Hook 纯 sys-botbase”。
