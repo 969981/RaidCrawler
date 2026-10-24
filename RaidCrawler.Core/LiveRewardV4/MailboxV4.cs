@@ -114,7 +114,7 @@ public static class MailboxV4
         if (enabled > 1) throw new InvalidDataException("MAILBOX_V4_BAD_ENABLED");
         uint count = ReadU32(data, 0x14);
         if (count > MaxRows) throw new InvalidDataException("MAILBOX_V4_BAD_COUNT");
-        var rows = new RewardRowV4[count];
+        var rows = new RewardRowV4[(int)count];
         for (int i = 0; i < count; i++)
         {
             int offset = RowTableOffset + i * RowLength;
