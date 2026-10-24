@@ -59,6 +59,7 @@ cp "$NSO" "$OUT/subsdk9"
 cp "$NPDM" "$OUT/main.npdm"
 python3 "$ROOT/gen_manifest.py" \
   --elf "$WORK/exlaunch.elf" \
+  --nso "$NSO" \
   --nm "$DEVKITPRO/devkitA64/bin/aarch64-none-elf-nm" \
   --out "$OUT/mailbox-v4-locator.json"
 (
