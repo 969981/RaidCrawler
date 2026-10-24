@@ -20,6 +20,7 @@ public sealed class LiveRewardV4Window : Form
     private readonly Label _state = new();
     private readonly TextBox _log = new();
     private ulong _address;
+    private ulong _mainBase;
     private bool _busy;
 
     public LiveRewardV4Window(ISwitchConnectionAsync connection)
@@ -81,6 +82,7 @@ public sealed class LiveRewardV4Window : Form
             var result = await MailboxV4Locator.DiscoverAsync(
                 _connection, manifest, _closing.Token);
             _address = result.Address;
+            _mainBase = await _connection.GetMainNsoBaseAsync(_closing.Token);
             return $"已定位 N1 邮箱：0x{_address:X}；只读能力={result.Header.Capabilities}。";
         });
         AddButton("发布只读配置", 178, 471, 150, async () => {
@@ -138,7 +140,18 @@ public sealed class LiveRewardV4Window : Form
             version != MailboxV4Locator.VioletVersion)
         {
             _address = 0; // Stale pointer must never survive game switching.
+            _mainBase = 0;
             throw new InvalidOperationException("当前进程不是《紫》4.0.0；已清除旧邮箱地址，请重新自动定位。");
+        }
+        if (_address >= 0x10000)
+        {
+            ulong currentMain = await _connection.GetMainNsoBaseAsync(_closing.Token);
+            if (currentMain != _mainBase)
+            {
+                _address = 0;
+                _mainBase = 0;
+                throw new InvalidOperationException("游戏进程可能已重新启动（main NSO 基址变化），请重新自动定位邮箱。");
+            }
         }
     }
 
