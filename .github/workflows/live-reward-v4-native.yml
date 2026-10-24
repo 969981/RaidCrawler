@@ -25,6 +25,7 @@ jobs:
           test -f /opt/devkitpro/libnx/switch_rules
           test -x /opt/devkitpro/devkitA64/bin/aarch64-none-elf-g++
           python3 switch/live-reward-v4/tests/test_manifest.py
+          python3 -m py_compile switch/live-reward-v4/tests/audit_violet400_elf.py
       - name: Compile strictly read-only Native subsdk9
         run: bash switch/live-reward-v4/build.sh
       - name: Prove manifest binds to built NSO
