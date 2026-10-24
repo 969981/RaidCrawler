@@ -45,6 +45,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: RaidCrawler-V4-N1-PC-READONLY-UNVERIFIED
-          path: RaidCrawler.WinForms/bin/x64/Release/net10.0-windows/win-x64/publish/
+          path: RaidCrawler.WinForms/bin/Release/net10.0-windows/win-x64/publish/
           if-no-files-found: error
           retention-days: 7
