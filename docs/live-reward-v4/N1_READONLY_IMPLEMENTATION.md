@@ -62,13 +62,29 @@ CI 不自动上传到 Switch，不包含 FTP 发布功能。Artifacts 标记 REA
 1. 备份数据与现有 ExeFS 覆盖；确认 Switch 游戏是《紫》4.0.0 且 Build ID 精确一致。**仅靠 17 条指令匹配不足以证明真实 Build ID。**
 2. 完全退出游戏；检查有无现有 subsdk9 / main.npdm 冲突，不要覆盖 Skyline 或其他插件；如需安装，本地手动将配对 NSO 放在 atmosphere/contents/01008F6008C5E000/exefs/subsdk9。
 3. 按 exlaunch/Atmosphère 的实际 Loader 要求单独检查 main.npdm；不应将 CI 产物强制覆盖已有 NPDM。
-4. 将同次 native artifact 内的 mailbox-v4-locator.json 放在 Windows RaidCrawler.exe 同目录，启动游戏，连接 sys-botbase。
+4. 将同次 Native Artifact 内的 **mailbox-v4-locator.json 与原样的 subsdk9** 一起放在 Windows RaidCrawler.exe 同目录（这里的 subsdk9 仅用于**本地 SHA-256 配对校验**；真正加载到 Switch 的仍是 SD 卡上的模块）。Windows 和 Native 附件是分开下载的；不要混用不同构建批次的 manifest/subsdk9。启动游戏、连接 sys-botbase 后再操作。
 5. RaidCrawler 主窗口底部选择「V4 只读」→「自动定位 N1」。若 Title/version/Opcode/Hook/Header 任一不匹配，工具必须拒绝。
 6. 先使用少量道具行测试，点「发布只读配置」；界面应显示 PublishedRevision=N、ObservedRevision 尚可能是上一版。
 7. 游戏中由自己担任房主，进入团体战并点击开始挑战。之后点「读取 Native 观察」：捕获序号增加、源/输出 FNV 一致，ObservedRevision 应为 N（若本次观察时配置有效）。
 8. 不退出游戏，改用道具 B，再次「发布只读配置」，再开另一场。核对 Revision 增长且 Native 读取更新。
 9. 恢复原版配置可取消 Enabled 并发布为 Disabled（该协议仍要求传输至少已指定的行才可再次启用）。
 10. 退出游戏前备份日志；无论通过多少次只读测试，**均不得宣称实际发奖或可投入官方网络环境**。
+
+## 4.1 两份 CI Artifact 的文件组合
+
+Windows 工作流生成 RaidCrawler-V4-N1-PC-READONLY-UNVERIFIED；Native 工作流生成 RaidCrawler-V4-N1-Violet400-READONLY-UNVERIFIED。它们不是传统意义的正式发布，特别不能把 CI 构建成功当成 Switch 真机兼容性验证。
+
+推荐测试目录：
+
+    PC/RaidCrawler.WinForms.exe
+    PC/mailbox-v4-locator.json
+    PC/subsdk9                   # 仅用于本地文件配对哈希校验
+    SD/atmosphere/contents/01008F6008C5E000/exefs/subsdk9
+    SD/.../main.npdm             # 仅在明确确认此文件确实需要且兼容时使用
+
+PC 执行“自动定位 N1”会校验 NSO0 头和本地 SHA-256。**该校验不能证明 SD 卡上的 subsdk9 和 PC 本地副本相同**；这是需要人工确认的安装步骤。后续仍要求校验 Title ID、游戏版本、原版 ELF 指令、exlaunch Hook 入口以及 RCHMB04 邮箱。任何检查失败，必须停止，不允许尝试猜测的地址。
+
+本阶段默认不启动任何后台轮询或自动发布：由操作者手动点发布，点击“读取 Native 观察”获得结果。失去连接或改变游戏后，应重新“自动定位 N1”。
 
 ## 5. 已知风险和限制
 
